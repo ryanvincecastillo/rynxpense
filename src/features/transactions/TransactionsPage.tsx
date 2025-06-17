@@ -381,55 +381,6 @@ const TransactionsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Summary Cards */}
-      {/* {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-green-700">Total Posted</p>
-                <p className="text-2xl font-bold text-green-800">
-                  {formatCurrency(summary.postedAmount)}
-                </p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-green-600" />
-            </div>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-yellow-700">Total Pending</p>
-                <p className="text-2xl font-bold text-yellow-800">
-                  {formatCurrency(summary.pendingAmount)}
-                </p>
-              </div>
-              <Clock className="h-8 w-8 text-yellow-600" />
-            </div>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-700">Posted Count</p>
-                <p className="text-2xl font-bold text-blue-800">{summary.postedCount}</p>
-              </div>
-              <Check className="h-8 w-8 text-blue-600" />
-            </div>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-purple-700">Pending Count</p>
-                <p className="text-2xl font-bold text-purple-800">{summary.pendingCount}</p>
-              </div>
-              <Clock className="h-8 w-8 text-purple-600" />
-            </div>
-          </Card>
-        </div>
-      )} */}
-
       {/* Filters */}
       <Card>
         <div className="space-y-4">
