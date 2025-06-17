@@ -382,7 +382,7 @@ const TransactionsPage: React.FC = () => {
       </div>
 
       {/* Summary Cards */}
-      {summary && (
+      {/* {summary && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
             <div className="flex items-center justify-between">
@@ -428,7 +428,7 @@ const TransactionsPage: React.FC = () => {
             </div>
           </Card>
         </div>
-      )}
+      )} */}
 
       {/* Filters */}
       <Card>
