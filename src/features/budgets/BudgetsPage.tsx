@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom'; // Make sure this is imported
-import { Plus, Edit3, Trash2, Archive, Eye } from 'lucide-react';
-import { useBudgets, useCreateBudget, useUpdateBudget, useDeleteBudget } from '../../hooks/useApi';
+import { Link } from 'react-router-dom';
+import { Plus, Edit3, Trash2, Archive, Eye, Copy } from 'lucide-react';
+import { useBudgets, useCreateBudget, useUpdateBudget, useDeleteBudget, useDuplicateBudget } from '../../hooks/useApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
   Button, 
@@ -19,6 +19,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { Budget } from '../../types';
+import { DuplicateBudgetOptions } from '../../interfaces/duplicateBudgetOptions';
+import { DuplicateBudgetModal } from '../../components/modals/DuplicateBudgetModal';
 
 // Form validation schema
 const budgetSchema = z.object({
@@ -40,12 +42,17 @@ const BudgetsPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
   const [includeArchived, setIncludeArchived] = useState(false);
+  
+  // NEW: Duplicate modal state
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [budgetToDuplicate, setBudgetToDuplicate] = useState<Budget | null>(null);
 
   // API hooks
   const { data: budgetsResponse, isLoading, error } = useBudgets({ includeArchived });
   const createBudgetMutation = useCreateBudget();
   const updateBudgetMutation = useUpdateBudget();
   const deleteBudgetMutation = useDeleteBudget();
+  const duplicateBudgetMutation = useDuplicateBudget();
 
   const budgets = budgetsResponse?.data || [];
 
@@ -115,6 +122,36 @@ const BudgetsPage: React.FC = () => {
     }
   };
 
+  // Handle duplicate budget - NEW ENHANCED VERSION
+  const handleShowDuplicateModal = (budget: Budget) => {
+    setBudgetToDuplicate(budget);
+    setShowDuplicateModal(true);
+  };
+
+  const handleDuplicateBudget = async (options: DuplicateBudgetOptions) => {
+    if (!budgetToDuplicate) return;
+    
+    try {
+      await duplicateBudgetMutation.mutateAsync({
+        budgetId: budgetToDuplicate.id,
+        options
+      });
+      
+      let message = `Budget "${budgetToDuplicate.name}" duplicated successfully!`;
+      if (options.includeRecurringTransactions) {
+        message += ' Recurring transactions included.';
+      } else if (options.includeRecentTransactions) {
+        message += ` Recent transactions (${options.recentDays} days) included.`;
+      }
+      
+      toast.success(message);
+      setShowDuplicateModal(false);
+      setBudgetToDuplicate(null);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to duplicate budget');
+    }
+  };
+
   // Handle archive/unarchive budget
   const handleArchiveBudget = async (budget: Budget) => {
     try {
@@ -147,6 +184,12 @@ const BudgetsPage: React.FC = () => {
     setShowCreateModal(false);
     setEditingBudget(null);
     reset();
+  };
+
+  // Close duplicate modal
+  const closeDuplicateModal = () => {
+    setShowDuplicateModal(false);
+    setBudgetToDuplicate(null);
   };
 
   if (isLoading) {
@@ -234,6 +277,15 @@ const BudgetsPage: React.FC = () => {
                   >
                     <Edit3 className="h-4 w-4" />
                   </button>
+                  {/* ENHANCED: Duplicate button with modal */}
+                  <button
+                    onClick={() => handleShowDuplicateModal(budget)}
+                    className="p-1 text-gray-400 hover:text-green-600 transition-colors"
+                    title="Duplicate budget with options"
+                    disabled={duplicateBudgetMutation.isPending}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
                   <button
                     onClick={() => handleArchiveBudget(budget)}
                     className="p-1 text-gray-400 hover:text-yellow-600 transition-colors"
@@ -271,7 +323,6 @@ const BudgetsPage: React.FC = () => {
                   <span className="text-xs text-gray-500">
                     Created {new Date(budget.createdAt).toLocaleDateString()}
                   </span>
-                  {/* FIXED: Added proper navigation to budget details */}
                   <Link to={`/budgets/${budget.id}`}>
                     <Button size="sm" variant="ghost">
                       <Eye className="h-3 w-3 mr-1" />
@@ -344,6 +395,15 @@ const BudgetsPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* NEW: Enhanced Duplicate Budget Modal */}
+      <DuplicateBudgetModal
+        isOpen={showDuplicateModal}
+        onClose={closeDuplicateModal}
+        budget={budgetToDuplicate}
+        onDuplicate={handleDuplicateBudget}
+        isLoading={duplicateBudgetMutation.isPending}
+      />
     </div>
   );
 };

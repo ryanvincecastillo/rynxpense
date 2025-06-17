@@ -15,7 +15,8 @@ import {
   MoreVertical,
   Download,
   Share,
-  Settings
+  Settings,
+  Copy
 } from 'lucide-react';
 import {
   PieChart,
@@ -40,7 +41,8 @@ import {
   useBudgetCategories,
   useTransactions,
   useUpdateBudget,
-  useDeleteBudget
+  useDeleteBudget,
+  useDuplicateBudget
 } from '../../hooks/useApi';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -49,7 +51,6 @@ import {
   LoadingSpinner,
   Badge,
   Alert,
-  ProgressBar,
   Modal,
   Input,
   Textarea,
@@ -59,7 +60,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format } from 'date-fns';
+
+// Import the duplicate modal component we created earlier
+import { DuplicateBudgetModal } from '../../components/modals/DuplicateBudgetModal';
+import { DuplicateBudgetOptions } from '../../interfaces/duplicateBudgetOptions';
 
 // Form validation schema
 const budgetUpdateSchema = z.object({
@@ -81,6 +86,10 @@ const BudgetDetailsPage: React.FC = () => {
   const { user } = useAuth();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
+  
+  // NEW: Duplicate modal state
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
 
   // API hooks
   const { data: budget, isLoading: budgetLoading, error: budgetError } = useBudget(budgetId!);
@@ -95,6 +104,7 @@ const BudgetDetailsPage: React.FC = () => {
 
   const updateBudgetMutation = useUpdateBudget();
   const deleteBudgetMutation = useDeleteBudget();
+  const duplicateBudgetMutation = useDuplicateBudget();
 
   const recentTransactions = transactionsResponse?.data || [];
 
@@ -183,6 +193,40 @@ const BudgetDetailsPage: React.FC = () => {
     }
   };
 
+  // Handle duplicate budget - ENHANCED VERSION
+  const handleShowDuplicateModal = () => {
+    setShowDuplicateModal(true);
+    setShowActionsMenu(false);
+  };
+
+  const handleDuplicateBudget = async (options: DuplicateBudgetOptions) => {
+    if (!budget) return;
+    
+    try {
+      const result = await duplicateBudgetMutation.mutateAsync({
+        budgetId: budget.id,
+        options
+      });
+      
+      let message = `Budget "${budget.name}" duplicated successfully!`;
+      if (options.includeRecurringTransactions) {
+        message += ' Recurring transactions included.';
+      } else if (options.includeRecentTransactions) {
+        message += ` Recent transactions (${options.recentDays} days) included.`;
+      }
+      
+      toast.success(message);
+      setShowDuplicateModal(false);
+      
+      // Optionally navigate to the new budget
+      if (result?.data?.id) {
+        navigate(`/budgets/${result.data.id}`);
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to duplicate budget');
+    }
+  };
+
   // Handle archive budget
   const handleArchiveBudget = async () => {
     if (!budget) return;
@@ -193,6 +237,7 @@ const BudgetDetailsPage: React.FC = () => {
         data: { isArchived: !budget.isArchived },
       });
       toast.success(`Budget ${budget.isArchived ? 'unarchived' : 'archived'} successfully!`);
+      setShowActionsMenu(false);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to update budget');
     }
@@ -273,12 +318,54 @@ const BudgetDetailsPage: React.FC = () => {
             <Share className="h-4 w-4 mr-2" />
             Share
           </Button>
+          
+          {/* Enhanced Actions Dropdown */}
           <div className="relative">
-            <Button variant="ghost" size="sm">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setShowActionsMenu(!showActionsMenu)}
+            >
               <MoreVertical className="h-4 w-4" />
             </Button>
-            {/* You can add a dropdown menu here */}
+            
+            {showActionsMenu && (
+              <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                <div className="py-1">
+                  <button
+                    onClick={handleShowDuplicateModal}
+                    disabled={duplicateBudgetMutation.isPending}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                  >
+                    <Copy className="h-4 w-4 mr-3" />
+                    <div className="text-left">
+                      <div>Duplicate Budget</div>
+                      <div className="text-xs text-gray-500">With options for transactions</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={handleArchiveBudget}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    <Archive className="h-4 w-4 mr-3" />
+                    {budget.isArchived ? 'Unarchive' : 'Archive'} Budget
+                  </button>
+                  <div className="border-t border-gray-100 my-1"></div>
+                  <button
+                    onClick={() => {
+                      setShowDeleteModal(true);
+                      setShowActionsMenu(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4 mr-3" />
+                    Delete Budget
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
+          
           <Button onClick={() => setShowEditModal(true)}>
             <Edit3 className="h-4 w-4 mr-2" />
             Edit Budget
@@ -594,7 +681,7 @@ const BudgetDetailsPage: React.FC = () => {
       {/* Quick Actions */}
       <Card>
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Link 
             to={`/categories?budgetId=${budgetId}`}
             className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all group text-center"
@@ -610,6 +697,17 @@ const BudgetDetailsPage: React.FC = () => {
             <DollarSign className="h-8 w-8 text-green-600 mx-auto mb-2" />
             <p className="font-medium text-gray-900 text-sm">Add Transaction</p>
           </Link>
+
+          {/* ENHANCED: Duplicate Budget Quick Action with Better Description */}
+          <button 
+            onClick={handleShowDuplicateModal}
+            disabled={duplicateBudgetMutation.isPending}
+            className="p-4 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-all group text-center disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Copy className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+            <p className="font-medium text-gray-900 text-sm">Duplicate</p>
+            <p className="text-xs text-gray-500">With options</p>
+          </button>
 
           <button 
             onClick={handleArchiveBudget}
@@ -690,6 +788,15 @@ const BudgetDetailsPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Enhanced Duplicate Budget Modal */}
+      <DuplicateBudgetModal
+        isOpen={showDuplicateModal}
+        onClose={() => setShowDuplicateModal(false)}
+        budget={budget}
+        onDuplicate={handleDuplicateBudget}
+        isLoading={duplicateBudgetMutation.isPending}
+      />
 
       {/* Delete Confirmation Modal */}
       <Modal

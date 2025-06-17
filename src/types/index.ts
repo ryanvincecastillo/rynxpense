@@ -66,7 +66,7 @@ export interface BudgetCategory {
   };
 }
 
-// Transaction types
+// UPDATED: Transaction types with recurring fields
 export interface Transaction {
   id: string;
   budgetId: string;
@@ -76,6 +76,10 @@ export interface Transaction {
   date: string;
   isPosted: boolean;
   receiptUrl?: string;
+  // NEW: Recurring transaction fields
+  isRecurring?: boolean;
+  dayOfMonth?: number;
+  frequency?: 'WEEKLY' | 'MONTHLY' | 'YEARLY';
   createdAt: string;
   updatedAt: string;
   budget?: Pick<Budget, 'id' | 'name' | 'color'>;
@@ -179,6 +183,7 @@ export interface CreateCategoryForm {
   color?: string;
 }
 
+// UPDATED: Create transaction form with recurring fields
 export interface CreateTransactionForm {
   budgetId: string;
   categoryId: string;
@@ -187,6 +192,10 @@ export interface CreateTransactionForm {
   date: string;
   isPosted?: boolean;
   receiptUrl?: string;
+  // NEW: Recurring fields
+  isRecurring?: boolean;
+  dayOfMonth?: number;
+  frequency?: 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 }
 
 // Query parameters
@@ -205,10 +214,12 @@ export interface CategoryQueryParams {
   limit?: number;
 }
 
+// UPDATED: Transaction query params with recurring filter
 export interface TransactionQueryParams {
   budgetId?: string;
   categoryId?: string;
   isPosted?: boolean;
+  isRecurring?: boolean; // NEW: Filter for recurring transactions
   startDate?: string;
   endDate?: string;
   minAmount?: number;
@@ -218,6 +229,13 @@ export interface TransactionQueryParams {
   sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;
+}
+
+// NEW: Duplication options type
+export interface DuplicateBudgetOptions {
+  includeRecurringTransactions?: boolean;
+  includeRecentTransactions?: boolean;
+  recentDays?: number;
 }
 
 // UI State types

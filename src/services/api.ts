@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import { DuplicateBudgetOptions } from '../interfaces/duplicateBudgetOptions';
 
 // Base API configuration
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
@@ -147,7 +148,9 @@ export const budgetAPI = {
 
   delete: (id: string) => api.delete(`/budgets/${id}`),
 
-  getSummary: (id: string) => api.get(`/budgets/${id}/summary`),
+  duplicate: (id: string, data : DuplicateBudgetOptions) => api.post(`/budgets/${id}/duplicate`, data),
+
+  getSummary: (id: string) => api.get(`/budgets/${id}/summary`)
 };
 
 // Category API

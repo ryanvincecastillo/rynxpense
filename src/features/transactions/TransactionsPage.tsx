@@ -10,7 +10,10 @@ import {
   TrendingUp,
   TrendingDown,
   Check,
-  Clock
+  Clock,
+  Repeat,
+  Calendar,
+  Info
 } from 'lucide-react';
 import { 
   useTransactions, 
@@ -40,7 +43,6 @@ import toast from 'react-hot-toast';
 import { Transaction, TransactionQueryParams } from '../../types';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 
-// Form validation schema
 const transactionSchema = z.object({
   budgetId: z.string().min(1, 'Budget is required'),
   categoryId: z.string().min(1, 'Category is required'),
@@ -49,7 +51,11 @@ const transactionSchema = z.object({
   date: z.string().min(1, 'Date is required'),
   isPosted: z.boolean().optional().default(false),
   receiptUrl: z.string().url('Invalid receipt URL').optional().or(z.literal('')),
+  isRecurring: z.boolean().optional().default(false),
+  dayOfMonth: z.number().min(1).max(31).optional(),
+  frequency: z.enum(['WEEKLY', 'MONTHLY', 'YEARLY']).optional().default('MONTHLY'),
 });
+
 
 type TransactionFormData = z.infer<typeof transactionSchema>;
 
@@ -93,10 +99,14 @@ const TransactionsPage: React.FC = () => {
     defaultValues: {
       date: format(new Date(), 'yyyy-MM-dd'),
       isPosted: false,
+      isRecurring: false,
+      frequency: 'MONTHLY',
     },
   });
 
   const watchedBudgetId = watch('budgetId');
+  const watchedIsRecurring = watch('isRecurring');
+  const watchedFrequency = watch('frequency');
 
   // Update categories when budget changes
   React.useEffect(() => {
@@ -122,14 +132,37 @@ const TransactionsPage: React.FC = () => {
   // Handle create transaction
   const handleCreateTransaction = async (data: TransactionFormData) => {
     try {
-      await createTransactionMutation.mutateAsync({
-        ...data,
+      console.log('Form data before processing:', data); // DEBUG LOG
+      
+      const payload = {
+        budgetId: data.budgetId,
+        categoryId: data.categoryId,
+        amount: data.amount,
+        description: data.description,
+        date: data.date,
+        isPosted: data.isPosted || false,
         receiptUrl: data.receiptUrl || undefined,
-      });
-      toast.success('Transaction created successfully!');
+          ...(data.isRecurring && {
+          isRecurring: data.isRecurring,
+          frequency: data.frequency,
+        }),
+        ...data.isRecurring && data.frequency === 'MONTHLY' && data.dayOfMonth ? { dayOfMonth: data.dayOfMonth } : {},
+      };
+
+      console.log('Payload being sent to API:', payload); // DEBUG LOG
+
+      await createTransactionMutation.mutateAsync(payload);
+      
+      let successMessage = 'Transaction created successfully!';
+      if (data.isRecurring) {
+        successMessage += ` This ${data.frequency?.toLowerCase()} recurring transaction will appear in future budget duplicates.`;
+      }
+      
+      toast.success(successMessage);
       setShowCreateModal(false);
       reset();
     } catch (error: any) {
+      console.error('Transaction creation error:', error); // DEBUG LOG
       toast.error(error.response?.data?.message || 'Failed to create transaction');
     }
   };
@@ -146,30 +179,46 @@ const TransactionsPage: React.FC = () => {
       date: format(new Date(transaction.date), 'yyyy-MM-dd'),
       isPosted: transaction.isPosted,
       receiptUrl: transaction.receiptUrl || '',
+      // NEW: Recurring fields
+      isRecurring: transaction.isRecurring || false,
+      dayOfMonth: transaction.dayOfMonth || undefined,
+      frequency: transaction.frequency || 'MONTHLY',
     });
     setShowCreateModal(true);
   };
 
   // Handle update transaction
   const handleUpdateTransaction = async (data: TransactionFormData) => {
-    if (!editingTransaction) return;
+  if (!editingTransaction) return;
 
-    try {
-      await updateTransactionMutation.mutateAsync({
-        id: editingTransaction.id,
-        data: {
-          ...data,
-          receiptUrl: data.receiptUrl || undefined,
-        },
-      });
-      toast.success('Transaction updated successfully!');
-      setShowCreateModal(false);
-      setEditingTransaction(null);
-      reset();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to update transaction');
-    }
-  };
+  try {
+    // Prepare payload - EXCLUDE budgetId as it cannot be changed during update
+    const { budgetId, ...updatePayload } = data;
+    
+    const payload = {
+      ...updatePayload,
+      receiptUrl: updatePayload.receiptUrl || undefined,
+      // Only include recurring fields if isRecurring is true
+      ...(updatePayload.isRecurring && {
+        isRecurring: updatePayload.isRecurring,
+        dayOfMonth: updatePayload.dayOfMonth,
+        frequency: updatePayload.frequency,
+      })
+    };
+
+    await updateTransactionMutation.mutateAsync({
+      id: editingTransaction.id,
+      data: payload, // Now excludes budgetId
+    });
+    
+    toast.success('Transaction updated successfully!');
+    setShowCreateModal(false);
+    setEditingTransaction(null);
+    reset();
+  } catch (error: any) {
+    toast.error(error.response?.data?.message || 'Failed to update transaction');
+  }
+};
 
   // Handle delete transaction
   const handleDeleteTransaction = async (transaction: Transaction) => {
@@ -193,7 +242,7 @@ const TransactionsPage: React.FC = () => {
     reset();
   };
 
-  // Table columns
+  // Enhanced table columns with recurring indicator
   const columns = [
     {
       key: 'date' as keyof Transaction,
@@ -205,8 +254,25 @@ const TransactionsPage: React.FC = () => {
       label: 'Description',
       render: (description: string, transaction: Transaction) => (
         <div>
-          <p className="font-medium text-gray-900">{description}</p>
-          <p className="text-sm text-gray-500">{transaction.category?.name}</p>
+          <div className="flex items-center space-x-2">
+            <p className="font-medium text-gray-900">{description}</p>
+            {/* NEW: Recurring indicator */}
+            {transaction.isRecurring && (
+              <span title="Recurring transaction">
+                <Repeat className="h-4 w-4 text-blue-500" />
+              </span>
+            )}
+          </div>
+          <div className="flex items-center space-x-2 text-sm text-gray-500">
+            <span>{transaction.category?.name}</span>
+            {/* NEW: Show recurring info */}
+            {transaction.isRecurring && (
+              <Badge variant="secondary" size="sm">
+                {transaction.frequency?.toLowerCase()} 
+                {transaction.dayOfMonth && ` (${transaction.dayOfMonth}${getOrdinalSuffix(transaction.dayOfMonth)})`}
+              </Badge>
+            )}
+          </div>
         </div>
       ),
     },
@@ -265,6 +331,17 @@ const TransactionsPage: React.FC = () => {
       ),
     },
   ];
+
+  // Helper function for ordinal suffix
+  const getOrdinalSuffix = (day: number) => {
+    if (day >= 11 && day <= 13) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  };
 
   if (isLoading) {
     return (
@@ -381,6 +458,7 @@ const TransactionsPage: React.FC = () => {
                   const value = e.target.value;
                   if (value === 'posted') updateFilters({ isPosted: true });
                   else if (value === 'pending') updateFilters({ isPosted: false });
+                  else if (value === 'recurring') updateFilters({ isRecurring: true });
                   else if (value === 'thisMonth') {
                     const now = new Date();
                     updateFilters({
@@ -395,6 +473,7 @@ const TransactionsPage: React.FC = () => {
                 <option value="thisMonth">This Month</option>
                 <option value="posted">Posted Only</option>
                 <option value="pending">Pending Only</option>
+                <option value="recurring">Recurring Only</option>
               </select>
             </div>
           </div>
@@ -416,7 +495,7 @@ const TransactionsPage: React.FC = () => {
           </div>
 
           {/* Clear Filters */}
-          {(filters.search || filters.budgetId || filters.startDate || filters.endDate || filters.isPosted !== undefined) && (
+          {(filters.search || filters.budgetId || filters.startDate || filters.endDate || filters.isPosted !== undefined || filters.isRecurring !== undefined) && (
             <div className="flex justify-end">
               <Button 
                 variant="ghost" 
@@ -454,7 +533,7 @@ const TransactionsPage: React.FC = () => {
         />
       )}
 
-      {/* Create/Edit Transaction Modal */}
+      {/* Enhanced Create/Edit Transaction Modal */}
       <Modal
         isOpen={showCreateModal}
         onClose={closeModal}
@@ -527,6 +606,95 @@ const TransactionsPage: React.FC = () => {
             <label htmlFor="isPosted" className="text-sm text-gray-700">
               Mark as posted (transaction has been processed)
             </label>
+          </div>
+
+          {/* NEW: Recurring Transaction Section */}
+          <div className="border-t pt-4">
+            <div className="flex items-center space-x-2 mb-4">
+              <input
+                type="checkbox"
+                id="isRecurring"
+                {...register('isRecurring')}
+                className="h-4 w-4 text-blue-600 rounded border-gray-300"
+              />
+              <label htmlFor="isRecurring" className="text-sm font-medium text-gray-700 flex items-center">
+                <Repeat className="h-4 w-4 mr-1" />
+                This is a recurring transaction
+              </label>
+            </div>
+            
+            {watchedIsRecurring && (
+              <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center space-x-2 text-sm text-blue-700 mb-3">
+                  <Info className="h-4 w-4" />
+                  <span>Recurring transactions will automatically appear in duplicated budgets</span>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Frequency *
+                    </label>
+                    <select
+                      {...register('frequency')}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    >
+                      <option value="MONTHLY">Monthly</option>
+                      <option value="WEEKLY">Weekly</option>
+                      <option value="YEARLY">Yearly</option>
+                    </select>
+                  </div>
+                  
+                  {watchedFrequency === 'MONTHLY' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Day of Month
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        {...register('dayOfMonth', { valueAsNumber: true })}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="25"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        e.g., 25 for rent due on the 25th of each month
+                      </p>
+                      {errors.dayOfMonth && (
+                        <p className="text-sm text-red-600 mt-1">{errors.dayOfMonth.message}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Examples based on frequency */}
+                <div className="text-xs text-blue-600 bg-blue-100 p-3 rounded">
+                  <strong>Common Examples:</strong>
+                  <div className="mt-1 space-y-1">
+                    {watchedFrequency === 'MONTHLY' && (
+                      <>
+                        <div>• Salary (30th of each month)</div>
+                        <div>• Rent (1st of each month)</div>
+                        <div>• Utilities (15th of each month)</div>
+                      </>
+                    )}
+                    {watchedFrequency === 'WEEKLY' && (
+                      <>
+                        <div>• Grocery allowance</div>
+                        <div>• Transportation budget</div>
+                      </>
+                    )}
+                    {watchedFrequency === 'YEARLY' && (
+                      <>
+                        <div>• Insurance premiums</div>
+                        <div>• Annual subscriptions</div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end space-x-3 pt-6">

@@ -12,6 +12,7 @@ import {
   CreateTransactionForm,
   TransactionsResponse,
 } from '../types';
+import { DuplicateBudgetOptions } from '../interfaces/duplicateBudgetOptions';
 
 // Query keys
 export const queryKeys = {
@@ -84,6 +85,27 @@ export const useDeleteBudget = () => {
   return useMutation({
     mutationFn: (id: string) => budgetAPI.delete(id),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.budgets });
+    },
+  });
+};
+
+export const useDuplicateBudget = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ 
+      budgetId, 
+      options = {} 
+    }: { 
+      budgetId: string; 
+      options?: DuplicateBudgetOptions 
+    }) => {
+      const response = await budgetAPI.duplicate(budgetId, options);
+      return response.data;
+    },
+    onSuccess: () => {
+      // Invalidate and refetch budgets list
       queryClient.invalidateQueries({ queryKey: queryKeys.budgets });
     },
   });
