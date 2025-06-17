@@ -509,7 +509,7 @@ const BudgetsPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Budgets</h1>
           <p className="text-gray-600">
-            Manage your budgets and track financial progress • {budgets.length} budgets
+            Manage your budgets and track financial progress • {budgets.length} budget(s)
           </p>
         </div>
         <div className="flex items-center space-x-3">
