@@ -1,17 +1,12 @@
 import React, { useState } from 'react';
 import { 
   Plus, 
-  Edit3, 
-  Trash2, 
   TrendingUp,
   TrendingDown,
   Target,
   DollarSign,
-  Filter,
   Search,
   BarChart3,
-  Eye,
-  EyeOff
 } from 'lucide-react';
 import { 
   useCategories, 
@@ -27,33 +22,15 @@ import {
   Card, 
   EmptyState, 
   LoadingSpinner, 
-  Modal, 
   Input, 
   Select,
-  Badge,
   Alert,
-  ProgressBar
 } from '../../components/ui';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { CategoryFormModal } from '../../components/modals';
 import toast from 'react-hot-toast';
-import { BudgetCategory, CategoryQueryParams } from '../../types';
-
-// Form validation schema
-const categorySchema = z.object({
-  budgetId: z.string().min(1, 'Budget is required'),
-  name: z.string().min(1, 'Category name is required').max(100, 'Name too long'),
-  type: z.enum(['INCOME', 'EXPENSE'], { required_error: 'Category type is required' }),
-  plannedAmount: z.number().min(0, 'Planned amount must be positive').optional().default(0),
-  color: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid color format').optional(),
-});
-
-type CategoryFormData = z.infer<typeof categorySchema>;
-
-// Color options for categories
-const incomeColors = ['#22C55E', '#10B981', '#059669', '#047857', '#065F46'];
-const expenseColors = ['#EF4444', '#DC2626', '#B91C1C', '#991B1B', '#7F1D1D'];
+import { BudgetCategory, CategoryQueryParams, CreateCategoryForm } from '../../types';
+import { CategoryCard } from '../../components/features/category';
+import { DeleteConfirmModal, ConfirmModal } from '../../components/ui';
 
 const CategoriesPage: React.FC = () => {
   const { user } = useAuth();
@@ -68,6 +45,12 @@ const CategoriesPage: React.FC = () => {
     isActive: true,
   });
 
+  // Confirmation modal states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showToggleModal, setShowToggleModal] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<BudgetCategory | null>(null);
+  const [categoryToToggle, setCategoryToToggle] = useState<BudgetCategory | null>(null);
+
   // API hooks
   const { data: budgetsResponse } = useBudgets();
   const { data: categoriesResponse, isLoading, error } = useCategories(filters);
@@ -78,33 +61,6 @@ const CategoriesPage: React.FC = () => {
 
   const budgets = budgetsResponse?.data || [];
   const categories = categoriesResponse?.data || [];
-  const budgetCategories = budgetCategoriesResponse || null;
-
-  // Form handling
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    setValue,
-    formState: { errors, isSubmitting },
-  } = useForm<CategoryFormData>({
-    resolver: zodResolver(categorySchema),
-    defaultValues: {
-      plannedAmount: 0,
-    },
-  });
-
-  const watchedType = watch('type');
-  const watchedColor = watch('color');
-
-  // Update color options when type changes
-  React.useEffect(() => {
-    if (watchedType && !watchedColor) {
-      const colors = watchedType === 'INCOME' ? incomeColors : expenseColors;
-      setValue('color', colors[0]);
-    }
-  }, [watchedType, watchedColor, setValue]);
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -119,97 +75,85 @@ const CategoriesPage: React.FC = () => {
     setFilters(prev => ({ ...prev, ...newFilters, page: 1 }));
   };
 
-  // Handle create category
-  const handleCreateCategory = async (data: CategoryFormData) => {
+  // Handle create/update category using our new modal
+  const handleCategorySubmit = async (data: CreateCategoryForm) => {
     try {
-      await createCategoryMutation.mutateAsync(data);
-      toast.success('Category created successfully!');
+      if (editingCategory) {
+        // Update existing category
+        await updateCategoryMutation.mutateAsync({
+          id: editingCategory.id,
+          data: {
+            name: data.name,
+            plannedAmount: data.plannedAmount,
+            color: data.color,
+          },
+        });
+        toast.success('Category updated successfully!');
+      } else {
+        // Create new category
+        await createCategoryMutation.mutateAsync(data);
+        toast.success('Category created successfully!');
+      }
       setShowCreateModal(false);
-      reset();
+      setEditingCategory(null);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create category');
+      toast.error(error.response?.data?.message || `Failed to ${editingCategory ? 'update' : 'create'} category`);
     }
   };
 
   // Handle edit category
   const handleEditCategory = (category: BudgetCategory) => {
     setEditingCategory(category);
-    reset({
-      budgetId: category.budgetId,
-      name: category.name,
-      type: category.type,
-      plannedAmount: category.plannedAmount,
-      color: category.color,
-    });
     setShowCreateModal(true);
   };
 
-  // Handle update category
-  const handleUpdateCategory = async (data: CategoryFormData) => {
-    if (!editingCategory) return;
-
-    try {
-      await updateCategoryMutation.mutateAsync({
-        id: editingCategory.id,
-        data: {
-          name: data.name,
-          plannedAmount: data.plannedAmount,
-          color: data.color,
-        },
-      });
-      toast.success('Category updated successfully!');
-      setShowCreateModal(false);
-      setEditingCategory(null);
-      reset();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to update category');
-    }
+  // Handle toggle category active status
+  const handleShowToggleModal = (category: BudgetCategory) => {
+    setCategoryToToggle(category);
+    setShowToggleModal(true);
   };
 
-  // Handle toggle category active status
-  const handleToggleActive = async (category: BudgetCategory) => {
+  const handleToggleActive = async () => {
+    if (!categoryToToggle) return;
+
     try {
       await updateCategoryMutation.mutateAsync({
-        id: category.id,
-        data: { isActive: !category.isActive },
+        id: categoryToToggle.id,
+        data: { isActive: !categoryToToggle.isActive },
       });
-      toast.success(`Category ${category.isActive ? 'deactivated' : 'activated'} successfully!`);
+      toast.success(`Category ${categoryToToggle.isActive ? 'deactivated' : 'activated'} successfully!`);
+      setShowToggleModal(false);
+      setCategoryToToggle(null);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to update category');
     }
   };
 
   // Handle delete category
-  const handleDeleteCategory = async (category: BudgetCategory) => {
-    if (!window.confirm(`Are you sure you want to delete "${category.name}"? This action cannot be undone.`)) {
-      return;
-    }
+  const handleShowDeleteModal = (category: BudgetCategory) => {
+    setCategoryToDelete(category);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!categoryToDelete) return;
 
     try {
-      await deleteCategoryMutation.mutateAsync(category.id);
+      await deleteCategoryMutation.mutateAsync(categoryToDelete.id);
       toast.success('Category deleted successfully!');
+      setShowDeleteModal(false);
+      setCategoryToDelete(null);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to delete category');
     }
   };
 
-  // Close modal and reset form
+  // Close modal
   const closeModal = () => {
     setShowCreateModal(false);
     setEditingCategory(null);
-    reset();
   };
 
-  // Get color options based on category type
-  const getColorOptions = (type: 'INCOME' | 'EXPENSE') => {
-    return type === 'INCOME' ? incomeColors : expenseColors;
-  };
-
-  // Calculate category performance
-  const getCategoryPerformance = (category: BudgetCategory) => {
-    if (category.plannedAmount === 0) return 0;
-    return (category.actualAmount / category.plannedAmount) * 100;
-  };
 
   if (isLoading) {
     return (
@@ -397,93 +341,16 @@ const CategoriesPage: React.FC = () => {
                 </h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {incomeCategories.map((category: BudgetCategory) => {
-                  const performance = getCategoryPerformance(category);
-                  return (
-                    <Card key={category.id} className="hover:shadow-lg transition-shadow duration-200">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center space-x-3">
-                          <div
-                            className="w-4 h-4 rounded-full"
-                            style={{ backgroundColor: category.color }}
-                          />
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{category.name}</h3>
-                            <Badge variant="success" size="sm">
-                              {category.type}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <button
-                            onClick={() => handleToggleActive(category)}
-                            className={`p-1 transition-colors ${
-                              category.isActive 
-                                ? 'text-gray-400 hover:text-yellow-600' 
-                                : 'text-yellow-600 hover:text-gray-600'
-                            }`}
-                            title={category.isActive ? "Deactivate category" : "Activate category"}
-                          >
-                            {category.isActive ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                          </button>
-                          <button
-                            onClick={() => handleEditCategory(category)}
-                            className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
-                            title="Edit category"
-                          >
-                            <Edit3 className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteCategory(category)}
-                            className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                            title="Delete category"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-500">Actual</span>
-                          <span className="font-semibold text-green-600">
-                            {formatCurrency(category.actualAmount)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-500">Planned</span>
-                          <span className="font-medium text-gray-900">
-                            {formatCurrency(category.plannedAmount)}
-                          </span>
-                        </div>
-                        
-                        {category.plannedAmount > 0 && (
-                          <div>
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="text-xs text-gray-500">Progress</span>
-                              <span className="text-xs text-gray-600">{performance.toFixed(1)}%</span>
-                            </div>
-                            <ProgressBar
-                              value={category.actualAmount}
-                              max={category.plannedAmount}
-                              color="green"
-                              size="sm"
-                            />
-                          </div>
-                        )}
-
-                        <div className="pt-3 border-t border-gray-200">
-                          <div className="flex items-center justify-between text-xs text-gray-500">
-                            <span>{category._count?.transactions || 0} transactions</span>
-                            <span className={`font-medium ${category.isActive ? 'text-green-600' : 'text-gray-400'}`}>
-                              {category.isActive ? 'Active' : 'Inactive'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
+                {incomeCategories.map((category: BudgetCategory) => (
+                  <CategoryCard
+                    key={category.id}
+                    category={category}
+                    onEdit={handleEditCategory}
+                    onDelete={handleShowDeleteModal}
+                    onToggleActive={handleShowToggleModal}
+                    formatCurrency={formatCurrency}
+                  />
+                ))}
               </div>
             </div>
           )}
@@ -498,185 +365,59 @@ const CategoriesPage: React.FC = () => {
                 </h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {expenseCategories.map((category: BudgetCategory) => {
-                  const performance = getCategoryPerformance(category);
-                  return (
-                    <Card key={category.id} className="hover:shadow-lg transition-shadow duration-200">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center space-x-3">
-                          <div
-                            className="w-4 h-4 rounded-full"
-                            style={{ backgroundColor: category.color }}
-                          />
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{category.name}</h3>
-                            <Badge variant="error" size="sm">
-                              {category.type}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <button
-                            onClick={() => handleToggleActive(category)}
-                            className={`p-1 transition-colors ${
-                              category.isActive 
-                                ? 'text-gray-400 hover:text-yellow-600' 
-                                : 'text-yellow-600 hover:text-gray-600'
-                            }`}
-                            title={category.isActive ? "Deactivate category" : "Activate category"}
-                          >
-                            {category.isActive ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                          </button>
-                          <button
-                            onClick={() => handleEditCategory(category)}
-                            className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
-                            title="Edit category"
-                          >
-                            <Edit3 className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteCategory(category)}
-                            className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                            title="Delete category"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-500">Actual</span>
-                          <span className="font-semibold text-red-600">
-                            {formatCurrency(category.actualAmount)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-500">Planned</span>
-                          <span className="font-medium text-gray-900">
-                            {formatCurrency(category.plannedAmount)}
-                          </span>
-                        </div>
-                        
-                        {category.plannedAmount > 0 && (
-                          <div>
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="text-xs text-gray-500">Usage</span>
-                              <span className="text-xs text-gray-600">{performance.toFixed(1)}%</span>
-                            </div>
-                            <ProgressBar
-                              value={category.actualAmount}
-                              max={category.plannedAmount}
-                              color={performance > 100 ? "red" : performance > 80 ? "yellow" : "blue"}
-                              size="sm"
-                            />
-                          </div>
-                        )}
-
-                        <div className="pt-3 border-t border-gray-200">
-                          <div className="flex items-center justify-between text-xs text-gray-500">
-                            <span>{category._count?.transactions || 0} transactions</span>
-                            <span className={`font-medium ${category.isActive ? 'text-green-600' : 'text-gray-400'}`}>
-                              {category.isActive ? 'Active' : 'Inactive'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
+                {expenseCategories.map((category: BudgetCategory) => (
+                  <CategoryCard
+                    key={category.id}
+                    category={category}
+                    onEdit={handleEditCategory}
+                    onDelete={handleDeleteCategory}
+                    onToggleActive={handleToggleActive}
+                    formatCurrency={formatCurrency}
+                  />
+                ))}
               </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Create/Edit Category Modal */}
-      <Modal
+      {/* NEW: Use our standardized CategoryFormModal */}
+      <CategoryFormModal
         isOpen={showCreateModal}
         onClose={closeModal}
-        title={editingCategory ? 'Edit Category' : 'Create New Category'}
-        size="lg"
-      >
-        <form onSubmit={handleSubmit(editingCategory ? handleUpdateCategory : handleCreateCategory)} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select
-              label="Budget *"
-              placeholder="Select a budget"
-              disabled={!!editingCategory} // Can't change budget when editing
-              options={budgets.map((budget: { id: any; name: any; }) => ({ value: budget.id, label: budget.name }))}
-              error={errors.budgetId?.message}
-              {...register('budgetId')}
-            />
+        onSubmit={handleCategorySubmit}
+        editingCategory={editingCategory}
+        isLoading={createCategoryMutation.isPending || updateCategoryMutation.isPending}
+        budgetId={selectedBudget || (budgets[0]?.id || '')}
+      />
 
-            <Select
-              label="Type *"
-              placeholder="Select category type"
-              disabled={!!editingCategory} // Can't change type when editing
-              options={[
-                { value: 'INCOME', label: 'Income' },
-                { value: 'EXPENSE', label: 'Expense' },
-              ]}
-              error={errors.type?.message}
-              {...register('type')}
-            />
-          </div>
+      {/* Confirmation Modals */}
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setCategoryToDelete(null);
+        }}
+        onConfirm={handleDeleteCategory}
+        itemName={categoryToDelete?.name || ''}
+        itemType="category"
+        isLoading={deleteCategoryMutation.isPending}
+        warningText="All transactions in this category will also be deleted."
+      />
 
-          <Input
-            label="Category Name *"
-            placeholder="e.g., Salary, Groceries, Utilities"
-            error={errors.name?.message}
-            {...register('name')}
-          />
-
-          <Input
-            label="Planned Amount"
-            type="number"
-            step="0.01"
-            placeholder="0.00"
-            error={errors.plannedAmount?.message}
-            {...register('plannedAmount', { valueAsNumber: true })}
-          />
-
-          {watchedType && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Color
-              </label>
-              <div className="grid grid-cols-5 gap-2">
-                {getColorOptions(watchedType).map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => setValue('color', color)}
-                    className={`w-10 h-10 rounded-lg border-2 transition-all ${
-                      watchedColor === color
-                        ? 'border-gray-400 scale-110'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
-              </div>
-              {errors.color && (
-                <p className="text-sm text-red-600 mt-1">{errors.color.message}</p>
-              )}
-            </div>
-          )}
-
-          <div className="flex justify-end space-x-3 pt-6">
-            <Button type="button" variant="secondary" onClick={closeModal}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              isLoading={isSubmitting || createCategoryMutation.isPending || updateCategoryMutation.isPending}
-            >
-              {editingCategory ? 'Update Category' : 'Create Category'}
-            </Button>
-          </div>
-        </form>
-      </Modal>
+      <ConfirmModal
+        isOpen={showToggleModal}
+        onClose={() => {
+          setShowToggleModal(false);
+          setCategoryToToggle(null);
+        }}
+        onConfirm={handleToggleActive}
+        variant="warning"
+        message={`${categoryToToggle?.isActive ? 'Deactivate' : 'Activate'} Category`}
+        description={`Are you sure you want to ${categoryToToggle?.isActive ? 'deactivate' : 'activate'} "${categoryToToggle?.name}"?`}
+        confirmText={categoryToToggle?.isActive ? 'Deactivate' : 'Activate'}
+        isLoading={updateCategoryMutation.isPending}
+      />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { DuplicateBudgetOptions } from '../interfaces/duplicateBudgetOptions';
+import { DuplicateBudgetOptions } from '../types';
 
 // Base API configuration
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';

@@ -11,8 +11,8 @@ import {
   CreateCategoryForm,
   CreateTransactionForm,
   TransactionsResponse,
+  DuplicateBudgetOptions,
 } from '../types';
-import { DuplicateBudgetOptions } from '../interfaces/duplicateBudgetOptions';
 
 // Query keys
 export const queryKeys = {

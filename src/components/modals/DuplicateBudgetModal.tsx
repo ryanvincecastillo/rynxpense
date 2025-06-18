@@ -1,7 +1,15 @@
 import React, { useState } from 'react';
-import { Copy, Calendar, Clock, FileText, Info } from 'lucide-react';
+import { Copy, Calendar, Clock, Info } from 'lucide-react';
 import { Modal, Button, Card, Badge } from '../../components/ui';
-import { DuplicateBudgetModalProps } from '../../interfaces/duplicateBudgetModalProps';
+import { Budget, DuplicateBudgetOptions } from '../../types';
+
+interface DuplicateBudgetModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  budget: Budget | null;
+  onDuplicate: (options: DuplicateBudgetOptions) => void;
+  isLoading: boolean;
+}
 
 export const DuplicateBudgetModal: React.FC<DuplicateBudgetModalProps> = ({
   isOpen,

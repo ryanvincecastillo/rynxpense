@@ -598,3 +598,9 @@ export const Skeleton: React.FC<SkeletonProps> = ({
     />
   );
 };
+
+
+// New standardized modals (alongside existing Modal)
+export { Modal as BaseModal, FormModal, type BaseModalProps, type FormModalProps } from './Modal';
+export { Button as StandardButton, type ButtonProps as StandardButtonProps } from './Navigation/Button';
+export { ConfirmModal, DeleteConfirmModal, ArchiveConfirmModal, type ConfirmModalProps } from './Modal';

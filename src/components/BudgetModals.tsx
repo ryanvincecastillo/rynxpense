@@ -8,7 +8,7 @@ import { Budget, BudgetCategoriesResponse, DuplicateBudgetOptions } from '../typ
 import { EditingItem, ModalState } from '../hooks/useBudgetState';
 import { Button, Input, Modal, Select, Textarea } from './ui';
 import { DuplicateBudgetModal } from './modals/DuplicateBudgetModal';
-import CategoryModal from './CategoryModal';
+import { CategoryFormModal } from './modals';
 
 // Form validation schemas
 const budgetUpdateSchema = z.object({
@@ -248,13 +248,12 @@ const BudgetModals: React.FC<BudgetModalsProps> = ({
       </Modal>
 
       {/* Enhanced Category Modal */}
-      <CategoryModal
+      <CategoryFormModal
         isOpen={modalState.showCategoryModal}
         onClose={() => onClose('showCategoryModal')}
         onSubmit={(data) => onSubmit('category', data)}
         editingCategory={editingItem.category}
-        isLoading={false}
-      />
+        isLoading={false} budgetId={''}      />
 
       {/* Transaction Modal */}
       <Modal
