@@ -10,6 +10,9 @@ import {
 import { TrendingUp, TrendingDown, Plus, DollarSign, Minus } from 'lucide-react';
 import { BudgetCategoriesResponse } from '../types';
 import { Card, EmptyState } from './ui';
+import BudgetSummaryCards from './BudgetSummaryCards';
+import { useBudgetSummary } from '../hooks/useApi';
+import { useParams } from 'react-router-dom';
 
 interface BudgetOverviewTabProps {
   categoriesData: BudgetCategoriesResponse | undefined;
@@ -22,6 +25,10 @@ const BudgetOverviewTab: React.FC<BudgetOverviewTabProps> = ({
   formatCurrency,
   onQuickAction,
 }) => {
+
+  const { budgetId } = useParams<{ budgetId: string }>();
+  const { data: summary, isLoading: summaryLoading } = useBudgetSummary(budgetId!);
+  
   // Prepare chart data
   const categoryChartData = useMemo(() => {
     if (!categoriesData) return [];
@@ -80,6 +87,13 @@ const BudgetOverviewTab: React.FC<BudgetOverviewTabProps> = ({
 
   return (
     <div className="space-y-8">
+           <BudgetSummaryCards 
+              summary={summary} 
+              formatCurrency={formatCurrency}
+              isLoading={summaryLoading}
+              categoriesData={categoriesData} // Pass categories data for enhanced display
+            />
+            
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Category Distribution */}

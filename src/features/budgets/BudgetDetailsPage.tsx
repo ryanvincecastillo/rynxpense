@@ -154,12 +154,12 @@ const BudgetDetailsPage: React.FC = () => {
       </BudgetHeader>
 
       {/* Summary Cards */}
-      <BudgetSummaryCards 
+      {/* <BudgetSummaryCards 
         summary={summary} 
         formatCurrency={formatCurrency}
         isLoading={summaryLoading}
         categoriesData={categoriesData} // Pass categories data for enhanced display
-      />
+      /> */}
 
       {/* Tabs Navigation */}
       <BudgetTabs 
