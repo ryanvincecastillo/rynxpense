@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,6 +17,13 @@ const budgetUpdateSchema = z.object({
   color: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid color format').optional(),
 });
 
+const categorySchema = z.object({
+  name: z.string().min(1, 'Category name is required').max(100, 'Name too long'),
+  type: z.enum(['INCOME', 'EXPENSE'], { required_error: 'Category type is required' }),
+  plannedAmount: z.number().min(0, 'Planned amount must be positive').optional().default(0),
+  color: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid color format').optional(),
+});
+
 const transactionSchema = z.object({
   categoryId: z.string().min(1, 'Category is required'),
   amount: z.number().positive('Amount must be positive'),
@@ -30,6 +37,7 @@ const transactionSchema = z.object({
 });
 
 type BudgetUpdateFormData = z.infer<typeof budgetUpdateSchema>;
+type CategoryFormData = z.infer<typeof categorySchema>;
 type TransactionFormData = z.infer<typeof transactionSchema>;
 
 const colorOptions = [
@@ -37,13 +45,16 @@ const colorOptions = [
   '#06B6D4', '#84CC16', '#F97316', '#EC4899', '#6366F1'
 ];
 
+const incomeColors = ['#22C55E', '#10B981', '#059669', '#047857', '#065F46'];
+const expenseColors = ['#EF4444', '#DC2626', '#B91C1C', '#991B1B', '#7F1D1D'];
+
 interface BudgetModalsProps {
   budget: Budget;
   categoriesData: BudgetCategoriesResponse | undefined;
   modalState: ModalState;
   editingItem: EditingItem;
   onClose: (modalName?: keyof ModalState) => void;
-  onSubmit: (type: string, data: any) => void;
+  onSubmit: (type: string, data: any) => Promise<void>;
   formatCurrency: (amount: number) => string;
 }
 
@@ -56,58 +67,122 @@ const BudgetModals: React.FC<BudgetModalsProps> = ({
   onSubmit,
   formatCurrency,
 }) => {
-  // Form instances
+  // Form hooks
   const budgetForm = useForm<BudgetUpdateFormData>({
     resolver: zodResolver(budgetUpdateSchema),
+    defaultValues: {
+      name: budget?.name || '',
+      description: budget?.description || '',
+      color: budget?.color || colorOptions[0],
+    },
+  });
+
+  const categoryForm = useForm<CategoryFormData>({
+    resolver: zodResolver(categorySchema),
+    defaultValues: {
+      name: '',
+      type: 'INCOME',
+      plannedAmount: 0,
+      color: incomeColors[0],
+    },
   });
 
   const transactionForm = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
+      amount: 0,
+      description: '',
       date: format(new Date(), 'yyyy-MM-dd'),
       isPosted: false,
+      receiptUrl: '',
       isRecurring: false,
       frequency: 'MONTHLY',
     },
   });
 
-  // Watch form values for transaction form
-  const watchedTransactionIsRecurring = transactionForm.watch('isRecurring');
-  const watchedTransactionFrequency = transactionForm.watch('frequency');
+  // Watch form values
+  const watchedCategoryType = categoryForm.watch('type');
+  const watchedCategoryColor = categoryForm.watch('color');
 
-  // Initialize forms when editing
-  React.useEffect(() => {
-    if (budget && modalState.showEditModal) {
+  // Reset forms when modals open/close or editing items change
+  useEffect(() => {
+    if (modalState.showEditModal && budget) {
       budgetForm.reset({
         name: budget.name,
         description: budget.description || '',
-        color: budget.color,
+        color: budget.color || colorOptions[0],
       });
     }
-  }, [budget, modalState.showEditModal, budgetForm]);
+  }, [modalState.showEditModal, budget, budgetForm]);
 
-  React.useEffect(() => {
-    if (editingItem.transaction && modalState.showTransactionModal) {
-      transactionForm.reset({
-        categoryId: editingItem.transaction.categoryId,
-        amount: editingItem.transaction.amount,
-        description: editingItem.transaction.description,
-        date: format(new Date(editingItem.transaction.date), 'yyyy-MM-dd'),
-        isPosted: editingItem.transaction.isPosted,
-        receiptUrl: editingItem.transaction.receiptUrl || '',
-        isRecurring: editingItem.transaction.isRecurring || false,
-        dayOfMonth: editingItem.transaction.dayOfMonth || undefined,
-        frequency: editingItem.transaction.frequency || 'MONTHLY',
-      });
-    } else if (!editingItem.transaction && modalState.showTransactionModal) {
-      transactionForm.reset({
-        date: format(new Date(), 'yyyy-MM-dd'),
-        isPosted: false,
-        isRecurring: false,
-        frequency: 'MONTHLY',
-      });
+  useEffect(() => {
+    if (modalState.showCategoryModal) {
+      if (editingItem.category) {
+        // Editing existing category
+        categoryForm.reset({
+          name: editingItem.category.name,
+          type: editingItem.category.type,
+          plannedAmount: editingItem.category.plannedAmount,
+          color: editingItem.category.color,
+        });
+      } else {
+        // Creating new category with preselected type
+        const preselectedType = editingItem.data?.type || editingItem.data?.preselectedType;
+        const defaultColor = preselectedType 
+          ? (preselectedType === 'INCOME' ? incomeColors[0] : expenseColors[0])
+          : incomeColors[0];
+        
+        categoryForm.reset({
+          name: '',
+          type: preselectedType || 'INCOME',
+          plannedAmount: 0,
+          color: defaultColor,
+        });
+      }
     }
-  }, [editingItem.transaction, modalState.showTransactionModal, transactionForm]);
+  }, [modalState.showCategoryModal, editingItem, categoryForm]);
+
+  useEffect(() => {
+    if (modalState.showTransactionModal) {
+      if (editingItem.transaction) {
+        transactionForm.reset({
+          categoryId: editingItem.transaction.categoryId,
+          amount: editingItem.transaction.amount,
+          description: editingItem.transaction.description,
+          date: format(new Date(editingItem.transaction.date), 'yyyy-MM-dd'),
+          isPosted: editingItem.transaction.isPosted,
+          receiptUrl: editingItem.transaction.receiptUrl || '',
+          isRecurring: editingItem.transaction.isRecurring || false,
+          dayOfMonth: editingItem.transaction.dayOfMonth,
+          frequency: editingItem.transaction.frequency || 'MONTHLY',
+        });
+      } else {
+        transactionForm.reset({
+          categoryId: editingItem.data?.categoryId || '',
+          amount: 0,
+          description: '',
+          date: format(new Date(), 'yyyy-MM-dd'),
+          isPosted: false,
+          receiptUrl: '',
+          isRecurring: false,
+          frequency: 'MONTHLY',
+        });
+      }
+    }
+  }, [modalState.showTransactionModal, editingItem, transactionForm]);
+
+  // Auto-set color when category type changes
+  useEffect(() => {
+    if (watchedCategoryType && !watchedCategoryColor) {
+      const colors = watchedCategoryType === 'INCOME' ? incomeColors : expenseColors;
+      categoryForm.setValue('color', colors[0]);
+    }
+  }, [watchedCategoryType, watchedCategoryColor, categoryForm]);
+
+  // Get color options based on category type
+  const getColorOptions = (type: 'INCOME' | 'EXPENSE') => {
+    return type === 'INCOME' ? incomeColors : expenseColors;
+  };
 
   // Get available categories for transactions
   const availableCategories = categoriesData ? 
@@ -178,7 +253,6 @@ const BudgetModals: React.FC<BudgetModalsProps> = ({
         onClose={() => onClose('showCategoryModal')}
         onSubmit={(data) => onSubmit('category', data)}
         editingCategory={editingItem.category}
-        budgetId={budget.id}
         isLoading={false}
       />
 
@@ -241,12 +315,11 @@ const BudgetModals: React.FC<BudgetModalsProps> = ({
               className="h-4 w-4 text-blue-600 rounded border-gray-300"
             />
             <label htmlFor="isPosted" className="text-sm text-gray-700">
-              Mark as posted (transaction has been processed)
+              Mark as posted/confirmed
             </label>
           </div>
 
-          {/* Recurring Transaction Section */}
-          <div className="border-t pt-4">
+          <div className="border-t border-gray-200 pt-4">
             <div className="flex items-center space-x-2 mb-4">
               <input
                 type="checkbox"
@@ -256,50 +329,40 @@ const BudgetModals: React.FC<BudgetModalsProps> = ({
               />
               <label htmlFor="isRecurring" className="text-sm font-medium text-gray-700 flex items-center">
                 <Repeat className="h-4 w-4 mr-1" />
-                This is a recurring transaction
+                Make this a recurring transaction
               </label>
             </div>
-            
-            {watchedTransactionIsRecurring && (
-              <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-center space-x-2 text-sm text-blue-700 mb-3">
-                  <Info className="h-4 w-4" />
-                  <span>Recurring transactions will automatically appear in duplicated budgets</span>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Frequency *
-                    </label>
-                    <select
-                      {...transactionForm.register('frequency')}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    >
-                      <option value="MONTHLY">Monthly</option>
-                      <option value="WEEKLY">Weekly</option>
-                      <option value="YEARLY">Yearly</option>
-                    </select>
+
+            {transactionForm.watch('isRecurring') && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
+                <Select
+                  label="Frequency"
+                  options={[
+                    { value: 'WEEKLY', label: 'Weekly' },
+                    { value: 'MONTHLY', label: 'Monthly' },
+                    { value: 'YEARLY', label: 'Yearly' },
+                  ]}
+                  {...transactionForm.register('frequency')}
+                />
+
+                <Input
+                  label="Day of Month (1-31)"
+                  type="number"
+                  min="1"
+                  max="31"
+                  placeholder="15"
+                  error={transactionForm.formState.errors.dayOfMonth?.message}
+                  {...transactionForm.register('dayOfMonth', { valueAsNumber: true })}
+                />
+
+                <div className="md:col-span-2">
+                  <div className="flex items-start space-x-2 text-sm text-blue-700">
+                    <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <p>
+                      This transaction will automatically repeat based on your selected frequency.
+                      You can manage recurring transactions from the budget overview.
+                    </p>
                   </div>
-                  
-                  {watchedTransactionFrequency === 'MONTHLY' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Day of Month
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="31"
-                        {...transactionForm.register('dayOfMonth', { valueAsNumber: true })}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                        placeholder="25"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        e.g., 25 for rent due on the 25th of each month
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
             )}
@@ -321,7 +384,7 @@ const BudgetModals: React.FC<BudgetModalsProps> = ({
         isOpen={modalState.showDuplicateModal}
         onClose={() => onClose('showDuplicateModal')}
         budget={budget}
-        onDuplicate={(options: DuplicateBudgetOptions) => onSubmit('duplicate', options)}
+        onDuplicate={(options: DuplicateBudgetOptions) => onSubmit('duplicateBudget', options)}
         isLoading={false}
       />
 
@@ -330,11 +393,14 @@ const BudgetModals: React.FC<BudgetModalsProps> = ({
         isOpen={modalState.showDeleteModal}
         onClose={() => onClose('showDeleteModal')}
         title="Delete Budget"
-        size="sm"
+        size="md"
       >
         <div className="space-y-4">
           <p className="text-gray-700">
-            Are you sure you want to delete "<strong>{budget.name}</strong>"? This action cannot be undone and will permanently delete all associated categories and transactions.
+            Are you sure you want to delete "<strong>{budget?.name}</strong>"?
+          </p>
+          <p className="text-sm text-red-600">
+            This action cannot be undone and will permanently delete all associated categories and transactions.
           </p>
           
           <div className="flex justify-end space-x-3">

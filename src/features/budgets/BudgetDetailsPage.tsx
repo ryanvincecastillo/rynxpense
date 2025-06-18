@@ -94,21 +94,21 @@ const BudgetDetailsPage: React.FC = () => {
   };
 
   // Enhanced modal submit handler
-  const handleModalSubmitEnhanced = (type: string, data: any) => {
+  const handleModalSubmitEnhanced = async (type: string, data: any): Promise<void> => {
     if (type === 'category') {
       if (editingItem.category) {
         // Update existing category
-        budgetActions.handleCategoryAction('update', editingItem.category, data);
+        await budgetActions.handleCategoryAction('update', editingItem.category, data);
       } else {
         // Create new category
-        budgetActions.handleCategoryAction('create', undefined, {
+        await budgetActions.handleCategoryAction('create', undefined, {
           budgetId,
           ...data,
         });
       }
     } else {
       // Handle other modal types
-      budgetActions.handleModalSubmit(type, data);
+      await budgetActions.handleModalSubmit(type, data);
     }
   };
 

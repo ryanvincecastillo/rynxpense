@@ -27,6 +27,7 @@ export interface FilterState {
 }
 
 export interface EditingItem {
+  data: any;
   category: BudgetCategory | null;
   transaction: Transaction | null;
 }
@@ -57,6 +58,7 @@ export const useBudgetState = () => {
   });
 
   const [editingItem, setEditingItem] = useState<EditingItem>({
+    data: null,
     category: null,
     transaction: null,
   });
@@ -72,6 +74,7 @@ export const useBudgetState = () => {
       showTransactionModal: false,
     });
     setEditingItem({
+      data: null,
       category: null,
       transaction: null,
     });

@@ -339,6 +339,7 @@ export const useBudgetActions = ({
     }
     
     setEditingItem({
+      data: null,
       category: null,
       transaction: null,
     });

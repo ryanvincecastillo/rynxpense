@@ -67,15 +67,15 @@ const BudgetPlanningTab: React.FC<BudgetPlanningTabProps> = ({
     return (
       <div 
         onClick={() => onCategoryAction('edit', category)}
-        className={`flex items-start justify-between p-3 bg-white border rounded-lg hover:shadow-sm transition-all cursor-pointer ${
+        className={`flex items-start justify-between p-3 border rounded-lg hover:shadow-sm transition-all cursor-pointer ${
           !category.isActive ? 'opacity-60' : ''
-        }`}>
-        {/* Left: Category Info */}
-        <div className="flex items-start space-x-3 flex-1 min-w-0">
-          <div 
-            className="w-3 h-3 rounded-full flex-shrink-0 mt-1"
-            style={{ backgroundColor: category.color }}
-          />
+        }`}
+        style={{ 
+          backgroundColor: `${category.color}08`, // 8 = ~3% opacity
+          borderColor: `${category.color}` // 20 = ~12% opacity
+        }}
+      >
+        <div className="flex items-start flex-1 min-w-0">
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between mb-1">
               <h4 className="text-sm font-medium text-gray-900 truncate">{category.name}</h4>
@@ -191,7 +191,7 @@ const BudgetPlanningTab: React.FC<BudgetPlanningTabProps> = ({
             className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center justify-center space-x-1"
           >
             <Plus className="h-4 w-4" />
-            <span>Add</span>
+            <span>Add Category</span>
           </Button>
         </div>
       </div>
@@ -202,15 +202,18 @@ const BudgetPlanningTab: React.FC<BudgetPlanningTabProps> = ({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <TrendingUp className="h-4 w-4 text-green-600" />
+              <TrendingUp className="h-4 w-4 text-green-600 hidden sm:block" />
               <div>
                 <h4 className="text-sm font-semibold text-gray-900">Income Categories</h4>
                 <p className="text-xs text-gray-500">{filteredCategories.income.length} categories • Track your income sources</p>
               </div>
             </div>
             <button 
-              onClick={() => onCategoryAction('create', undefined, { type: 'INCOME', preselectedType: 'INCOME' })}
-              className="text-green-600 hover:text-green-700 p-1"
+              onClick={() => onCategoryAction('create', undefined, { 
+                type: 'INCOME', 
+                preselectedType: 'INCOME' 
+              })}
+              className="text-green-600 hover:text-green-700 p-1 hidden sm:block"
             >
               <Plus className="h-4 w-4" />
             </button>
@@ -234,15 +237,18 @@ const BudgetPlanningTab: React.FC<BudgetPlanningTabProps> = ({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <TrendingDown className="h-4 w-4 text-red-600" />
+              <TrendingDown className="h-4 w-4 text-red-600 hidden sm:block" />
               <div>
                 <h4 className="text-sm font-semibold text-gray-900">Expense Categories</h4>
                 <p className="text-xs text-gray-500">{filteredCategories.expense.length} categories • Control your spending</p>
               </div>
             </div>
             <button 
-              onClick={() => onCategoryAction('create', undefined, { type: 'EXPENSE', preselectedType: 'EXPENSE' })}
-              className="text-red-600 hover:text-red-700 p-1"
+              onClick={() => onCategoryAction('create', undefined, { 
+                type: 'EXPENSE', 
+                preselectedType: 'EXPENSE' 
+              })}
+              className="text-red-600 hover:text-red-700 p-1 hidden sm:block"
             >
               <Plus className="h-4 w-4" />
             </button>

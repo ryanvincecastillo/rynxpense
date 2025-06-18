@@ -29,7 +29,7 @@ const BudgetTabs: React.FC<BudgetTabsProps> = ({
     { 
       id: 'transactions' as ActiveTab, 
       label: 'Transactions', 
-      count: summary?.transactionCount 
+      count: null
     },
   ];
 

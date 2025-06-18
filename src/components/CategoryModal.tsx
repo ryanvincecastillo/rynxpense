@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Palette, 
-  X,
-  CheckCircle,
-  Target
-} from 'lucide-react';
+import { TrendingUp, TrendingDown, X, Target } from 'lucide-react';
 
 // Form data type
 interface CategoryFormData {
@@ -16,53 +9,42 @@ interface CategoryFormData {
   color: string;
 }
 
-// Compact color palettes - fewer colors, smaller selection
+// Compact color palettes for mobile
 const colorPalettes = {
-  INCOME: [
-    '#22C55E', // Success Green
-    '#10B981', // Emerald  
-    '#059669', // Teal Green
-    '#3B82F6', // Blue
-    '#0EA5E9', // Sky Blue
-    '#06B6D4'  // Cyan
-  ],
-  EXPENSE: [
-    '#EF4444', // Red
-    '#DC2626', // Dark Red
-    '#F97316', // Orange
-    '#F59E0B', // Amber
-    '#8B5CF6', // Purple
-    '#EC4899'  // Pink
-  ]
+  INCOME: ['#22C55E', '#10B981', '#3B82F6', '#059669', '#0EA5E9', '#06B6D4'],
+  EXPENSE: ['#EF4444', '#DC2626', '#F97316', '#F59E0B', '#8B5CF6', '#EC4899']
 };
 
-// Mock UI components with enhanced styling
+// Enhanced Modal Component - Mobile Optimized
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: React.ReactNode;
   children: React.ReactNode;
-  size?: 'md' | 'lg';
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = "md" }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
   
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
-      <div className={`bg-white rounded-2xl shadow-2xl ${
-        size === 'lg' ? 'max-w-2xl w-full' : 'max-w-md w-full'
-      } max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-300`}>
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-xl font-bold text-gray-900">{title}</h2>
-          <button 
-            onClick={onClose} 
-            className="p-2 hover:bg-gray-100 rounded-xl transition-colors duration-200 group"
-          >
-            <X className="h-5 w-5 text-gray-400 group-hover:text-gray-600" />
-          </button>
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+      {/* Mobile: Bottom sheet style, Desktop: Center modal */}
+      <div className="bg-white w-full max-w-md sm:rounded-2xl shadow-2xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom-2 sm:slide-in-from-bottom-4 duration-300">
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 sm:px-6 sm:py-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">{title}</h2>
+            <button 
+              onClick={onClose} 
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X className="h-5 w-5 text-gray-400" />
+            </button>
+          </div>
         </div>
-        <div className="p-6">
+        
+        {/* Content */}
+        <div className="p-4 sm:p-6">
           {children}
         </div>
       </div>
@@ -70,17 +52,20 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
   );
 };
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+// Compact Input Component
+interface InputProps {
   label: string;
+  value: string | number;
+  onChange: (value: string | number) => void;
   error?: string;
-  value: any;
-  onChange: (value: any) => void;
+  type?: string;
+  placeholder?: string;
   icon?: React.ReactNode;
 }
 
-const Input: React.FC<InputProps> = ({ label, error, value, onChange, icon, ...props }) => (
+const Input: React.FC<InputProps> = ({ label, value, onChange, error, type = "text", placeholder, icon }) => (
   <div className="space-y-2">
-    <label className="block text-sm font-semibold text-gray-700">{label}</label>
+    <label className="block text-sm font-medium text-gray-700">{label}</label>
     <div className="relative">
       {icon && (
         <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
@@ -88,111 +73,50 @@ const Input: React.FC<InputProps> = ({ label, error, value, onChange, icon, ...p
         </div>
       )}
       <input 
+        type={type}
         value={value || ''}
-        onChange={(e) => onChange(e.target.value)}
-        className={`w-full ${icon ? 'pl-10' : 'pl-4'} pr-4 py-3 border-2 rounded-xl transition-all duration-200 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 hover:border-gray-400 ${
-          error ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'
+        onChange={(e) => onChange(type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value)}
+        placeholder={placeholder}
+        className={`w-full ${icon ? 'pl-10' : 'pl-3'} pr-3 py-2.5 border rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+          error ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
         }`}
-        {...props} 
       />
     </div>
-    {error && (
-      <div className="flex items-center space-x-2 text-red-600 animate-in slide-in-from-top-1 duration-200">
-        <div className="w-1 h-1 bg-red-500 rounded-full"></div>
-        <p className="text-sm font-medium">{error}</p>
-      </div>
-    )}
+    {error && <p className="text-sm text-red-600">{error}</p>}
   </div>
 );
 
-interface SelectOption {
-  value: string;
-  label: string;
-}
-
-interface SelectProps {
-  label: string;
-  error?: string;
-  options: SelectOption[];
-  value: string;
-  onChange: (value: string) => void;
-  icon?: React.ReactNode;
-  placeholder?: string;
-  disabled?: boolean;
-  name?: string;
-  id?: string;
-  required?: boolean;
-  className?: string;
-  style?: React.CSSProperties;
-}
-
-const Select: React.FC<SelectProps> = ({ label, error, options, value, onChange, icon, ...props }) => (
-  <div className="space-y-2">
-    <label className="block text-sm font-semibold text-gray-700">{label}</label>
-    <div className="relative">
-      {icon && (
-        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-          {icon}
-        </div>
-      )}
-      <select 
-        value={value || ''}
-        onChange={(e) => onChange(e.target.value)}
-        className={`w-full ${icon ? 'pl-10' : 'pl-4'} pr-4 py-3 border-2 rounded-xl transition-all duration-200 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 hover:border-gray-400 appearance-none bg-no-repeat bg-right ${
-          error ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'
-        }`}
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
-          backgroundPosition: 'right 0.75rem center',
-          backgroundSize: '1.5em 1.5em',
-        }}
-        {...props}
-      >
-        <option value="">Choose an option...</option>
-        {options?.map(option => (
-          <option key={option.value} value={option.value}>{option.label}</option>
-        ))}
-      </select>
-    </div>
-    {error && (
-      <div className="flex items-center space-x-2 text-red-600 animate-in slide-in-from-top-1 duration-200">
-        <div className="w-1 h-1 bg-red-500 rounded-full"></div>
-        <p className="text-sm font-medium">{error}</p>
-      </div>
-    )}
-  </div>
-);
-
+// Button Component
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  children: React.ReactNode;
   variant?: 'primary' | 'secondary';
   isLoading?: boolean;
-  icon?: React.ReactNode;
+  size?: 'sm' | 'md';
 }
 
-const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', isLoading, icon, ...props }) => (
+const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', isLoading, size = 'md', ...props }) => (
   <button
-    className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2 ${
+    className={`font-medium rounded-lg transition-all flex items-center justify-center ${
+      size === 'sm' ? 'px-3 py-2 text-sm' : 'px-4 py-2.5 text-sm'
+    } ${
       variant === 'secondary' 
-        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105 active:scale-95' 
-        : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl'
+        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
+        : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
     } ${isLoading ? 'opacity-75 cursor-not-allowed' : ''}`}
     disabled={isLoading}
     {...props}
   >
-    {icon && <span>{icon}</span>}
-    <span>{isLoading ? 'Processing...' : children}</span>
+    {isLoading ? 'Saving...' : children}
   </button>
 );
 
+// Main Category Modal Component
 interface CategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: CategoryFormData) => void;
   editingCategory?: any;
-  budgetId: string;
   isLoading?: boolean;
-  preselectedType?: 'INCOME' | 'EXPENSE'; // Add this new prop
+  preselectedType?: 'INCOME' | 'EXPENSE';
 }
 
 const CategoryModal: React.FC<CategoryModalProps> = ({
@@ -200,9 +124,8 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
   onClose,
   onSubmit,
   editingCategory,
-  budgetId,
   isLoading = false,
-  preselectedType, // Add this parameter
+  preselectedType
 }) => {
   const [formData, setFormData] = useState<CategoryFormData>({
     name: '',
@@ -212,38 +135,34 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Initialize form when editing or when modal opens with preselected type
+  // Initialize form when modal opens
   useEffect(() => {
-    if (editingCategory && isOpen) {
-      // Editing existing category
-      setFormData({
-        name: editingCategory.name,
-        type: editingCategory.type,
-        plannedAmount: editingCategory.plannedAmount,
-        color: editingCategory.color,
-      });
-      setErrors({});
-    } else if (!editingCategory && isOpen) {
-      // Creating new category
-      setFormData({
-        name: '',
-        type: preselectedType || '', // Set preselected type if provided
-        plannedAmount: 0,
-        color: '',
-      });
+    if (isOpen) {
+      if (editingCategory) {
+        // Editing existing category
+        setFormData({
+          name: editingCategory.name,
+          type: editingCategory.type,
+          plannedAmount: editingCategory.plannedAmount,
+          color: editingCategory.color,
+        });
+      } else {
+        // Creating new category with preselected type
+        const defaultType = preselectedType || '';
+        const defaultColor = defaultType ? colorPalettes[defaultType][0] : '';
+        
+        setFormData({
+          name: '',
+          type: defaultType,
+          plannedAmount: 0,
+          color: defaultColor,
+        });
+      }
       setErrors({});
     }
-  }, [editingCategory, isOpen, preselectedType]);
+  }, [isOpen, editingCategory, preselectedType]);
 
-  // Set default color when type changes (including preselected type)
-  useEffect(() => {
-    if (formData.type && !formData.color) {
-      const defaultColor = colorPalettes[formData.type as 'INCOME' | 'EXPENSE'][0];
-      setFormData(prev => ({ ...prev, color: defaultColor }));
-    }
-  }, [formData.type, formData.color]);
-
-  // Format currency
+  // Format currency helper
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-PH', {
       style: 'currency',
@@ -252,14 +171,12 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
     }).format(amount);
   };
 
-  // Simple validation
+  // Validation
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
     if (!formData.name.trim()) {
       newErrors.name = 'Category name is required';
-    } else if (formData.name.length > 100) {
-      newErrors.name = 'Name too long (max 100 characters)';
     }
     
     if (!formData.type) {
@@ -267,306 +184,185 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
     }
     
     if (formData.plannedAmount < 0) {
-      newErrors.plannedAmount = 'Planned amount must be positive';
-    }
-    
-    if (formData.color && !/^#[0-9A-F]{6}$/i.test(formData.color)) {
-      newErrors.color = 'Invalid color format';
+      newErrors.plannedAmount = 'Amount must be positive';
     }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmitClick = () => {
+  const handleSubmit = () => {
     if (validateForm()) {
       onSubmit(formData);
     }
   };
 
   const handleClose = () => {
-    setFormData({
-      name: '',
-      type: '',
-      plannedAmount: 0,
-      color: '',
-    });
+    setFormData({ name: '', type: '', plannedAmount: 0, color: '' });
     setErrors({});
     onClose();
   };
 
   const updateField = (field: keyof CategoryFormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error for this field when user starts typing
+    setFormData(prev => ({ 
+      ...prev, 
+      [field]: value,
+      // Auto-set color when type changes
+      ...(field === 'type' && value ? { color: colorPalettes[value as 'INCOME' | 'EXPENSE'][0] } : {})
+    }));
+    
+    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
-  // Get current color palette
   const currentColors = formData.type ? colorPalettes[formData.type as 'INCOME' | 'EXPENSE'] : [];
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={editingCategory ? 'Edit Category' : 'Create New Category'}
-      size="md"
+      title={editingCategory ? 'Edit Category' : 'Create Category'}
     >
-      <div className="space-y-5">
-        {/* Type Selection - Enhanced with auto-selection feedback */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="block text-sm font-semibold text-gray-700">Category Type</label>
+      <div className="space-y-4">
+        {/* Type Selection - Compact for mobile */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Category Type *
             {preselectedType && !editingCategory && (
-              <div className="flex items-center space-x-2 text-xs">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                <span className="text-blue-600 font-medium">Auto-selected</span>
-              </div>
+              <span className="ml-2 text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+                Pre-selected
+              </span>
             )}
-          </div>
-          <div className="grid grid-cols-2 gap-3">
+          </label>
+          <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => updateField('type', 'INCOME')}
-              disabled={editingCategory && editingCategory.type !== 'INCOME'} // Disable if editing different type
-              className={`p-4 border-2 rounded-xl transition-all duration-200 ${
+              disabled={editingCategory && editingCategory.type !== 'INCOME'}
+              className={`p-3 border-2 rounded-lg transition-all ${
                 formData.type === 'INCOME'
-                  ? 'border-green-500 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg scale-105'
+                  ? 'border-green-500 bg-green-50 text-green-700'
                   : editingCategory && editingCategory.type !== 'INCOME'
                   ? 'border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed'
-                  : 'border-gray-200 bg-gray-50 hover:border-green-300 hover:bg-green-50'
+                  : 'border-gray-200 hover:border-green-300 hover:bg-green-50'
               }`}
             >
-              <div className="flex flex-col items-center space-y-2">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  formData.type === 'INCOME' ? 'bg-green-500' : 'bg-gray-300'
-                }`}>
-                  <TrendingUp className={`h-5 w-5 ${
-                    formData.type === 'INCOME' ? 'text-white' : 'text-gray-600'
-                  }`} />
-                </div>
-                <span className={`text-sm font-semibold ${
-                  formData.type === 'INCOME' ? 'text-green-700' : 'text-gray-600'
-                }`}>
-                  Income
-                </span>
-                {preselectedType === 'INCOME' && !editingCategory && (
-                  <div className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                    Pre-selected
-                  </div>
-                )}
+              <div className="flex flex-col items-center space-y-1">
+                <TrendingUp className={`h-5 w-5 ${
+                  formData.type === 'INCOME' ? 'text-green-600' : 'text-gray-400'
+                }`} />
+                <span className="text-sm font-medium">Income</span>
               </div>
             </button>
             
             <button
               type="button"
               onClick={() => updateField('type', 'EXPENSE')}
-              disabled={editingCategory && editingCategory.type !== 'EXPENSE'} // Disable if editing different type
-              className={`p-4 border-2 rounded-xl transition-all duration-200 ${
+              disabled={editingCategory && editingCategory.type !== 'EXPENSE'}
+              className={`p-3 border-2 rounded-lg transition-all ${
                 formData.type === 'EXPENSE'
-                  ? 'border-red-500 bg-gradient-to-br from-red-50 to-pink-50 shadow-lg scale-105'
+                  ? 'border-red-500 bg-red-50 text-red-700'
                   : editingCategory && editingCategory.type !== 'EXPENSE'
                   ? 'border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed'
-                  : 'border-gray-200 bg-gray-50 hover:border-red-300 hover:bg-red-50'
+                  : 'border-gray-200 hover:border-red-300 hover:bg-red-50'
               }`}
             >
-              <div className="flex flex-col items-center space-y-2">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  formData.type === 'EXPENSE' ? 'bg-red-500' : 'bg-gray-300'
-                }`}>
-                  <TrendingDown className={`h-5 w-5 ${
-                    formData.type === 'EXPENSE' ? 'text-white' : 'text-gray-600'
-                  }`} />
-                </div>
-                <span className={`text-sm font-semibold ${
-                  formData.type === 'EXPENSE' ? 'text-red-700' : 'text-gray-600'
-                }`}>
-                  Expense
-                </span>
-                {preselectedType === 'EXPENSE' && !editingCategory && (
-                  <div className="text-xs text-red-600 bg-red-100 px-2 py-1 rounded-full">
-                    Pre-selected
-                  </div>
-                )}
+              <div className="flex flex-col items-center space-y-1">
+                <TrendingDown className={`h-5 w-5 ${
+                  formData.type === 'EXPENSE' ? 'text-red-600' : 'text-gray-400'
+                }`} />
+                <span className="text-sm font-medium">Expense</span>
               </div>
             </button>
           </div>
-          {errors.type && (
-            <div className="flex items-center space-x-2 text-red-600 animate-in slide-in-from-top-1 duration-200">
-              <div className="w-1 h-1 bg-red-500 rounded-full"></div>
-              <p className="text-sm font-medium">{errors.type}</p>
-            </div>
-          )}
+          {errors.type && <p className="text-sm text-red-600">{errors.type}</p>}
         </div>
 
         {/* Category Name */}
         <Input
-          label="Category Name"
-          placeholder="e.g., Salary, Groceries, Utilities"
-          error={errors.name}
+          label="Category Name *"
           value={formData.name}
           onChange={(value) => updateField('name', value)}
-          icon={<Palette className="h-4 w-4" />}
+          error={errors.name}
+          placeholder="e.g., Salary, Groceries, Utilities"
         />
 
         {/* Planned Amount */}
         <Input
           label="Planned Amount"
           type="number"
-          step="0.01"
-          placeholder="0.00"
-          error={errors.plannedAmount}
           value={formData.plannedAmount}
-          onChange={(value) => updateField('plannedAmount', parseFloat(value) || 0)}
-          icon={<span className="text-sm font-bold">₱</span>}
+          onChange={(value) => updateField('plannedAmount', value)}
+          error={errors.plannedAmount}
+          placeholder="0.00"
+          icon={<Target className="h-4 w-4" />}
         />
 
-        {/* Enhanced Color Selection */}
-        {formData.type && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <label className="block text-sm font-semibold text-gray-700">
-                Choose Color
-              </label>
-              <div className="flex items-center space-x-2 text-xs text-gray-500">
-                <Palette className="h-3 w-3" />
-                <span>{formData.type === 'INCOME' ? 'Income' : 'Expense'} Palette</span>
-              </div>
-            </div>
-            
-            {/* Color Grid - Beautiful and interactive */}
-            <div className="grid grid-cols-6 gap-3 p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border border-gray-200">
-              {currentColors.map((color, index) => (
+        {/* Color Selection - Compact grid */}
+        {currentColors.length > 0 && (
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Color</label>
+            <div className="grid grid-cols-6 gap-2">
+              {currentColors.map((color) => (
                 <button
                   key={color}
                   type="button"
                   onClick={() => updateField('color', color)}
-                  className={`relative w-10 h-10 rounded-xl border-3 transition-all duration-300 hover:scale-110 hover:rotate-6 transform ${
+                  className={`w-8 h-8 rounded-lg border-2 transition-all ${
                     formData.color === color
-                      ? 'border-white shadow-2xl scale-110 rotate-6'
-                      : 'border-white/50 shadow-lg hover:shadow-xl'
+                      ? 'border-gray-600 scale-110'
+                      : 'border-gray-200 hover:border-gray-400'
                   }`}
-                  style={{ 
-                    backgroundColor: color,
-                    animationDelay: `${index * 50}ms`
-                  }}
-                >
-                  {formData.color === color && (
-                    <div className="absolute inset-0 rounded-xl bg-white/20 flex items-center justify-center">
-                      <CheckCircle className="h-6 w-6 text-white drop-shadow-lg animate-in zoom-in duration-200" />
-                    </div>
-                  )}
-                  <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
-                </button>
+                  style={{ backgroundColor: color }}
+                />
               ))}
             </div>
           </div>
         )}
 
-        {/* Beautiful Preview Card */}
-        {formData.name && formData.color && (
-          <div className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl"></div>
-            <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="relative">
-                    <div
-                      className="w-6 h-6 rounded-full shadow-lg ring-4 ring-white"
-                      style={{ backgroundColor: formData.color }}
-                    />
-                    <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-transparent via-white/50 to-transparent animate-pulse"></div>
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-gray-900">{formData.name}</h4>
-                    <div className="flex items-center space-x-3 text-sm">
-                      {formData.type === 'INCOME' ? (
-                        <div className="flex items-center space-x-1 text-green-600">
-                          <TrendingUp className="h-4 w-4" />
-                          <span className="font-semibold">Income Category</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center space-x-1 text-red-600">
-                          <TrendingDown className="h-4 w-4" />
-                          <span className="font-semibold">Expense Category</span>
-                        </div>
-                      )}
-                      <span className="text-gray-400">•</span>
-                      <span className="font-bold text-gray-700">{formatCurrency(formData.plannedAmount || 0)}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-gradient-to-br from-gray-100 to-gray-200 p-3 rounded-xl">
-                  <Target className="h-6 w-6 text-gray-600" />
-                </div>
-              </div>
-              <div className="mt-4 h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-1000 ease-out"
-                  style={{ width: '0%', animation: 'grow 2s ease-out infinite alternate' }}
-                ></div>
-              </div>
+        {/* Preview */}
+        {formData.name && formData.type && (
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <p className="text-xs text-gray-600 mb-2">Preview:</p>
+            <div className="flex items-center space-x-2">
+              <div 
+                className="w-3 h-3 rounded-full" 
+                style={{ backgroundColor: formData.color }}
+              />
+              <span className="text-sm font-medium">{formData.name}</span>
+              <span className="text-xs text-gray-500">
+                ({formData.type.toLowerCase()})
+              </span>
+              {formData.plannedAmount > 0 && (
+                <span className="text-xs text-gray-600 ml-auto">
+                  {formatCurrency(formData.plannedAmount)}
+                </span>
+              )}
             </div>
           </div>
         )}
 
-        {/* Beautiful Action Buttons */}
-        <div className="flex justify-end space-x-4 pt-6 border-t border-gray-100">
+        {/* Actions */}
+        <div className="flex space-x-3 pt-4 border-t border-gray-100">
           <Button 
+            type="button" 
             variant="secondary" 
             onClick={handleClose}
-            icon={<X className="h-4 w-4" />}
+            className="flex-1"
           >
             Cancel
           </Button>
           <Button 
-            onClick={handleSubmitClick} 
+            type="button" 
+            onClick={handleSubmit}
             isLoading={isLoading}
-            icon={formData.type === 'INCOME' ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+            className="flex-1"
           >
-            {editingCategory ? 'Update Category' : 'Create Category'}
+            {editingCategory ? 'Update' : 'Create'}
           </Button>
         </div>
-
-        {/* Add custom CSS for animations */}
-        <style>{`
-          @keyframes grow {
-            from { width: 0%; }
-            to { width: 75%; }
-          }
-          .animate-in {
-            animation-fill-mode: both;
-          }
-          .fade-in {
-            animation: fadeIn 0.3s ease-out;
-          }
-          .slide-in-from-bottom-4 {
-            animation: slideInFromBottom 0.3s ease-out;
-          }
-          .slide-in-from-top-1 {
-            animation: slideInFromTop 0.2s ease-out;
-          }
-          .zoom-in {
-            animation: zoomIn 0.2s ease-out;
-          }
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-          @keyframes slideInFromBottom {
-            from { transform: translateY(16px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-          }
-          @keyframes slideInFromTop {
-            from { transform: translateY(-4px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-          }
-          @keyframes zoomIn {
-            from { transform: scale(0.8); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-          }
-        `}</style>
       </div>
     </Modal>
   );
