@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { BudgetCategory, Transaction } from '../types';
 
-export type ActiveTab = 'overview' | 'categories' | 'transactions';
+export type ActiveTab = 'overview' | 'budget-planning' | 'transactions';
 export type ActionType = 'create' | 'edit' | 'delete' | 'duplicate';
 
 export interface ModalState {

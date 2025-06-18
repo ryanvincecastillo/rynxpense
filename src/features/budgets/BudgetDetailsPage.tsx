@@ -153,13 +153,6 @@ const BudgetDetailsPage: React.FC = () => {
         />
       </BudgetHeader>
 
-      {/* Description */}
-      {budget.description && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <p className="text-gray-700">{budget.description}</p>
-        </div>
-      )}
-
       {/* Summary Cards */}
       <BudgetSummaryCards 
         summary={summary} 
@@ -184,7 +177,7 @@ const BudgetDetailsPage: React.FC = () => {
         />
       )}
 
-      {activeTab === 'categories' && (
+      {activeTab === 'budget-planning' && (
         <BudgetPlanningTab
           categoriesData={categoriesData}
           filters={{

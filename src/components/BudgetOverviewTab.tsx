@@ -7,7 +7,7 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
-import { TrendingUp, TrendingDown, Plus, DollarSign } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, DollarSign, Minus } from 'lucide-react';
 import { BudgetCategoriesResponse } from '../types';
 import { Card, EmptyState } from './ui';
 
@@ -64,17 +64,17 @@ const BudgetOverviewTab: React.FC<BudgetOverviewTabProps> = ({
       description: 'Add income transaction',
       icon: Plus,
       action: () => onQuickAction('addTransaction', 'INCOME'),
-      colorClasses: 'border-blue-200 hover:border-blue-300 hover:bg-blue-50 group-hover:bg-blue-200',
-      iconColorClasses: 'bg-blue-100 text-blue-600',
+      colorClasses: 'border-green-200 hover:border-green-300 hover:bg-green-50 group-hover:bg-green-200',
+      iconColorClasses: 'bg-green-100 text-green-600',
     },
     {
       id: 'recordExpense',
       title: 'Record Expense',
       description: 'Add expense transaction',
-      icon: DollarSign,
+      icon: Minus,
       action: () => onQuickAction('addTransaction', 'EXPENSE'),
-      colorClasses: 'border-purple-200 hover:border-purple-300 hover:bg-purple-50 group-hover:bg-purple-200',
-      iconColorClasses: 'bg-purple-100 text-purple-600',
+      colorClasses: 'border-red-200 hover:border-red-300 hover:bg-red-50 group-hover:bg-red-200',
+      iconColorClasses: 'bg-red-100 text-red-600',
     },
   ];
 
