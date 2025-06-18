@@ -32,6 +32,7 @@ export interface Budget {
   owner?: Pick<User, 'id' | 'firstName' | 'lastName' | 'email'>;
   collaborators?: BudgetCollaborator[];
   categories?: BudgetCategory[];
+  summary?: BudgetSummary;
   _count?: {
     categories: number;
     transactions: number;

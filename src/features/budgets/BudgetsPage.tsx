@@ -51,26 +51,6 @@ const BudgetsPage: React.FC = () => {
     }).format(amount);
   };
 
-  // Calculate overall statistics from enhanced data
-  const overallStats = budgets.reduce((acc: any, budget: any) => {
-    if (budget.summary) {
-      acc.totalIncome += budget.summary.totalActualIncome || 0;
-      acc.totalExpenses += budget.summary.totalActualExpenses || 0;
-    }
-    acc.totalBudgets += 1;
-    acc.totalCategories += budget._count?.categories || 0;
-    acc.totalTransactions += budget._count?.transactions || 0;
-    return acc;
-  }, {
-    totalIncome: 0,
-    totalExpenses: 0,
-    totalBudgets: 0,
-    totalCategories: 0,
-    totalTransactions: 0
-  });
-
-  const netTotal = overallStats.totalIncome - overallStats.totalExpenses;
-
   // Handle create/update budget using our new modal
   const handleBudgetSubmit = async (data: CreateBudgetForm) => {
     try {
@@ -242,7 +222,7 @@ const BudgetsPage: React.FC = () => {
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {budgets.map((budget: any) => (
+          {budgets.map((budget: Budget) => (
              <BudgetCard
                 key={budget.id}
                 budget={budget}

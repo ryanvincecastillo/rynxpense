@@ -1,15 +1,10 @@
 import React, { useState } from 'react';
 import { 
   Plus, 
-  Edit3, 
-  Trash2, 
   Filter, 
   Download, 
   Search,
   DollarSign,
-  Check,
-  Clock,
-  Repeat,
 } from 'lucide-react';
 import { 
   useTransactions, 
@@ -27,7 +22,6 @@ import {
   LoadingSpinner, 
   Input, 
   Select,
-  Badge,
   Alert,
 } from '../../components/ui';
 import { TransactionFormModal } from '../../components/modals';
