@@ -1,33 +1,18 @@
-// components/CategoriesTab.tsx
 import React, { useMemo, useState } from 'react';
-import {
-  Plus,
+import { 
+  Plus, 
+  TrendingUp, 
+  TrendingDown, 
   Search,
-  TrendingUp,
-  TrendingDown,
-  Edit3,
+  MoreVertical,
+  Edit2,
   Trash2,
   Eye,
-  EyeOff,
-  Target,
-  DollarSign,
+  EyeOff
 } from 'lucide-react';
-
-// Types
 import { BudgetCategoriesResponse, BudgetCategory } from '../types';
+import { Button, EmptyState } from './ui';
 
-// UI Components
-import {
-  Button,
-  Card,
-  EmptyState,
-  Input,
-  Select,
-  Badge,
-  ProgressBar,
-} from './ui';
-
-// Interfaces
 interface CategoryFilters {
   type: 'INCOME' | 'EXPENSE' | '';
   showInactive: boolean;
@@ -43,190 +28,6 @@ interface CategoriesTabProps {
   isLoading: boolean;
 }
 
-// Category Performance Calculation
-const getCategoryPerformance = (category: BudgetCategory): number => {
-  if (category.plannedAmount === 0) return 0;
-  return (category.actualAmount / category.plannedAmount) * 100;
-};
-
-// Performance Color Helper
-const getPerformanceColor = (performance: number, isIncome: boolean): string => {
-  if (isIncome) {
-    // For income, higher is better
-    if (performance >= 100) return 'text-green-600 bg-green-100';
-    if (performance >= 80) return 'text-yellow-600 bg-yellow-100';
-    return 'text-red-600 bg-red-100';
-  } else {
-    // For expenses, staying under budget is better
-    if (performance <= 80) return 'text-green-600 bg-green-100';
-    if (performance <= 100) return 'text-yellow-600 bg-yellow-100';
-    return 'text-red-600 bg-red-100';
-  }
-};
-
-// Category Card Component
-const CategoryCard: React.FC<{
-  category: BudgetCategory;
-  onAction: (action: string, category: BudgetCategory) => void;
-  formatCurrency: (amount: number) => string;
-}> = ({ category, onAction, formatCurrency }) => {
-  const performance = getCategoryPerformance(category);
-  const isIncome = category.type === 'INCOME';
-  const performanceColor = getPerformanceColor(performance, isIncome);
-  
-  const variance = category.actualAmount - category.plannedAmount;
-  const isOverBudget = variance > 0 && !isIncome;
-  const isUnderBudget = variance < 0 && !isIncome;
-
-  return (
-    <Card className="hover:shadow-lg transition-all duration-200 group">
-      <div className="space-y-4">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-3">
-            <div
-              className="w-4 h-4 rounded-full ring-2 ring-white shadow-sm"
-              style={{ backgroundColor: category.color }}
-            />
-            <div>
-              <h4 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                {category.name}
-              </h4>
-              <Badge 
-                variant={isIncome ? 'success' : 'error'} 
-                size="sm"
-                className="mt-1"
-              >
-                {category.type}
-              </Badge>
-            </div>
-          </div>
-          
-          {/* Action Buttons */}
-          <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={() => onAction('toggleActive', category)}
-              className={`p-1.5 rounded-md transition-colors ${
-                category.isActive
-                  ? 'text-gray-400 hover:text-yellow-600 hover:bg-yellow-50'
-                  : 'text-yellow-600 hover:text-gray-600 hover:bg-gray-50'
-              }`}
-              title={category.isActive ? 'Deactivate category' : 'Activate category'}
-            >
-              {category.isActive ? (
-                <Eye className="h-4 w-4" />
-              ) : (
-                <EyeOff className="h-4 w-4" />
-              )}
-            </button>
-            <button
-              onClick={() => onAction('edit', category)}
-              className="p-1.5 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-              title="Edit category"
-            >
-              <Edit3 className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => onAction('delete', category)}
-              className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-              title="Delete category"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Description */}
-        {category.description && (
-          <p className="text-sm text-gray-600 line-clamp-2">
-            {category.description}
-          </p>
-        )}
-
-        {/* Amounts */}
-        <div className="space-y-3">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-500">Planned:</span>
-            <span className="font-medium text-gray-900">
-              {formatCurrency(category.plannedAmount)}
-            </span>
-          </div>
-          
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-500">Actual:</span>
-            <span className={`font-medium ${
-              isIncome 
-                ? 'text-green-600' 
-                : category.actualAmount > category.plannedAmount 
-                  ? 'text-red-600' 
-                  : 'text-green-600'
-            }`}>
-              {formatCurrency(category.actualAmount)}
-            </span>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="space-y-1">
-            <ProgressBar
-              value={Math.min(performance, 150)}
-              max={150}
-              variant={
-                performance > 100 && !isIncome
-                  ? 'danger'
-                  : performance > 80
-                    ? isIncome ? 'success' : 'warning'
-                    : isIncome ? 'warning' : 'success'
-              }
-              size="sm"
-              showPercentage={false}
-            />
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-gray-500">Progress</span>
-              <Badge 
-                variant="secondary" 
-                size="sm"
-                className={performanceColor}
-              >
-                {performance.toFixed(0)}%
-              </Badge>
-            </div>
-          </div>
-
-          {/* Variance */}
-          {Math.abs(variance) > 0.01 && (
-            <div className={`text-xs px-2 py-1 rounded-md ${
-              variance > 0
-                ? isIncome
-                  ? 'bg-green-50 text-green-700'
-                  : 'bg-red-50 text-red-700'
-                : isIncome
-                  ? 'bg-red-50 text-red-700'
-                  : 'bg-green-50 text-green-700'
-            }`}>
-              {variance > 0 ? '+' : ''}{formatCurrency(variance)} vs planned
-              {isOverBudget && ' (Over budget)'}
-              {isUnderBudget && ' (Under budget)'}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="pt-3 border-t border-gray-200">
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <span>{category._count?.transactions || 0} transactions</span>
-            <span className={`font-medium ${
-              category.isActive ? 'text-green-600' : 'text-gray-400'
-            }`}>
-              {category.isActive ? 'Active' : 'Inactive'}
-            </span>
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-};
-
-// Main Component
 const CategoriesTab: React.FC<CategoriesTabProps> = ({
   categoriesData,
   filters,
@@ -235,29 +36,14 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({
   formatCurrency,
   isLoading,
 }) => {
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-
-  // Filter and process categories
+  // Filter categories based on filters
   const filteredCategories = useMemo(() => {
     if (!categoriesData) return { income: [], expense: [] };
-
+    
     const filterCategory = (categories: BudgetCategory[]) => {
       return categories.filter(cat => {
-        // Active/Inactive filter
         if (!filters.showInactive && !cat.isActive) return false;
-        
-        // Type filter
-        if (filters.type && cat.type !== filters.type) return false;
-        
-        // Search filter
-        if (filters.search) {
-          const searchTerm = filters.search.toLowerCase();
-          return (
-            cat.name.toLowerCase().includes(searchTerm) ||
-            cat.description?.toLowerCase().includes(searchTerm)
-          );
-        }
-        
+        if (filters.search && !cat.name.toLowerCase().includes(filters.search.toLowerCase())) return false;
         return true;
       });
     };
@@ -268,165 +54,399 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({
     };
   }, [categoriesData, filters]);
 
-  // Calculate summary stats
-  const summaryStats = useMemo(() => {
-    if (!categoriesData) return null;
-
-    const allCategories = [...(categoriesData.income || []), ...(categoriesData.expense || [])];
-    const activeCategories = allCategories.filter(cat => cat.isActive);
-    const totalPlanned = allCategories.reduce((sum, cat) => sum + cat.plannedAmount, 0);
-    const totalActual = allCategories.reduce((sum, cat) => sum + cat.actualAmount, 0);
-
-    return {
-      total: allCategories.length,
-      active: activeCategories.length,
-      totalPlanned,
-      totalActual,
-      variance: totalActual - totalPlanned,
-    };
-  }, [categoriesData]);
-
-  // Handle filter changes
-  const handleFilterChange = (key: keyof CategoryFilters, value: any) => {
-    onFiltersChange({ ...filters, [key]: value });
+  // Calculate performance percentage
+  const getPerformance = (planned: number, actual: number) => {
+    if (planned === 0) return actual > 0 ? 100 : 0;
+    return (actual / planned) * 100;
   };
 
+  // Compact Category Item Component
+  const CategoryItem: React.FC<{ category: BudgetCategory; type: 'INCOME' | 'EXPENSE' }> = ({ 
+    category, 
+    type 
+  }) => {
+    const [showActions, setShowActions] = useState(false);
+    const performance = getPerformance(category.plannedAmount, category.actualAmount);
+    const isOverBudget = type === 'EXPENSE' && performance > 100;
+    const isUnderIncome = type === 'INCOME' && performance < 100;
+    const hasVariance = Math.abs(category.actualAmount - category.plannedAmount) > 0;
+    
+    return (
+      <div 
+        onClick={() => onCategoryAction('edit', category)}
+        className={`relative group flex items-start justify-between p-2 sm:p-3 border rounded-lg hover:shadow-sm transition-all cursor-pointer ${
+          !category.isActive ? 'opacity-60' : ''
+        }`}
+        style={{ 
+          backgroundColor: `${category.color}08`,
+          borderColor: `${category.color}30`
+        }}
+      >
+        <div className="flex items-start flex-1 min-w-0">
+          {/* Category Color Indicator */}
+          <div 
+            className="w-2 h-2 sm:w-3 sm:h-3 rounded-full mt-1 mr-2 sm:mr-3 flex-shrink-0"
+            style={{ backgroundColor: category.color }}
+          />
+          
+          <div className="min-w-0 flex-1">
+            {/* Header Row */}
+            <div className="flex items-center justify-between mb-1">
+              <h4 className="text-xs sm:text-sm font-medium text-gray-900 truncate pr-1">
+                {category.name}
+              </h4>
+              <div className={`text-xs font-medium ${
+                isOverBudget || isUnderIncome ? 'text-red-600' : 'text-green-600'
+              }`}>
+                {performance.toFixed(0)}%
+              </div>
+            </div>
+
+            {/* Amount Information */}
+            <div className="text-xs text-gray-500 space-y-0.5">
+              <div className="flex items-center justify-between">
+                <span>Actual:</span>
+                <span className="font-medium text-gray-700">
+                  {formatCurrency(category.actualAmount)}
+                </span>
+              </div>
+              
+              {category.plannedAmount > 0 && (
+                <div className="flex items-center justify-between">
+                  <span>Planned:</span>
+                  <span className="font-medium text-gray-700">
+                    {formatCurrency(category.plannedAmount)}
+                  </span>
+                </div>
+              )}
+
+              {hasVariance && (
+                <div className="flex items-center justify-between">
+                  <span>Variance:</span>
+                  <span className={`font-medium ${
+                    isOverBudget || isUnderIncome ? 'text-red-600' : 'text-green-600'
+                  }`}>
+                    {category.actualAmount >= category.plannedAmount ? '+' : ''}
+                    {formatCurrency(category.actualAmount - category.plannedAmount)}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Progress Bar */}
+            {category.plannedAmount > 0 && (
+              <div className="mt-1 sm:mt-2">
+                <div className="w-full bg-gray-200 rounded-full h-1 sm:h-1.5">
+                  <div 
+                    className={`h-1 sm:h-1.5 rounded-full transition-all ${
+                      isOverBudget ? 'bg-red-500' :
+                      isUnderIncome ? 'bg-orange-500' :
+                      'bg-green-500'
+                    }`}
+                    style={{ 
+                      width: `${Math.min(performance, 100)}%`
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Footer Information */}
+            <div className="flex items-center justify-between text-xs text-gray-500 mt-1 sm:mt-2 pt-1 border-t border-gray-100">
+              <span>{category._count?.transactions || 0} transaction(s)</span>
+              <span className={`font-medium ${
+                category.isActive ? 'text-green-600' : 'text-gray-400'
+              }`}>
+                {category.isActive ? 'Active' : 'Inactive'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Menu */}
+        <div className="relative ml-1 sm:ml-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowActions(!showActions);
+            }}
+            className="p-0.5 sm:p-1 rounded hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <MoreVertical className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+          </button>
+
+          {showActions && (
+            <div className="absolute right-0 top-full mt-1 w-28 sm:w-32 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCategoryAction('edit', category);
+                  setShowActions(false);
+                }}
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center"
+              >
+                <Edit2 className="h-3 w-3 mr-1 sm:mr-2" />
+                Edit
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCategoryAction('toggleActive', category);
+                  setShowActions(false);
+                }}
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center"
+              >
+                {category.isActive ? (
+                  <>
+                    <EyeOff className="h-3 w-3 mr-1 sm:mr-2" />
+                    Deactivate
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-3 w-3 mr-1 sm:mr-2" />
+                    Activate
+                  </>
+                )}
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCategoryAction('delete', category);
+                  setShowActions(false);
+                }}
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs text-red-600 hover:bg-red-50 flex items-center"
+              >
+                <Trash2 className="h-3 w-3 mr-1 sm:mr-2" />
+                Delete
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Empty State Component
+  const EmptyState: React.FC<{ type: 'INCOME' | 'EXPENSE'; onAdd: () => void }> = ({ 
+    type, 
+    onAdd 
+  }) => (
+    <div className="text-center p-4 sm:p-6 border-2 border-dashed border-gray-200 rounded-lg">
+      <div className={`w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 sm:mb-3 rounded-lg flex items-center justify-center ${
+        type === 'INCOME' ? 'bg-green-100' : 'bg-red-100'
+      }`}>
+        {type === 'INCOME' ? 
+          <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" /> : 
+          <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
+        }
+      </div>
+      <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
+        No {type.toLowerCase()} categories yet
+      </p>
+      <button 
+        onClick={onAdd}
+        className={`text-xs px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg font-medium transition-colors ${
+          type === 'INCOME' 
+            ? 'bg-green-600 hover:bg-green-700 text-white' 
+            : 'bg-red-600 hover:bg-red-700 text-white'
+        }`}
+      >
+        <Plus className="h-3 w-3 mr-1 inline" />
+        Add {type === 'INCOME' ? 'Income' : 'Expense'}
+      </button>
+    </div>
+  );
+
+  // Loading state
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div className="h-6 bg-gray-200 rounded w-48 animate-pulse"></div>
-          <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
+        {/* Header Skeleton */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="h-6 sm:h-8 bg-gray-200 rounded w-48 sm:w-64 animate-pulse" />
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="h-8 sm:h-10 bg-gray-200 rounded w-24 sm:w-32 animate-pulse" />
+            <div className="h-8 sm:h-10 bg-gray-200 rounded w-24 sm:w-32 animate-pulse" />
+          </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <div className="h-40 bg-gray-200 rounded"></div>
-            </Card>
+
+        {/* Content Skeleton */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-6">
+          {[1, 2].map((col) => (
+            <div key={col} className="space-y-3">
+              <div className="h-4 sm:h-6 bg-gray-200 rounded w-32 sm:w-48 animate-pulse" />
+              <div className="space-y-2">
+                {[1, 2, 3].map((item) => (
+                  <div key={item} className="h-16 sm:h-20 bg-gray-200 rounded animate-pulse" />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>
     );
   }
 
+  const hasCategories = categoriesData && (categoriesData.income?.length > 0 || categoriesData.expense?.length > 0);
+  const hasNoCategories = filteredCategories.income.length === 0 && filteredCategories.expense.length === 0;
+
   return (
     <div className="space-y-6">
       {/* Header and Controls */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Categories Management</h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Categories Management</h2>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">
             Organize and track your budget categories
           </p>
         </div>
-        
-        <Button onClick={() => onCategoryAction('create')} className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Category
-        </Button>
-      </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-50 rounded-lg">
-        <div className="flex-1">
-          <Input
-            type="text"
-            placeholder="Search categories..."
-            value={filters.search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
-            leftIcon={Search}
-            className="w-full"
-          />
+        {/* Controls */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search categories..."
+              value={filters.search}
+              onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 w-full sm:w-48"
+            />
+          </div>
+
+          {/* Filters */}
+          <div className="flex items-center space-x-3">
+            <label className="flex items-center space-x-2 text-sm text-gray-600 whitespace-nowrap">
+              <input
+                type="checkbox"
+                checked={filters.showInactive}
+                onChange={(e) => onFiltersChange({ ...filters, showInactive: e.target.checked })}
+                className="h-4 w-4 text-blue-600 rounded border-gray-300"
+              />
+              <span>Show inactive</span>
+            </label>
+
+            <Button onClick={() => onCategoryAction('create')}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Category
+            </Button>
+          </div>
         </div>
-        
-        <Select
-          value={filters.type}
-          onChange={(e) => handleFilterChange('type', e.target.value as any)}
-          options={[
-            { value: '', label: 'All Types' },
-            { value: 'INCOME', label: 'Income Only' },
-            { value: 'EXPENSE', label: 'Expense Only' },
-          ]}
-          className="w-full sm:w-40"
-        />
-        
-        <label className="flex items-center space-x-2 text-sm text-gray-600 whitespace-nowrap">
-          <input
-            type="checkbox"
-            checked={filters.showInactive}
-            onChange={(e) => handleFilterChange('showInactive', e.target.checked)}
-            className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-          />
-          <span>Show inactive</span>
-        </label>
       </div>
 
-      {/* Categories Content */}
-      {filteredCategories.income.length === 0 && filteredCategories.expense.length === 0 ? (
-        <Card>
-          <EmptyState
-            icon={filters.search ? Search : Plus}
-            title={filters.search ? "No categories found" : "No categories yet"}
-            description={
-              filters.search
-                ? "Try adjusting your search or filters to find categories."
-                : "Create income and expense categories to organize your budget."
-            }
-            action={
-              !filters.search ? (
-                <Button onClick={() => onCategoryAction('create')}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create First Category
-                </Button>
-              ) : undefined
-            }
-          />
-        </Card>
+      {/* Main Content - Using BudgetPlanningTab Layout Structure */}
+      {!hasCategories ? (
+        <div className="bg-white border border-gray-200 rounded-lg p-8">
+          <div className="text-center">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+              <Plus className="h-6 w-6 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Categories Yet</h3>
+            <p className="text-gray-600 mb-6">
+              Create income and expense categories to organize your budget.
+            </p>
+            <Button onClick={() => onCategoryAction('create')}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create First Category
+            </Button>
+          </div>
+        </div>
+      ) : hasNoCategories ? (
+        <div className="bg-white border border-gray-200 rounded-lg p-8">
+          <div className="text-center">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+              <Search className="h-6 w-6 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Categories Found</h3>
+            <p className="text-gray-600">
+              Try adjusting your search or filters to find categories.
+            </p>
+          </div>
+        </div>
       ) : (
-        <div className="space-y-8">
-          {/* Income Categories */}
-          {filteredCategories.income.length > 0 && (
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <TrendingUp className="h-5 w-5 text-green-600" />
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Income Categories ({filteredCategories.income.length})
-                </h3>
+        <div className="grid grid-cols-2 gap-3 sm:gap-6">
+          {/* Income Column */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+                <div>
+                  <h4 className="text-xs sm:text-sm font-semibold text-gray-900">Income Categories</h4>
+                  <p className="text-xs text-gray-500 hidden sm:block">
+                    {filteredCategories.income.length} categories • Track your earnings
+                  </p>
+                  <p className="text-xs text-gray-500 sm:hidden">
+                    {filteredCategories.income.length} categories
+                  </p>
+                </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredCategories.income.map((category) => (
-                  <CategoryCard
-                    key={category.id}
-                    category={category}
-                    onAction={onCategoryAction}
-                    formatCurrency={formatCurrency}
-                  />
-                ))}
-              </div>
+              <button 
+                onClick={() => onCategoryAction('create', undefined, { 
+                  type: 'INCOME', 
+                  preselectedType: 'INCOME' 
+                })}
+                className="text-green-600 hover:text-green-700 p-0.5 sm:p-1 rounded hover:bg-green-50 transition-colors"
+                title="Add Income Category"
+              >
+                <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+              </button>
             </div>
-          )}
 
-          {/* Expense Categories */}
-          {filteredCategories.expense.length > 0 && (
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <TrendingDown className="h-5 w-5 text-red-600" />
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Expense Categories ({filteredCategories.expense.length})
-                </h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredCategories.expense.map((category) => (
-                  <CategoryCard
-                    key={category.id}
-                    category={category}
-                    onAction={onCategoryAction}
-                    formatCurrency={formatCurrency}
-                  />
-                ))}
-              </div>
+            <div className="space-y-1 sm:space-y-2 max-h-80 sm:max-h-96 overflow-y-auto">
+              {filteredCategories.income.length === 0 ? (
+                <EmptyState 
+                  type="INCOME" 
+                  onAdd={() => onCategoryAction('create', undefined, { type: 'INCOME' })} 
+                />
+              ) : (
+                filteredCategories.income.map((category) => (
+                  <CategoryItem key={category.id} category={category} type="INCOME" />
+                ))
+              )}
             </div>
-          )}
+          </div>
+
+          {/* Expense Column */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
+                <div>
+                  <h4 className="text-xs sm:text-sm font-semibold text-gray-900">Expense Categories</h4>
+                  <p className="text-xs text-gray-500 hidden sm:block">
+                    {filteredCategories.expense.length} categories • Control your spending
+                  </p>
+                  <p className="text-xs text-gray-500 sm:hidden">
+                    {filteredCategories.expense.length} categories
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => onCategoryAction('create', undefined, { 
+                  type: 'EXPENSE', 
+                  preselectedType: 'EXPENSE' 
+                })}
+                className="text-red-600 hover:text-red-700 p-0.5 sm:p-1 rounded hover:bg-red-50 transition-colors"
+                title="Add Expense Category"
+              >
+                <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-1 sm:space-y-2 max-h-80 sm:max-h-96 overflow-y-auto">
+              {filteredCategories.expense.length === 0 ? (
+                <EmptyState 
+                  type="EXPENSE" 
+                  onAdd={() => onCategoryAction('create', undefined, { type: 'EXPENSE' })} 
+                />
+              ) : (
+                filteredCategories.expense.map((category) => (
+                  <CategoryItem key={category.id} category={category} type="EXPENSE" />
+                ))
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
