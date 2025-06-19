@@ -6,10 +6,17 @@ import {
   DollarSign, 
   TrendingUp, 
   Users,
-  FileText 
+  FileText, 
+  CreditCard,
+  Receipt,
+  ReceiptText,
+  BarChart2,
+  BarChart,
+  BarChart4
 } from 'lucide-react';
 import { BudgetSummary } from '../types';
 import { Badge } from './ui';
+import { Bar } from 'recharts';
 
 
 type ActiveTab = 'overview' | 'categories' | 'transactions';
@@ -42,7 +49,7 @@ const BudgetTabs: React.FC<BudgetTabsProps> = ({
     {
       id: 'overview',
       label: 'Overview',
-      icon: BarChart3,
+      icon: BarChart2,
       description: 'Budget summary and insights',
       color: 'blue',
     },
@@ -51,25 +58,23 @@ const BudgetTabs: React.FC<BudgetTabsProps> = ({
       label: 'Categories',
       icon: Target,
       description: 'Manage income and expense categories',
-      count: categoriesCount,
-      color: 'purple',
+      color: 'blue',
     },
     {
       id: 'transactions',
       label: 'Transactions',
-      icon: DollarSign,
+      icon: ReceiptText,
       description: 'View and manage all transactions',
-      count: transactionsCount,
-      color: 'green',
+      color: 'blue',
     },
   ];
 
   const getTabColorClasses = (tab: TabConfig, isActive: boolean) => {
     const colorMap = {
       blue: {
-        active: 'border-blue-500 text-blue-600 bg-blue-50',
-        inactive: 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-300',
-        icon: isActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-500',
+        active: 'text-blue-600 bg-blue-50',
+        inactive: 'border-transparent text-gray-500',
+        icon: isActive ? 'text-blue-600' : 'text-gray-400',
         badge: 'bg-blue-100 text-blue-700',
       },
       purple: {
@@ -102,7 +107,7 @@ const BudgetTabs: React.FC<BudgetTabsProps> = ({
               <button
                 key={tab.id}
                 onClick={() => onTabChange(tab.id)}
-                className={`group relative min-w-0 flex-1 sm:flex-none py-4 px-6 border-b-2 font-medium text-sm whitespace-nowrap transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                className={`group relative min-w-0 flex-1 sm:flex-none py-4 px-6  font-medium text-sm whitespace-nowrap transition-all duration-200 ${
                   isActive ? colors.active : colors.inactive
                 }`}
                 role="tab"
@@ -136,85 +141,11 @@ const BudgetTabs: React.FC<BudgetTabsProps> = ({
                     </span>
                   </div>
                 </div>
-
-                {/* Active indicator */}
-                {isActive && (
-                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 h-0.5 bg-gradient-to-r from-transparent via-current to-transparent opacity-75"></div>
-                )}
               </button>
             );
           })}
         </nav>
       </div>
-
-      {/* Summary Bar for Active Tab */}
-      {summary && (
-        <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
-          <div className="flex items-center justify-between text-sm">
-            {activeTab === 'overview' && (
-              <div className="flex items-center space-x-6">
-                <div className="flex items-center space-x-2">
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                  <span className="text-gray-600">Net Income:</span>
-                  <span className={`font-semibold ${
-                    summary.netActual >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    ₱{summary.netActual.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <BarChart3 className="h-4 w-4 text-blue-600" />
-                  <span className="text-gray-600">Budget Utilization:</span>
-                  <span className="font-semibold text-blue-600">
-                    {summary.totalPlannedExpenses > 0 
-                      ? Math.round((summary.totalActualExpenses / summary.totalPlannedExpenses) * 100)
-                      : 0
-                    }%
-                  </span>
-                </div>
-              </div>
-            )}
-            
-            {activeTab === 'categories' && (
-              <div className="flex items-center space-x-6">
-                <div className="flex items-center space-x-2">
-                  <Users className="h-4 w-4 text-purple-600" />
-                  <span className="text-gray-600">Active Categories:</span>
-                  <span className="font-semibold text-purple-600">{categoriesCount}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Target className="h-4 w-4 text-green-600" />
-                  <span className="text-gray-600">Total Planned:</span>
-                  <span className="font-semibold text-green-600">
-                    ₱{(summary.totalPlannedIncome + summary.totalPlannedExpenses).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            )}
-            
-            {activeTab === 'transactions' && (
-              <div className="flex items-center space-x-6">
-                <div className="flex items-center space-x-2">
-                  <FileText className="h-4 w-4 text-green-600" />
-                  <span className="text-gray-600">Total Transactions:</span>
-                  <span className="font-semibold text-green-600">{transactionsCount}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <DollarSign className="h-4 w-4 text-blue-600" />
-                  <span className="text-gray-600">Total Amount:</span>
-                  <span className="font-semibold text-blue-600">
-                    ₱{(summary.totalActualIncome + summary.totalActualExpenses).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            )}
-            
-            <div className="text-xs text-gray-400">
-              Last updated: {new Date().toLocaleTimeString()}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
