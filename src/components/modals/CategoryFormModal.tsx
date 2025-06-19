@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { FormModal, Input, Select } from '../ui';
 import { CreateCategoryForm, BudgetCategory } from '../../types';
+import { CATEGORY_COLORS, DEFAULT_COLORS } from '../../constants/colors';
+import { CurrencyInput } from '../forms/CurrencyInput';
+import { ColorPicker } from '../forms/ColorPicker';
 
 interface CategoryFormModalProps {
   isOpen: boolean;
@@ -10,10 +13,6 @@ interface CategoryFormModalProps {
   isLoading?: boolean;
   budgetId: string;
 }
-
-// Color options for categories
-const incomeColors = ['#22C55E', '#10B981', '#059669', '#047857', '#065F46'];
-const expenseColors = ['#EF4444', '#DC2626', '#B91C1C', '#991B1B', '#7F1D1D'];
 
 export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
   isOpen,
@@ -32,6 +31,7 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
   });
   
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const colorOptions = formData.type === 'INCOME' ? CATEGORY_COLORS.income : CATEGORY_COLORS.expense;
 
   // Initialize form when modal opens or editing category changes
   useEffect(() => {
@@ -60,7 +60,7 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
   // Update default color when type changes
   useEffect(() => {
     if (!editingCategory) {
-      const defaultColor = formData.type === 'INCOME' ? incomeColors[0] : expenseColors[0];
+      const defaultColor = formData.type === 'INCOME' ? DEFAULT_COLORS.incomeCategory : DEFAULT_COLORS.expenseCategory;
       setFormData(prev => ({ ...prev, color: defaultColor }));
     }
   }, [formData.type, editingCategory]);
@@ -99,8 +99,6 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
     }
   };
 
-  const colorOptions = formData.type === 'INCOME' ? incomeColors : expenseColors;
-
   return (
     <FormModal
       isOpen={isOpen}
@@ -130,37 +128,21 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
         error={errors.type}
       />
 
-      <Input
+      <CurrencyInput
         label="Planned Amount"
-        type="number"
         value={formData.plannedAmount}
-        onChange={(e) => handleInputChange('plannedAmount', parseFloat(e.target.value) || 0)}
+        onChange={(value: number) => handleInputChange('plannedAmount', value)}
         error={errors.plannedAmount}
         placeholder="0.00"
-        min="0"
-        step="0.01"
       />
 
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">
-          Color
-        </label>
-        <div className="flex space-x-2">
-          {colorOptions.map((color) => (
-            <button
-              key={color}
-              type="button"
-              onClick={() => handleInputChange('color', color)}
-              className={`w-8 h-8 rounded-full border-2 transition-all ${
-                formData.color === color
-                  ? 'border-gray-800 scale-110'
-                  : 'border-gray-300 hover:border-gray-500'
-              }`}
-              style={{ backgroundColor: color }}
-            />
-          ))}
-        </div>
-      </div>
+     <ColorPicker
+        label="Color"
+        value={formData.color ?? ''}
+        onChange={(color: string) => handleInputChange('color', color)}
+        colors={colorOptions.slice()}
+        error={errors.color}
+      />
     </FormModal>
   );
 };

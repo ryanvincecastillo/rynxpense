@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2, AlertCircle, CheckCircle, XCircle, Info, X } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, XCircle, Info, X, LucideProps } from 'lucide-react';
 
 // Loading Spinner Component
 interface LoadingSpinnerProps {
@@ -71,6 +71,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   helpText?: string;
+  leftIcon?: React.ForwardRefExoticComponent<Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>>;
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(({
@@ -236,6 +237,7 @@ interface AlertProps {
   title?: string;
   children: React.ReactNode;
   className?: string;
+  description?: string;
   onClose?: () => void;
 }
 
@@ -527,6 +529,8 @@ interface ProgressBarProps {
   size?: 'sm' | 'md' | 'lg';
   showLabel?: boolean;
   className?: string;
+  variant?: 'success' | 'warning' | 'danger';
+  showPercentage?: boolean;
 }
 
 export const ProgressBar: React.FC<ProgressBarProps> = ({
@@ -600,7 +604,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 };
 
 
-// New standardized modals (alongside existing Modal)
-export { Modal as BaseModal, FormModal, type BaseModalProps, type FormModalProps } from './Modal';
+// Standardized modals
+export { Modal as BaseModal, FormModal, type ModalProps as BaseModalProps, type FormModalProps } from './Modal';
 export { Button as StandardButton, type ButtonProps as StandardButtonProps } from './Navigation/Button';
 export { ConfirmModal, DeleteConfirmModal, ArchiveConfirmModal, type ConfirmModalProps } from './Modal';

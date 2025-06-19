@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button, Input, Alert } from '../../components/ui';
+import { ROUTES } from '../../constants/routes';
 
 // Validation schema
 const loginSchema = z.object({
@@ -33,7 +34,7 @@ const LoginPage: React.FC = () => {
     try {
       await login(data.email, data.password);
       toast.success('Welcome back! Login successful.');
-      navigate('/dashboard');
+      navigate(ROUTES.DASHBOARD);
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
       toast.error(errorMessage);
@@ -103,7 +104,7 @@ const LoginPage: React.FC = () => {
               </div>
 
               <Link
-                to="/forgot-password"
+                to="ROUTES.FORGOT_PASSWORD"
                 className="text-sm text-blue-600 hover:text-blue-500 font-medium"
               >
                 Forgot password?
@@ -133,7 +134,7 @@ const LoginPage: React.FC = () => {
 
             <div className="mt-6">
               <Link
-                to="/register"
+                to="ROUTES.REGISTER"
                 className="w-full flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 Create new account

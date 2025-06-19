@@ -14,23 +14,21 @@ import LoginPage from './features/auth/LoginPage';
 import RegisterPage from './features/auth/RegisterPage';
 import DashboardPage from './features/dashboard/DashboardPage';
 import BudgetsPage from './features/budgets/BudgetsPage';
-import TransactionsPage from './features/transactions/TransactionsPage';
-import CategoriesPage from './features/categories/CategoriesPage';
+import BudgetDetailsPage from './features/budgets/BudgetDetailsPage';
 import SettingsPage from './features/settings/SettingsPage';
 
 // Loading and error components
 import { LoadingSpinner } from './components/ui';
 import ErrorBoundary from './components/ui/ErrorBoundary';
-import BudgetDetailsPage from './features/budgets/BudgetDetailsPage';
 
-// Create React Query client
+// Create React Query client with optimized defaults
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (renamed from cacheTime in v5)
+      gcTime: 10 * 60 * 1000, // 10 minutes
     },
     mutations: {
       retry: 1,
@@ -40,7 +38,7 @@ const queryClient = new QueryClient({
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -50,146 +48,13 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     );
   }
 
-  if (!isAuthenticated) {
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;
 };
 
-// Public Route Component (redirect if authenticated)
-const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return <>{children}</>;
-};
-
-// App Routes Component
-const AppRoutes: React.FC = () => {
-  return (
-    <Routes>
-      {/* Public routes */}
-      <Route
-        path="/login"
-        element={
-          <PublicRoute>
-            <AuthLayout>
-              <LoginPage />
-            </AuthLayout>
-          </PublicRoute>
-        }
-      />
-      <Route
-        path="/register"
-        element={
-          <PublicRoute>
-            <AuthLayout>
-              <RegisterPage />
-            </AuthLayout>
-          </PublicRoute>
-        }
-      />
-
-      {/* Protected routes */}
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <DashboardPage />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/budgets"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <BudgetsPage />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/budgets/:budgetId"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <BudgetDetailsPage />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/transactions"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <TransactionsPage />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/categories"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <CategoriesPage />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <SettingsPage />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Default redirect */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
-      {/* 404 route */}
-      <Route
-        path="*"
-        element={
-          <div className="min-h-screen flex items-center justify-center">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">404</h1>
-              <p className="text-gray-600 mb-8">Page not found</p>
-              <button
-                onClick={() => (window.location.href = '/dashboard')}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
-              >
-                Go to Dashboard
-              </button>
-            </div>
-          </div>
-        }
-      />
-    </Routes>
-  );
-};
-
-// Main App Component
 const App: React.FC = () => {
   return (
     <ErrorBoundary>
@@ -197,9 +62,91 @@ const App: React.FC = () => {
         <AuthProvider>
           <Router>
             <div className="App">
-              <AppRoutes />
-              
-              {/* Toast notifications */}
+              <Routes>
+                {/* Auth Routes */}
+                <Route
+                  path="/login"
+                  element={
+                    <AuthLayout>
+                      <LoginPage />
+                    </AuthLayout>
+                  }
+                />
+                <Route
+                  path="/register"
+                  element={
+                    <AuthLayout>
+                      <RegisterPage />
+                    </AuthLayout>
+                  }
+                />
+
+                {/* Protected App Routes */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <AppLayout>
+                        <DashboardPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/budgets"
+                  element={
+                    <ProtectedRoute>
+                      <AppLayout>
+                        <BudgetsPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/budgets/:budgetId"
+                  element={
+                    <ProtectedRoute>
+                      <AppLayout>
+                        <BudgetDetailsPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <AppLayout>
+                        <SettingsPage />
+                      </AppLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Default redirect */}
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+                {/* 404 route */}
+                <Route
+                  path="*"
+                  element={
+                    <div className="min-h-screen flex items-center justify-center">
+                      <div className="text-center">
+                        <h1 className="text-4xl font-bold text-gray-900 mb-4">404</h1>
+                        <p className="text-gray-600 mb-8">Page not found</p>
+                        <button
+                          onClick={() => (window.location.href = '/dashboard')}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          Go to Dashboard
+                        </button>
+                      </div>
+                    </div>
+                  }
+                />
+              </Routes>
+
+              {/* Global Toast Notifications */}
               <Toaster
                 position="top-right"
                 toastOptions={{
@@ -210,16 +157,14 @@ const App: React.FC = () => {
                   },
                   success: {
                     duration: 3000,
-                    iconTheme: {
-                      primary: '#4ade80',
-                      secondary: '#fff',
+                    style: {
+                      background: '#10B981',
                     },
                   },
                   error: {
                     duration: 5000,
-                    iconTheme: {
-                      primary: '#ef4444',
-                      secondary: '#fff',
+                    style: {
+                      background: '#EF4444',
                     },
                   },
                 }}
@@ -227,11 +172,7 @@ const App: React.FC = () => {
             </div>
           </Router>
         </AuthProvider>
-        
-        {/* React Query Devtools (only in development) */}
-        {process.env.NODE_ENV === 'development' && (
-          <ReactQueryDevtools initialIsOpen={false} />
-        )}
+        <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
     </ErrorBoundary>
   );

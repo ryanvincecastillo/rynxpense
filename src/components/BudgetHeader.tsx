@@ -4,8 +4,6 @@ import { Link } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Edit3, 
-  TrendingUp, 
-  TrendingDown, 
   Download, 
   Calendar,
   MoreHorizontal,
@@ -14,9 +12,6 @@ import {
   Settings,
   Minus,
   Share2,
-  Share2Icon,
-  DownloadCloudIcon,
-  HardDriveDownload
 } from 'lucide-react';
 import { Badge } from './ui';
 import { format } from 'date-fns';

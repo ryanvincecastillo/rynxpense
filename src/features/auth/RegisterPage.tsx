@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { Eye, EyeOff, ArrowRight, UserPlus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button, Input, Select, Alert } from '../../components/ui';
+import { CURRENCIES, DEFAULT_CURRENCY } from '../../constants/currency';
 
 // Validation schema
 const registerSchema = z.object({
@@ -23,16 +24,6 @@ const registerSchema = z.object({
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
-// Currency options
-const currencyOptions = [
-  { value: 'USD', label: 'US Dollar (USD)' },
-  { value: 'PHP', label: 'Philippine Peso (PHP)' },
-  { value: 'EUR', label: 'Euro (EUR)' },
-  { value: 'GBP', label: 'British Pound (GBP)' },
-  { value: 'JPY', label: 'Japanese Yen (JPY)' },
-  { value: 'CAD', label: 'Canadian Dollar (CAD)' },
-  { value: 'AUD', label: 'Australian Dollar (AUD)' },
-];
 
 const RegisterPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -47,7 +38,7 @@ const RegisterPage: React.FC = () => {
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      currency: 'PHP', // Default to PHP for Philippines users
+      currency: DEFAULT_CURRENCY
     },
   });
 
@@ -152,7 +143,10 @@ const RegisterPage: React.FC = () => {
 
             <Select
               label="Default currency"
-              options={currencyOptions}
+              options={CURRENCIES.map((currency) => ({
+                value: currency.value,
+                label: `${currency.label} (${currency.value})`,
+              }))}
               error={errors.currency?.message}
               {...register('currency')}
             />

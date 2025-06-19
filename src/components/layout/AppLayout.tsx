@@ -2,10 +2,8 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
-  DollarSign,
   PieChart,
   Settings,
-  Users,
   Menu,
   X,
   LogOut,
@@ -24,6 +22,7 @@ interface NavItem {
   label: string;
   icon: React.ComponentType<any>;
   path: string;
+  description?: string;
 }
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
@@ -33,37 +32,28 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Navigation items
+  // Streamlined navigation items - Transactions & Categories now accessed via Budget Details
   const navItems: NavItem[] = [
     {
       id: 'dashboard',
       label: 'Dashboard',
       icon: BarChart3,
       path: '/dashboard',
+      description: 'Overview and analytics',
     },
     {
       id: 'budgets',
       label: 'Budgets',
       icon: PieChart,
       path: '/budgets',
-    },
-    {
-      id: 'transactions',
-      label: 'Transactions',
-      icon: DollarSign,
-      path: '/transactions',
-    },
-    {
-      id: 'categories',
-      label: 'Categories',
-      icon: Users,
-      path: '/categories',
+      description: 'Manage budgets, transactions & categories',
     },
     {
       id: 'settings',
       label: 'Settings',
       icon: Settings,
       path: '/settings',
+      description: 'Account and preferences',
     },
   ];
 
@@ -76,11 +66,17 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     }
   };
 
-  const isActiveRoute = (path: string) => {
+  const isActiveRoute = (path: string): boolean => {
     return location.pathname.startsWith(path);
   };
 
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    setSidebarOpen(false);
+  };
 
+  const closeSidebar = () => setSidebarOpen(false);
+  const toggleUserMenu = () => setShowUserMenu(prev => !prev);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -88,7 +84,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
+          onClick={closeSidebar}
         />
       )}
 
@@ -109,15 +105,16 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             </h1>
           </div>
           <button
-            onClick={() => setSidebarOpen(false)}
+            onClick={closeSidebar}
             className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors"
+            aria-label="Close sidebar"
           >
             <X className="h-5 w-5 text-gray-600" />
           </button>
         </div>
 
         {/* Navigation */}
-        <nav className="mt-8 px-4">
+        <nav className="mt-8 px-4" role="navigation" aria-label="Main navigation">
           <div className="space-y-2">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -126,30 +123,50 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               return (
                 <button
                   key={item.id}
-                  onClick={() => {
-                    navigate(item.path);
-                    setSidebarOpen(false);
-                  }}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 text-left rounded-xl transition-all duration-200 ${
+                  onClick={() => handleNavigation(item.path)}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 text-left rounded-xl transition-all duration-200 group ${
                     isActive
                       ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
-                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:transform hover:scale-102'
                   }`}
+                  aria-current={isActive ? 'page' : undefined}
+                  title={item.description}
                 >
-                  <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-gray-500'}`} />
-                  <span className="font-medium">{item.label}</span>
+                  <Icon className={`h-5 w-5 transition-colors ${
+                    isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+                  }`} />
+                  <div className="flex-1">
+                    <span className="font-medium">{item.label}</span>
+                    {item.description && (
+                      <p className={`text-xs mt-0.5 ${
+                        isActive ? 'text-blue-100' : 'text-gray-500 group-hover:text-gray-600'
+                      }`}>
+                        {item.description}
+                      </p>
+                    )}
+                  </div>
                 </button>
               );
             })}
           </div>
         </nav>
 
-        {/* Sidebar footer */}
+        {/* Help section */}
+        <div className="px-4 mt-8">
+          <div className="p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border border-blue-100">
+            <h3 className="text-sm font-semibold text-blue-900 mb-2">Quick Tip</h3>
+            <p className="text-xs text-blue-700 leading-relaxed">
+              Access transactions and categories through Budget Details for better organization.
+            </p>
+          </div>
+        </div>
+
+        {/* Sidebar footer - User Profile */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
           <div className="flex items-center space-x-3 px-4 py-3 bg-gray-50 rounded-xl">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
               <span className="text-white text-sm font-medium">
-                {user?.firstName?.charAt(0) || 'U'}
+                {user?.firstName?.charAt(0)?.toUpperCase() || 'U'}
               </span>
             </div>
             <div className="flex-1 min-w-0">
@@ -172,6 +189,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               <button
                 onClick={() => setSidebarOpen(true)}
                 className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors"
+                aria-label="Open sidebar"
               >
                 <Menu className="h-5 w-5 text-gray-600" />
               </button>
@@ -181,8 +199,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 <Search className="h-4 w-4 text-gray-500 mr-2" />
                 <input
                   type="text"
-                  placeholder="Search transactions, categories..."
-                  className="bg-transparent outline-none text-sm flex-1 text-gray-700"
+                  placeholder="Search budgets, transactions..."
+                  className="bg-transparent border-none outline-none flex-1 text-sm text-gray-700 placeholder-gray-500"
                 />
               </div>
             </div>
@@ -190,59 +208,66 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             {/* Right side */}
             <div className="flex items-center space-x-4">
               {/* Notifications */}
-              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
-                <Bell className="h-5 w-5 text-gray-600" />
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
-                  3
-                </span>
+              <button
+                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors relative"
+                aria-label="Notifications"
+              >
+                <Bell className="h-5 w-5" />
+                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
               </button>
 
               {/* User menu */}
               <div className="relative">
                 <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  onClick={toggleUserMenu}
+                  className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  aria-expanded={showUserMenu}
+                  aria-label="User menu"
                 >
                   <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                     <span className="text-white text-sm font-medium">
-                      {user?.firstName?.charAt(0) || 'U'}
+                      {user?.firstName?.charAt(0)?.toUpperCase() || 'U'}
                     </span>
-                  </div>
-                  <div className="hidden md:block text-left">
-                    <p className="text-sm font-medium text-gray-900">
-                      {user?.firstName} {user?.lastName}
-                    </p>
-                    <p className="text-xs text-gray-500">{user?.currency}</p>
                   </div>
                 </button>
 
                 {/* User dropdown menu */}
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+                    <div className="px-4 py-3 border-b border-gray-200">
+                      <p className="text-sm font-medium text-gray-900">
+                        {user?.firstName} {user?.lastName}
+                      </p>
+                      <p className="text-xs text-gray-500">{user?.email}</p>
+                    </div>
+                    
                     <button
                       onClick={() => {
                         navigate('/settings');
                         setShowUserMenu(false);
                       }}
-                      className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                     >
                       <User className="h-4 w-4" />
                       <span>Profile Settings</span>
                     </button>
+                    
                     <button
                       onClick={() => {
                         navigate('/settings');
                         setShowUserMenu(false);
                       }}
-                      className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                     >
                       <Settings className="h-4 w-4" />
                       <span>Preferences</span>
                     </button>
+                    
                     <hr className="my-2 border-gray-200" />
+                    
                     <button
                       onClick={handleLogout}
-                      className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                      className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                     >
                       <LogOut className="h-4 w-4" />
                       <span>Sign out</span>

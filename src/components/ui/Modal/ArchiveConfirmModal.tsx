@@ -14,6 +14,7 @@ export const ArchiveConfirmModal: React.FC<ArchiveConfirmModalProps> = ({
   isArchived,
   message,
   description,
+  onConfirm,
   ...props
 }) => {
   const action = isArchived ? 'unarchive' : 'archive';
@@ -25,6 +26,7 @@ export const ArchiveConfirmModal: React.FC<ArchiveConfirmModalProps> = ({
   return (
     <ConfirmModal
       {...props}
+      onConfirm={onConfirm}
       variant="warning"
       message={defaultMessage}
       description={defaultDescription}

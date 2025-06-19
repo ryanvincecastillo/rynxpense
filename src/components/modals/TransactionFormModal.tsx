@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FormModal, Input, Select, Textarea } from '../ui';
 import { CreateTransactionForm, Transaction, BudgetCategory } from '../../types';
 import { Calendar, Repeat } from 'lucide-react';
+import { CurrencyInput } from '../forms/CurrencyInput';
 
 interface TransactionFormModalProps {
   isOpen: boolean;
@@ -150,15 +151,12 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
           placeholder="Select a category"
         />
 
-        <Input
+        <CurrencyInput
           label="Amount"
-          type="number"
           value={formData.amount}
-          onChange={(e) => handleInputChange('amount', parseFloat(e.target.value) || 0)}
+          onChange={(value) => handleInputChange('amount', value)}
           error={errors.amount}
           placeholder="0.00"
-          min="0"
-          step="0.01"
           required
         />
       </div>

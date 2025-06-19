@@ -31,6 +31,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { CURRENCIES } from '../../constants/currency';
+import { getErrorMessage } from '../../utils';
+import { ROUTES } from '../../constants/routes';
 
 // Form validation schemas
 const profileSchema = z.object({
@@ -52,19 +55,6 @@ const passwordSchema = z.object({
 type ProfileFormData = z.infer<typeof profileSchema>;
 type PasswordFormData = z.infer<typeof passwordSchema>;
 
-// Currency options
-const currencies = [
-  { value: 'PHP', label: 'Philippine Peso (PHP) - ₱' },
-  { value: 'USD', label: 'US Dollar (USD) - $' },
-  { value: 'EUR', label: 'Euro (EUR) - €' },
-  { value: 'GBP', label: 'British Pound (GBP) - £' },
-  { value: 'JPY', label: 'Japanese Yen (JPY) - ¥' },
-  { value: 'CAD', label: 'Canadian Dollar (CAD) - C$' },
-  { value: 'AUD', label: 'Australian Dollar (AUD) - A$' },
-  { value: 'SGD', label: 'Singapore Dollar (SGD) - S$' },
-  { value: 'HKD', label: 'Hong Kong Dollar (HKD) - HK$' },
-  { value: 'CNY', label: 'Chinese Yuan (CNY) - ¥' },
-];
 
 const SettingsPage: React.FC = () => {
   const { user, logout, updateUser } = useAuth();
@@ -119,7 +109,7 @@ const SettingsPage: React.FC = () => {
       
       toast.success('Profile updated successfully!');
     } catch (error) {
-      toast.error('Failed to update profile. Please try again.');
+      toast.error(getErrorMessage(error))
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -136,7 +126,7 @@ const SettingsPage: React.FC = () => {
       toast.success('Password changed successfully!');
       passwordForm.reset();
     } catch (error) {
-      toast.error('Failed to change password. Please try again.');
+      toast.error(getErrorMessage(error))
     } finally {
       setIsChangingPassword(false);
     }
@@ -149,9 +139,9 @@ const SettingsPage: React.FC = () => {
       toast.success('Account deletion request submitted.');
       setShowDeleteModal(false);
       await logout();
-      navigate('/login');
+      navigate(ROUTES.LOGIN)
     } catch (error) {
-      toast.error('Failed to delete account. Please try again.');
+      toast.error(getErrorMessage(error))
     }
   };
 
@@ -160,9 +150,9 @@ const SettingsPage: React.FC = () => {
     try {
       await logout();
       toast.success('Logged out successfully!');
-      navigate('/login');
+      navigate(ROUTES.LOGIN)
     } catch (error) {
-      toast.error('Failed to logout. Please try again.');
+      toast.error(getErrorMessage(error))
     }
   };
 
@@ -266,7 +256,10 @@ const SettingsPage: React.FC = () => {
 
               <Select
                 label="Default Currency"
-                options={currencies}
+                options={CURRENCIES.map((currency) => ({
+                  value: currency.value,
+                  label: `${currency.label}`,
+                }))}
                 error={profileForm.formState.errors.currency?.message}
                 {...profileForm.register('currency')}
               />

@@ -25,8 +25,6 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  LineChart,
-  Line,
   Area,
   AreaChart,
   Pie
@@ -40,6 +38,8 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { Card, LoadingSpinner, EmptyState, Badge, Button, Select } from '../../components/ui';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { formatCurrency, formatDate, getCurrentMonthDateRange } from '../../utils';
+import { ROUTES } from '../../constants/routes';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -66,11 +66,8 @@ const DashboardPage: React.FC = () => {
   const recentTransactions = transactionsResponse?.data || [];
 
   // Format currency helper
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: user?.currency || 'PHP',
-    }).format(amount);
+  const formatCurrencyWrapper = (amount: number) => {
+    return formatCurrency(amount, user?.currency || 'PHP');
   };
 
   // Prepare chart data
@@ -144,7 +141,7 @@ const DashboardPage: React.FC = () => {
           <p className="text-gray-600 mb-8 max-w-md mx-auto">
             Start your financial journey by creating your first budget. Track income, expenses, and achieve your financial goals.
           </p>
-          <Link to="/budgets">
+          <Link to="ROUTES.BUDGETS">
             <Button size="lg">
               <Plus className="h-5 w-5 mr-2" />
               Create Your First Budget
@@ -190,10 +187,10 @@ const DashboardPage: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-green-700">Total Income</p>
                 <p className="text-2xl font-bold text-green-800">
-                  {formatCurrency(summary.totalActualIncome)}
+                  {formatCurrencyWrapper(summary.totalActualIncome)}
                 </p>
                 <p className="text-xs text-green-600 mt-1">
-                  vs {formatCurrency(summary.totalPlannedIncome)} planned
+                  vs {formatCurrencyWrapper(summary.totalPlannedIncome)} planned
                 </p>
               </div>
               <div className="w-12 h-12 bg-green-200 rounded-xl flex items-center justify-center">
@@ -207,10 +204,10 @@ const DashboardPage: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-red-700">Total Expenses</p>
                 <p className="text-2xl font-bold text-red-800">
-                  {formatCurrency(summary.totalActualExpenses)}
+                  {formatCurrencyWrapper(summary.totalActualExpenses)}
                 </p>
                 <p className="text-xs text-red-600 mt-1">
-                  vs {formatCurrency(summary.totalPlannedExpenses)} planned
+                  vs {formatCurrencyWrapper(summary.totalPlannedExpenses)} planned
                 </p>
               </div>
               <div className="w-12 h-12 bg-red-200 rounded-xl flex items-center justify-center">
@@ -226,10 +223,10 @@ const DashboardPage: React.FC = () => {
                 <p className={`text-2xl font-bold ${
                   summary.netActual >= 0 ? 'text-blue-800' : 'text-red-800'
                 }`}>
-                  {formatCurrency(summary.netActual)}
+                  {formatCurrencyWrapper(summary.netActual)}
                 </p>
                 <p className="text-xs text-blue-600 mt-1">
-                  vs {formatCurrency(summary.netPlanned)} planned
+                  vs {formatCurrencyWrapper(summary.netPlanned)} planned
                 </p>
               </div>
               <div className="w-12 h-12 bg-blue-200 rounded-xl flex items-center justify-center">
@@ -295,7 +292,7 @@ const DashboardPage: React.FC = () => {
                     ))}
                   </Pie>
                   <Tooltip 
-                    formatter={(value: any) => [formatCurrency(value), 'Amount']}
+                    formatter={(value: any) => [formatCurrencyWrapper(value), 'Amount']}
                     labelFormatter={(label) => `${label}`}
                   />
                   <Legend />
@@ -335,7 +332,7 @@ const DashboardPage: React.FC = () => {
                     tickFormatter={(value) => `₱${(value / 1000).toFixed(0)}k`}
                   />
                   <Tooltip 
-                    formatter={(value: any) => [formatCurrency(value), '']}
+                    formatter={(value: any) => [formatCurrencyWrapper(value), '']}
                     labelStyle={{ color: '#374151' }}
                   />
                   <Legend />
@@ -381,7 +378,7 @@ const DashboardPage: React.FC = () => {
                 tickFormatter={(value) => `₱${(value / 1000).toFixed(0)}k`}
               />
               <Tooltip 
-                formatter={(value: any) => [formatCurrency(value), '']}
+                formatter={(value: any) => [formatCurrencyWrapper(value), '']}
                 labelStyle={{ color: '#374151' }}
               />
               <Legend />
@@ -452,7 +449,7 @@ const DashboardPage: React.FC = () => {
                     <span className={`font-semibold text-sm ${
                       transaction.category?.type === 'INCOME' ? 'text-green-600' : 'text-red-600'
                     }`}>
-                      {transaction.category?.type === 'INCOME' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                      {transaction.category?.type === 'INCOME' ? '+' : '-'}{formatCurrencyWrapper(transaction.amount)}
                     </span>
                     <div className="text-xs text-gray-500">
                       {transaction.isPosted ? 'Posted' : 'Pending'}
@@ -469,7 +466,7 @@ const DashboardPage: React.FC = () => {
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Quick Actions</h3>
           <div className="grid grid-cols-2 gap-4">
             <Link 
-              to="/budgets"
+              to="ROUTES.BUDGETS"
               className="p-6 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all group text-center"
             >
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-200 transition-colors">
@@ -480,7 +477,7 @@ const DashboardPage: React.FC = () => {
             </Link>
 
             <Link 
-              to="/transactions"
+              to="ROUTES.TRANSACTIONS"
               className="p-6 border border-gray-200 rounded-xl hover:border-green-300 hover:bg-green-50 transition-all group text-center"
             >
               <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-green-200 transition-colors">
@@ -491,7 +488,7 @@ const DashboardPage: React.FC = () => {
             </Link>
 
             <Link 
-              to="/categories"
+              to="ROUTES.CATEGORIES"
               className="p-6 border border-gray-200 rounded-xl hover:border-purple-300 hover:bg-purple-50 transition-all group text-center"
             >
               <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-purple-200 transition-colors">
@@ -502,7 +499,7 @@ const DashboardPage: React.FC = () => {
             </Link>
 
             <Link 
-              to="/settings"
+              to="ROUTES.SETTINGS"
               className="p-6 border border-gray-200 rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-all group text-center"
             >
               <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:bg-gray-200 transition-colors">

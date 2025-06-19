@@ -14,6 +14,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   message,
   warningText,
   description,
+  onConfirm,
   ...props
 }) => {
   const defaultMessage = message || `Delete ${itemType}`;
@@ -27,6 +28,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   return (
     <ConfirmModal
       {...props}
+      onConfirm={onConfirm}
       variant="danger"
       message={defaultMessage}
       description={fullDescription}

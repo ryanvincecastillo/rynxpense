@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { FormModal, Input, Textarea } from '../ui';
 import { CreateBudgetForm, Budget } from '../../types';
+import { BUDGET_COLORS, DEFAULT_COLORS } from '../../constants/colors';
+import { isValidHexColor } from '../../utils';
+import { ColorPicker } from '../forms/ColorPicker';
 
 interface BudgetFormModalProps {
   isOpen: boolean;
@@ -10,11 +13,6 @@ interface BudgetFormModalProps {
   isLoading?: boolean;
 }
 
-// Color options for budgets
-const colorOptions = [
-  '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
-  '#06B6D4', '#84CC16', '#F97316', '#EC4899', '#6366F1'
-];
 
 export const BudgetFormModal: React.FC<BudgetFormModalProps> = ({
   isOpen,
@@ -26,7 +24,7 @@ export const BudgetFormModal: React.FC<BudgetFormModalProps> = ({
   const [formData, setFormData] = useState<CreateBudgetForm>({
     name: '',
     description: '',
-    color: colorOptions[0],
+    color: DEFAULT_COLORS.budget,
   });
   
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -44,7 +42,7 @@ export const BudgetFormModal: React.FC<BudgetFormModalProps> = ({
         setFormData({
           name: '',
           description: '',
-          color: colorOptions[0],
+          color: DEFAULT_COLORS.budget,
         });
       }
       setErrors({});
@@ -64,7 +62,7 @@ export const BudgetFormModal: React.FC<BudgetFormModalProps> = ({
       newErrors.description = 'Description is too long';
     }
 
-    if (!formData.color || !/^#[0-9A-F]{6}$/i.test(formData.color)) {
+    if (!formData.color || !isValidHexColor(formData.color)) {
       newErrors.color = 'Please select a valid color';
     }
 
@@ -115,30 +113,13 @@ export const BudgetFormModal: React.FC<BudgetFormModalProps> = ({
         rows={3}
       />
 
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">
-          Color
-        </label>
-        <div className="grid grid-cols-5 gap-3">
-          {colorOptions.map((color) => (
-            <button
-              key={color}
-              type="button"
-              onClick={() => handleInputChange('color', color)}
-              className={`w-12 h-12 rounded-lg border-2 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                formData.color === color
-                  ? 'border-gray-800 scale-110 shadow-lg'
-                  : 'border-gray-300 hover:border-gray-500 hover:scale-105'
-              }`}
-              style={{ backgroundColor: color }}
-              title={`Select ${color} color`}
-            />
-          ))}
-        </div>
-        {errors.color && (
-          <p className="text-sm text-red-600">{errors.color}</p>
-        )}
-      </div>
+      <ColorPicker
+        label="Color"
+        value={formData.color ?? DEFAULT_COLORS.budget}
+        onChange={(color) => handleInputChange('color', color)}
+        colors={BUDGET_COLORS.slice()}
+        error={errors.color}
+      />
 
       <div className="bg-gray-50 rounded-lg p-4">
         <h4 className="text-sm font-medium text-gray-700 mb-2">Preview</h4>

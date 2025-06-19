@@ -1,128 +1,104 @@
-import { useState } from 'react';
-import { BudgetCategory, Transaction } from '../types';
+import { useState, useCallback } from 'react';
+import { Transaction, BudgetCategory } from '../types';
 
-export type ActiveTab = 'overview' | 'budget-planning' | 'transactions';
-export type ActionType = 'create' | 'edit' | 'delete' | 'duplicate';
+export type ActiveTab = 'overview' | 'categories' | 'transactions';
 
-export interface ModalState {
-  showEditModal: boolean;
-  showDeleteModal: boolean;
+export interface BudgetModalState {
+  showCreateCategoryModal: boolean;
+  showEditCategoryModal: boolean;
+  showCreateTransactionModal: boolean;
+  showEditTransactionModal: boolean;
+  showDeleteConfirmModal: boolean;
   showActionsMenu: boolean;
-  showDuplicateModal: boolean;
-  showCategoryModal: boolean;
-  showTransactionModal: boolean;
+  showEditBudgetModal: boolean;
 }
 
-export interface FilterState {
+export interface BudgetFilters {
   categories: {
     type: 'INCOME' | 'EXPENSE' | '';
     showInactive: boolean;
-    searchTerm: string; // Added search term
+    search: string;
   };
   transactions: {
     isPosted?: boolean;
     isRecurring?: boolean;
+    categoryId?: string;
     search: string;
+    dateRange?: {
+      start: Date;
+      end: Date;
+    };
   };
 }
 
-export interface EditingItem {
-  data: any;
-  category: BudgetCategory | null;
-  transaction: Transaction | null;
+export interface BudgetState {
+  activeTab: ActiveTab;
+  modalState: BudgetModalState;
+  filters: BudgetFilters;
+  editingItem: Transaction | BudgetCategory | null;
 }
+
+const initialModalState: BudgetModalState = {
+  showCreateCategoryModal: false,
+  showEditCategoryModal: false,
+  showCreateTransactionModal: false,
+  showEditTransactionModal: false,
+  showDeleteConfirmModal: false,
+  showActionsMenu: false,
+  showEditBudgetModal: false,
+};
+
+const initialFilters: BudgetFilters = {
+  categories: {
+    type: '',
+    showInactive: false,
+    search: '',
+  },
+  transactions: {
+    search: '',
+  },
+};
 
 export const useBudgetState = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
-  
-  const [modalState, setModalState] = useState<ModalState>({
-    showEditModal: false,
-    showDeleteModal: false,
-    showActionsMenu: false,
-    showDuplicateModal: false,
-    showCategoryModal: false,
-    showTransactionModal: false,
-  });
+  const [modalState, setModalState] = useState<BudgetModalState>(initialModalState);
+  const [filters, setFilters] = useState<BudgetFilters>(initialFilters);
+  const [editingItem, setEditingItem] = useState<Transaction | BudgetCategory | null>(null);
 
-  const [filters, setFilters] = useState<FilterState>({
-    categories: {
-      type: '',
-      showInactive: false,
-      searchTerm: '', // Added search term
-    },
-    transactions: {
-      isPosted: undefined,
-      isRecurring: undefined,
-      search: '',
-    },
-  });
+  const updateModalState = useCallback((updates: Partial<BudgetModalState>) => {
+    setModalState(prev => ({ ...prev, ...updates }));
+  }, []);
 
-  const [editingItem, setEditingItem] = useState<EditingItem>({
-    data: null,
-    category: null,
-    transaction: null,
-  });
-
-  // Helper functions to update state
-  const closeAllModals = () => {
-    setModalState({
-      showEditModal: false,
-      showDeleteModal: false,
-      showActionsMenu: false,
-      showDuplicateModal: false,
-      showCategoryModal: false,
-      showTransactionModal: false,
-    });
-    setEditingItem({
-      data: null,
-      category: null,
-      transaction: null,
-    });
-  };
-
-  const openModal = (modalName: keyof ModalState) => {
-    setModalState(prev => ({ ...prev, [modalName]: true }));
-  };
-
-  const closeModal = (modalName: keyof ModalState) => {
-    setModalState(prev => ({ ...prev, [modalName]: false }));
-  };
-
-  // Helper to update category filters
-  const updateCategoryFilters = (updates: Partial<FilterState['categories']>) => {
+  const updateFilters = useCallback((filterType: keyof BudgetFilters, updates: any) => {
     setFilters(prev => ({
       ...prev,
-      categories: {
-        ...prev.categories,
-        ...updates,
-      },
+      [filterType]: { ...prev[filterType], ...updates }
     }));
-  };
+  }, []);
 
-  // Helper to update transaction filters
-  const updateTransactionFilters = (updates: Partial<FilterState['transactions']>) => {
-    setFilters(prev => ({
-      ...prev,
-      transactions: {
-        ...prev.transactions,
-        ...updates,
-      },
-    }));
-  };
+  const resetState = useCallback(() => {
+    setActiveTab('overview');
+    setModalState(initialModalState);
+    setFilters(initialFilters);
+    setEditingItem(null);
+  }, []);
 
   return {
+    // State
     activeTab,
-    setActiveTab,
     modalState,
-    setModalState,
     filters,
-    setFilters,
     editingItem,
+    
+    // Setters
+    setActiveTab,
+    setModalState,
+    setFilters,
     setEditingItem,
-    closeAllModals,
-    openModal,
-    closeModal,
-    updateCategoryFilters,
-    updateTransactionFilters,
+    
+    // Helpers
+    updateModalState,
+    updateFilters,
+    resetState,
   };
 };

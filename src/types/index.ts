@@ -53,6 +53,7 @@ export interface BudgetCategory {
   id: string;
   budgetId: string;
   name: string;
+  description: string;
   type: 'INCOME' | 'EXPENSE';
   plannedAmount: number;
   actualAmount: number;
