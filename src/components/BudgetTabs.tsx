@@ -1,23 +1,12 @@
 // components/BudgetTabs.tsx
 import React from 'react';
 import { 
-  BarChart3, 
+  BarChart2, 
   Target, 
-  DollarSign, 
-  TrendingUp, 
-  Users,
-  FileText, 
-  CreditCard,
-  Receipt,
-  ReceiptText,
-  BarChart2,
-  BarChart,
-  BarChart4
+  ReceiptText
 } from 'lucide-react';
 import { BudgetSummary } from '../types';
 import { Badge } from './ui';
-import { Bar } from 'recharts';
-
 
 type ActiveTab = 'overview' | 'categories' | 'transactions';
 
@@ -32,10 +21,9 @@ interface BudgetTabsProps {
 interface TabConfig {
   id: ActiveTab;
   label: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   description: string;
   count?: number;
-  color: string;
 }
 
 const BudgetTabs: React.FC<BudgetTabsProps> = ({
@@ -51,101 +39,104 @@ const BudgetTabs: React.FC<BudgetTabsProps> = ({
       label: 'Overview',
       icon: BarChart2,
       description: 'Budget summary and insights',
-      color: 'blue',
     },
     {
       id: 'categories',
       label: 'Categories',
       icon: Target,
       description: 'Manage income and expense categories',
-      color: 'blue',
+      count: categoriesCount,
     },
     {
       id: 'transactions',
       label: 'Transactions',
       icon: ReceiptText,
       description: 'View and manage all transactions',
-      color: 'blue',
+      count: transactionsCount,
     },
   ];
 
-  const getTabColorClasses = (tab: TabConfig, isActive: boolean) => {
-    const colorMap = {
-      blue: {
-        active: 'text-blue-600 bg-blue-50',
-        inactive: 'border-transparent text-gray-500',
-        icon: isActive ? 'text-blue-600' : 'text-gray-400',
-        badge: 'bg-blue-100 text-blue-700',
-      },
-      purple: {
-        active: 'border-purple-500 text-purple-600 bg-purple-50',
-        inactive: 'border-transparent text-gray-500 hover:text-purple-600 hover:border-purple-300',
-        icon: isActive ? 'text-purple-600' : 'text-gray-400 group-hover:text-purple-500',
-        badge: 'bg-purple-100 text-purple-700',
-      },
-      green: {
-        active: 'border-green-500 text-green-600 bg-green-50',
-        inactive: 'border-transparent text-gray-500 hover:text-green-600 hover:border-green-300',
-        icon: isActive ? 'text-green-600' : 'text-gray-400 group-hover:text-green-500',
-        badge: 'bg-green-100 text-green-700',
-      },
-    };
+  const getTabClasses = (isActive: boolean) => {
+    const baseClasses = "group relative flex-1 py-3 px-4 font-medium text-sm transition-all duration-200 border-b-2 hover:bg-gray-50";
+    
+    if (isActive) {
+      return `${baseClasses} border-blue-500 text-blue-600 bg-blue-50`;
+    }
+    
+    return `${baseClasses} border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300`;
+  };
 
-    return colorMap[tab.color as keyof typeof colorMap];
+  const getIconClasses = (isActive: boolean) => {
+    return `h-5 w-5 transition-colors ${
+      isActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'
+    }`;
+  };
+
+  const getBadgeClasses = (isActive: boolean) => {
+    return isActive ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600';
   };
 
   return (
     <div className="border-b border-gray-200 bg-white">
-      <div className="flex overflow-x-auto">
-        <nav className="-mb-px flex space-x-1 min-w-full px-4 sm:px-0">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            const colors = getTabColorClasses(tab, isActive);
+      <nav className="flex w-full">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
 
-            return (
-              <button
-                key={tab.id}
-                onClick={() => onTabChange(tab.id)}
-                className={`group relative min-w-0 flex-1 sm:flex-none py-4 px-6  font-medium text-sm whitespace-nowrap transition-all duration-200 ${
-                  isActive ? colors.active : colors.inactive
-                }`}
-                role="tab"
-                aria-selected={isActive}
-                aria-controls={`${tab.id}-panel`}
-              >
-                <div className="flex items-center space-x-3">
-                  {/* Tab Icon */}
-                  <Icon className={`h-5 w-5 transition-colors ${colors.icon}`} />
-                  
-                  {/* Tab Content */}
-                  <div className="flex flex-col items-start">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-semibold">{tab.label}</span>
-                      {tab.count !== undefined && tab.count > 0 && (
-                        <Badge 
-                          variant="secondary" 
-                          size="sm"
-                          className={isActive ? colors.badge : 'bg-gray-100 text-gray-600'}
-                        >
-                          {tab.count}
-                        </Badge>
-                      )}
-                    </div>
-                    <span className={`text-xs mt-0.5 ${
-                      isActive 
-                        ? 'text-gray-600' 
-                        : 'text-gray-400 group-hover:text-gray-500'
-                    }`}>
-                      {tab.description}
-                    </span>
+          return (
+            <button
+              key={tab.id}
+              onClick={() => onTabChange(tab.id)}
+              className={getTabClasses(isActive)}
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`${tab.id}-panel`}
+            >
+              {/* Mobile Layout: Icon left, title right, no description */}
+              <div className="flex items-center justify-center space-x-2 md:hidden">
+                <Icon className={getIconClasses(isActive)} />
+                <span className="font-semibold">{tab.label}</span>
+                {tab.count !== undefined && tab.count > 0 && (
+                  <Badge 
+                    variant="secondary" 
+                    size="sm"
+                    className={getBadgeClasses(isActive)}
+                  >
+                    {tab.count}
+                  </Badge>
+                )}
+              </div>
+
+              {/* Desktop Layout: Icon top, title and description below */}
+              <div className="hidden md:flex md:flex-col md:items-center md:space-y-1">
+                <Icon className={getIconClasses(isActive)} />
+                
+                <div className="flex flex-col items-center">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-semibold">{tab.label}</span>
+                    {tab.count !== undefined && tab.count > 0 && (
+                      <Badge 
+                        variant="secondary" 
+                        size="sm"
+                        className={getBadgeClasses(isActive)}
+                      >
+                        {tab.count}
+                      </Badge>
+                    )}
                   </div>
+                  <span className={`text-xs mt-0.5 ${
+                    isActive 
+                      ? 'text-blue-500' 
+                      : 'text-gray-400 group-hover:text-gray-500'
+                  }`}>
+                    {tab.description}
+                  </span>
                 </div>
-              </button>
-            );
-          })}
-        </nav>
-      </div>
+              </div>
+            </button>
+          );
+        })}
+      </nav>
     </div>
   );
 };
