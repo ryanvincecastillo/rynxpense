@@ -11,7 +11,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { BudgetCategoriesResponse, BudgetCategory } from '../types';
-import { Button, EmptyState } from './ui';
+import { Button,  } from './ui';
 
 interface CategoryFilters {
   type: 'INCOME' | 'EXPENSE' | '';
@@ -85,7 +85,7 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({
         <div className="flex items-start flex-1 min-w-0">
           {/* Category Color Indicator */}
           <div 
-            className="w-2 h-2 sm:w-3 sm:h-3 rounded-full mt-1 mr-2 sm:mr-3 flex-shrink-0"
+            className="w-2 h-2 sm:w-3 sm:h-3 rounded-full mt-1 mr-2 sm:mr-3 flex-shrink-0 hidden sm:block"
             style={{ backgroundColor: category.color }}
           />
           
@@ -164,7 +164,7 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({
         </div>
 
         {/* Action Menu */}
-        <div className="relative ml-1 sm:ml-2">
+        <div className="relative ml-1 sm:ml-2 hidden sm:block">
           <button
             onClick={(e) => {
               e.stopPropagation();
