@@ -154,14 +154,14 @@ export const BudgetTransactionsTab: React.FC<BudgetTransactionsTabProps> = ({
       {/* Header and Controls */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Transactions</h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Transactions</h2>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">
             Track and manage all budget transactions
           </p>
         </div>
 
         {/* Controls */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3  hidden sm:block">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -217,14 +217,14 @@ export const BudgetTransactionsTab: React.FC<BudgetTransactionsTabProps> = ({
       </div>
 
       {/* Main Content - Two Column Layout */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-6">
         {/* Income Transactions Column */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <TrendingUp className="h-4 w-4 text-green-600" />
+              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
               <div>
-                <h4 className="text-sm font-semibold text-gray-900">Income Transactions</h4>
+                <h4 className="text-xs sm:text-sm font-semibold text-gray-900">Income Transactions</h4>
                 <p className="text-xs text-gray-500">
                   {incomeTransactions.length} transactions • {formatCurrency(totals.income)}
                 </p>
@@ -232,15 +232,16 @@ export const BudgetTransactionsTab: React.FC<BudgetTransactionsTabProps> = ({
             </div>
             <button 
               onClick={() => onTransactionAction('create', undefined, { type: 'INCOME' })}
-              className="text-green-600 hover:text-green-700 p-1 rounded hover:bg-green-50 transition-colors"
+              className="text-green-600 hover:text-green-700 p-0.5 sm:p-1 rounded hover:bg-green-50 transition-colors"
               title="Add Income Transaction"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
             </button>
           </div>
 
-          <div className="space-y-2 max-h-96 overflow-y-auto">
+          <div className="space-y-1 sm:space-y-2 max-h-80 sm:max-h-96 overflow-y-auto">
             {incomeTransactions.length === 0 ? (
+              //Empty State for Income Transactions
               <div className="text-center py-8 px-4">
                 <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
                   <TrendingUp className="h-6 w-6 text-green-600" />
@@ -257,10 +258,10 @@ export const BudgetTransactionsTab: React.FC<BudgetTransactionsTabProps> = ({
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
                   <Plus className="h-3 w-3 mr-1" />
-                  Add Income
+                  Add Income Transaction
                 </Button>
               </div>
-            ) : (
+            ) : ( //Transactions Item
               incomeTransactions.map((transaction) => {
                 const transactionDate = new Date(transaction.date);
                 const category = allCategories.find(cat => cat.id === transaction.categoryId);
@@ -330,12 +331,12 @@ export const BudgetTransactionsTab: React.FC<BudgetTransactionsTabProps> = ({
         </div>
 
         {/* Expense Transactions Column */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <TrendingDown className="h-4 w-4 text-red-600" />
+              <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
               <div>
-                <h4 className="text-sm font-semibold text-gray-900">Expense Transactions</h4>
+                <h4 className="text-xs sm:text-sm font-semibold text-gray-900">Expenses</h4>
                 <p className="text-xs text-gray-500">
                   {expenseTransactions.length} transactions • {formatCurrency(totals.expense)}
                 </p>
@@ -343,10 +344,10 @@ export const BudgetTransactionsTab: React.FC<BudgetTransactionsTabProps> = ({
             </div>
             <button 
               onClick={() => onTransactionAction('create', undefined, { type: 'EXPENSE' })}
-              className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors"
+              className="text-red-600 hover:text-red-700 p-0.5 sm:p-1 rounded hover:bg-red-50 transition-colors"
               title="Add Expense Transaction"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
             </button>
           </div>
 
