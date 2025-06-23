@@ -34,13 +34,13 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   // Streamlined navigation items - Transactions & Categories now accessed via Budget Details
   const navItems: NavItem[] = [
-    {
-      id: 'dashboard',
-      label: 'Dashboard',
-      icon: BarChart3,
-      path: '/dashboard',
-      description: 'Overview and analytics',
-    },
+    // {
+    //   id: 'dashboard',
+    //   label: 'Dashboard',
+    //   icon: BarChart3,
+    //   path: '/dashboard',
+    //   description: 'Overview and analytics',
+    // },
     {
       id: 'budgets',
       label: 'Budgets',

@@ -12,7 +12,6 @@ import AuthLayout from './components/layout/AuthLayout';
 // Page components
 import LoginPage from './features/auth/LoginPage';
 import RegisterPage from './features/auth/RegisterPage';
-import DashboardPage from './features/dashboard/DashboardPage';
 import BudgetsPage from './features/budgets/BudgetsPage';
 import BudgetDetailsPage from './features/budgets/BudgetDetailsPage';
 import SettingsPage from './features/settings/SettingsPage';
@@ -20,6 +19,7 @@ import SettingsPage from './features/settings/SettingsPage';
 // Loading and error components
 import { LoadingSpinner } from './components/ui';
 import ErrorBoundary from './components/ui/ErrorBoundary';
+import { ROUTES } from './constants/routes';
 
 // Create React Query client with optimized defaults
 const queryClient = new QueryClient({
@@ -82,7 +82,7 @@ const App: React.FC = () => {
                 />
 
                 {/* Protected App Routes */}
-                <Route
+                {/* <Route
                   path="/dashboard"
                   element={
                     <ProtectedRoute>
@@ -91,7 +91,7 @@ const App: React.FC = () => {
                       </AppLayout>
                     </ProtectedRoute>
                   }
-                />
+                /> */}
                 <Route
                   path="/budgets"
                   element={
@@ -124,7 +124,7 @@ const App: React.FC = () => {
                 />
 
                 {/* Default redirect */}
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/" element={<Navigate to={ROUTES.BUDGETS} replace />} />
 
                 {/* 404 route */}
                 <Route
@@ -135,10 +135,10 @@ const App: React.FC = () => {
                         <h1 className="text-4xl font-bold text-gray-900 mb-4">404</h1>
                         <p className="text-gray-600 mb-8">Page not found</p>
                         <button
-                          onClick={() => (window.location.href = '/dashboard')}
+                          onClick={() => (window.location.href = ROUTES.BUDGETS)}
                           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                         >
-                          Go to Dashboard
+                          Go to Budgets
                         </button>
                       </div>
                     </div>

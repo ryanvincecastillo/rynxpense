@@ -34,7 +34,7 @@ const LoginPage: React.FC = () => {
     try {
       await login(data.email, data.password);
       toast.success('Welcome back! Login successful.');
-      navigate(ROUTES.DASHBOARD);
+      navigate(ROUTES.BUDGETS);
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
       toast.error(errorMessage);
@@ -104,7 +104,7 @@ const LoginPage: React.FC = () => {
               </div>
 
               <Link
-                to="ROUTES.FORGOT_PASSWORD"
+                to={ROUTES.FORGOT_PASSWORD}
                 className="text-sm text-blue-600 hover:text-blue-500 font-medium"
               >
                 Forgot password?
@@ -134,7 +134,7 @@ const LoginPage: React.FC = () => {
 
             <div className="mt-6">
               <Link
-                to="ROUTES.REGISTER"
+                to={ROUTES.REGISTER}
                 className="w-full flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 Create new account
