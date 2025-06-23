@@ -153,7 +153,7 @@ const BudgetDetailsPage: React.FC = () => {
   const transactionsParams = useMemo(() => ({
     budgetId: budgetId!,
     page: state.currentPage,
-    limit: 1000,
+    limit: 1000, //changed to 1000 from 50, need to view all transactions
     ...state.filters.transactions,
   }), [budgetId, state.currentPage, state.filters.transactions]);
   

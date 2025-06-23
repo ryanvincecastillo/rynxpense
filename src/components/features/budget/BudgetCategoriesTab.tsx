@@ -111,13 +111,6 @@ export const BudgetCategoriesTab: React.FC<BudgetCategoriesTabProps> = ({
 
             {/* Amount Information */}
             <div className="text-xs text-gray-500 space-y-0.5">
-              <div className="flex items-center justify-between">
-                <span>Actual:</span>
-                <span className="font-medium text-gray-700">
-                  {formatCurrency(category.actualAmount)}
-                </span>
-              </div>
-              
               {category.plannedAmount > 0 && (
                 <div className="flex items-center justify-between">
                   <span>Planned:</span>
@@ -126,6 +119,13 @@ export const BudgetCategoriesTab: React.FC<BudgetCategoriesTabProps> = ({
                   </span>
                 </div>
               )}
+
+              <div className="flex items-center justify-between">
+                <span>Actual:</span>
+                <span className="font-medium text-gray-700">
+                  {formatCurrency(category.actualAmount)}
+                </span>
+              </div>
 
               {hasVariance && (
                 <div className="flex items-center justify-between">
