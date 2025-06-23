@@ -6,3 +6,5 @@ export { BudgetTabs } from './BudgetTabs';
 export { BudgetOverviewTab } from './BudgetOverviewTab';
 export { BudgetCategoriesTab } from './BudgetCategoriesTab';
 export { BudgetTransactionsTab } from './BudgetTransactionsTab';
+export { BudgetTemplateSelector } from './BudgetTemplateSelector';
+export { BudgetTemplatePreview } from './BudgetTemplatePreview';
