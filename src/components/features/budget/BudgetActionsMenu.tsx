@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
-import { MoreVertical, Copy, Archive, Trash2 } from 'lucide-react';
-import { Budget } from '../types';
-import { Button } from './ui';
+import { MoreVertical, Copy, Archive, Trash2, Edit } from 'lucide-react';
+import { Budget } from '../../../types';
+import { Button } from '../../ui';
 
 interface BudgetActionsMenuProps {
   budget: Budget;
@@ -10,7 +10,7 @@ interface BudgetActionsMenuProps {
   onAction: (action: string) => void;
 }
 
-const BudgetActionsMenu: React.FC<BudgetActionsMenuProps> = ({
+export const BudgetActionsMenu: React.FC<BudgetActionsMenuProps> = ({
   budget,
   isOpen,
   onToggle,
@@ -36,6 +36,13 @@ const BudgetActionsMenu: React.FC<BudgetActionsMenuProps> = ({
 
   const menuItems = [
     {
+      id: 'edit',
+      label: 'Edit Budget',
+      icon: Edit,
+      onClick: () => onAction('edit'),
+      className: 'text-gray-700 hover:bg-gray-100',
+    },
+    {
       id: 'duplicate',
       label: 'Duplicate Budget',
       icon: Copy,
@@ -48,6 +55,7 @@ const BudgetActionsMenu: React.FC<BudgetActionsMenuProps> = ({
       icon: Archive,
       onClick: () => onAction('archive'),
       className: 'text-gray-700 hover:bg-gray-100',
+      separator: true,
     },
     {
       id: 'delete',
@@ -55,7 +63,6 @@ const BudgetActionsMenu: React.FC<BudgetActionsMenuProps> = ({
       icon: Trash2,
       onClick: () => onAction('delete'),
       className: 'text-red-600 hover:bg-red-50',
-      separator: true,
     },
   ];
 
@@ -91,5 +98,3 @@ const BudgetActionsMenu: React.FC<BudgetActionsMenuProps> = ({
     </div>
   );
 };
-
-export default BudgetActionsMenu;

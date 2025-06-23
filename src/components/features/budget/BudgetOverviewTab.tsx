@@ -8,11 +8,11 @@ import {
   Legend,
 } from 'recharts';
 import { TrendingUp, TrendingDown, Plus, DollarSign, Minus } from 'lucide-react';
-import { BudgetCategoriesResponse } from '../types';
-import { Card, EmptyState } from './ui';
-import BudgetSummaryCards from './BudgetSummaryCards';
-import { useBudgetSummary } from '../hooks/useApi';
+import { BudgetCategoriesResponse } from '../../../types';
+import { Card, EmptyState } from '../../ui';
+import { useBudgetSummary } from '../../../hooks/useApi';
 import { useParams } from 'react-router-dom';
+import { BudgetSummaryCards } from './BudgetSummaryCards';
 
 interface BudgetOverviewTabProps {
   categoriesData: BudgetCategoriesResponse | undefined;
@@ -20,7 +20,7 @@ interface BudgetOverviewTabProps {
   onQuickAction: (action: string, type?: string) => void;
 }
 
-const BudgetOverviewTab: React.FC<BudgetOverviewTabProps> = ({
+export const BudgetOverviewTab: React.FC<BudgetOverviewTabProps> = ({
   categoriesData,
   formatCurrency,
   onQuickAction,
@@ -166,5 +166,3 @@ const BudgetOverviewTab: React.FC<BudgetOverviewTabProps> = ({
     </div>
   );
 };
-
-export default BudgetOverviewTab;

@@ -1,7 +1,7 @@
 import React from 'react';
-import { TrendingUp, TrendingDown, Target, DollarSign } from 'lucide-react';
-import { BudgetSummary } from '../types';
-import { Card, ProgressBar } from './ui';
+import { TrendingUp, TrendingDown, Target } from 'lucide-react';
+import { BudgetSummary } from '../../../types';
+import { Card, ProgressBar } from '../../ui';
 
 interface BudgetSummaryCardsProps {
   summary: BudgetSummary | undefined;
@@ -10,7 +10,7 @@ interface BudgetSummaryCardsProps {
   categoriesData?: any; // Optional categories data for enhanced display
 }
 
-const BudgetSummaryCards: React.FC<BudgetSummaryCardsProps> = ({
+export const BudgetSummaryCards: React.FC<BudgetSummaryCardsProps> = ({
   summary,
   formatCurrency,
   isLoading,
@@ -186,5 +186,3 @@ const BudgetSummaryCards: React.FC<BudgetSummaryCardsProps> = ({
     </div>
   );
 };
-
-export default BudgetSummaryCards;

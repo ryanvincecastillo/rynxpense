@@ -225,7 +225,7 @@ export const Card: React.FC<CardProps> = ({
   const hoverClasses = hover ? 'hover:shadow-lg transition-shadow duration-200' : '';
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-gray-100 ${paddingClasses[padding]} ${hoverClasses} ${className}`}>
+    <div className={`bg-transparent rounded-xl shadow-sm border border-gray-100 ${paddingClasses[padding]} ${hoverClasses} ${className}`}>
       {children}
     </div>
   );

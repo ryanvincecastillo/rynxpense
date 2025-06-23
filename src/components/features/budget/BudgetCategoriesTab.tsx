@@ -10,8 +10,8 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
-import { BudgetCategoriesResponse, BudgetCategory } from '../types';
-import { Button,  } from './ui';
+import { BudgetCategoriesResponse, BudgetCategory } from '../../../types';
+import { Button } from '../../ui';
 
 interface CategoryFilters {
   type: 'INCOME' | 'EXPENSE' | '';
@@ -19,7 +19,7 @@ interface CategoryFilters {
   search: string;
 }
 
-interface CategoriesTabProps {
+interface BudgetCategoriesTabProps {
   categoriesData: BudgetCategoriesResponse | undefined;
   filters: CategoryFilters;
   onFiltersChange: (filters: CategoryFilters) => void;
@@ -28,7 +28,7 @@ interface CategoriesTabProps {
   isLoading: boolean;
 }
 
-const CategoriesTab: React.FC<CategoriesTabProps> = ({
+export const BudgetCategoriesTab: React.FC<BudgetCategoriesTabProps> = ({
   categoriesData,
   filters,
   onFiltersChange,
@@ -252,7 +252,7 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({
         }`}
       >
         <Plus className="h-3 w-3 mr-1 inline" />
-        Add {type === 'INCOME' ? 'Income' : 'Expense'}
+        Add {type === 'INCOME' ? 'Income' : 'Expense'} Category
       </button>
     </div>
   );
@@ -452,5 +452,3 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({
     </div>
   );
 };
-
-export default CategoriesTab;

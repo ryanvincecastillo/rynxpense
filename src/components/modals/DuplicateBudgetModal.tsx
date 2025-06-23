@@ -244,7 +244,7 @@ export const DuplicateBudgetModal: React.FC<DuplicateBudgetModalProps> = ({
           <Button
             onClick={handleDuplicate}
             isLoading={isLoading}
-            className="flex items-center"
+            className="w-full sm:w-auto sm:flex-1 order-1 sm:order-2"
           >
             <Copy className="h-4 w-4 mr-2" />
             Duplicate Budget

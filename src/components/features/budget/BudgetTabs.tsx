@@ -1,12 +1,11 @@
-// components/BudgetTabs.tsx
 import React from 'react';
 import { 
   BarChart2, 
   Target, 
   ReceiptText
 } from 'lucide-react';
-import { BudgetSummary } from '../types';
-import { Badge } from './ui';
+import { BudgetSummary } from '../../../types';
+import { Badge } from '../../ui';
 
 type ActiveTab = 'overview' | 'categories' | 'transactions';
 
@@ -26,7 +25,7 @@ interface TabConfig {
   count?: number;
 }
 
-const BudgetTabs: React.FC<BudgetTabsProps> = ({
+export const BudgetTabs: React.FC<BudgetTabsProps> = ({
   activeTab,
   onTabChange,
   summary,
@@ -42,7 +41,7 @@ const BudgetTabs: React.FC<BudgetTabsProps> = ({
     },
     {
       id: 'categories',
-      label: 'Categories',
+      label: 'Budget Planning', //Changed from "Categories" to "Budget Planning"
       icon: Target,
       description: 'Manage income and expense categories',
       count: categoriesCount,
@@ -94,9 +93,9 @@ const BudgetTabs: React.FC<BudgetTabsProps> = ({
             >
               {/* Mobile Layout: Icon left, title right, no description */}
               <div className="flex items-center justify-center space-x-2 md:hidden">
-                <Icon className={getIconClasses(isActive)} />
+                {/* <Icon className={getIconClasses(isActive)} /> */}
                 <span className="font-semibold">{tab.label}</span>
-                {tab.count !== undefined && tab.count > 0 && (
+                {/* {tab.count !== undefined && tab.count > 0 && (
                   <Badge 
                     variant="secondary" 
                     size="sm"
@@ -104,7 +103,7 @@ const BudgetTabs: React.FC<BudgetTabsProps> = ({
                   >
                     {tab.count}
                   </Badge>
-                )}
+                )} */}
               </div>
 
               {/* Desktop Layout: Icon top, title and description below */}
@@ -140,5 +139,3 @@ const BudgetTabs: React.FC<BudgetTabsProps> = ({
     </div>
   );
 };
-
-export default BudgetTabs;
