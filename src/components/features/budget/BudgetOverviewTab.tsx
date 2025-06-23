@@ -87,12 +87,12 @@ export const BudgetOverviewTab: React.FC<BudgetOverviewTabProps> = ({
 
   return (
     <div className="space-y-8">
-           <BudgetSummaryCards 
-              summary={summary} 
-              formatCurrency={formatCurrency}
-              isLoading={summaryLoading}
-              categoriesData={categoriesData} // Pass categories data for enhanced display
-            />
+      {/* <BudgetSummaryCards 
+        summary={summary} 
+        formatCurrency={formatCurrency}
+        isLoading={summaryLoading}
+        categoriesData={categoriesData} // Pass categories data for enhanced display
+      /> */}
             
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

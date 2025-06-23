@@ -386,14 +386,14 @@ const BudgetsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="max-w-7xl mx-auto">
         <div className="space-y-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              <h4 className="text-xl sm:text-2xl font-bold text-gray-900">
                 Budgets
-              </h1>
+              </h4>
               <p className="text-sm sm:text-base text-gray-600 mt-1">
                 Manage and track your budgets
               </p>

@@ -1,10 +1,15 @@
-import React, { useState, useCallback, memo,  } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import { 
   Calendar,
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+  CreditCard,
+  PiggyBank,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-// UI Components - using only what exists in your project
+// UI Components
 import { 
   Card, 
   Badge
@@ -41,11 +46,11 @@ export const BudgetsList: React.FC<BudgetsListProps> = memo(({
   viewMode,
   className,
 }) => {
-  // State for actions menu - use budget ID to track which menu is open
+  // State for actions menu
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const isActionsMenuOpen = openMenuId === budget.id;
 
-  // Handlers that close the dropdown after action
+  // Handlers
   const handleEdit = useCallback(() => {
     onEdit(budget);
   }, [budget, onEdit]);
@@ -62,7 +67,6 @@ export const BudgetsList: React.FC<BudgetsListProps> = memo(({
     onDelete(budget);
   }, [budget, onDelete]);
 
-  // Handle action menu toggle
   const handleToggleActionsMenu = useCallback((e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
@@ -71,7 +75,6 @@ export const BudgetsList: React.FC<BudgetsListProps> = memo(({
     setOpenMenuId(prev => prev === budget.id ? null : budget.id);
   }, [budget.id]);
 
-  // Handle action menu actions
   const handleMenuAction = useCallback((action: string) => {
     switch (action) {
       case 'edit':
@@ -86,51 +89,51 @@ export const BudgetsList: React.FC<BudgetsListProps> = memo(({
       case 'delete':
         handleDelete();
         break;
-      default:
-        console.warn('Unknown action:', action);
     }
-    setOpenMenuId(null); // Close the menu
+    setOpenMenuId(null);
   }, [handleEdit, handleDuplicate, handleArchive, handleDelete]);
 
-  // Calculate totals from budget summary
-  const totalBudget = budget.summary?.totalPlannedIncome || 0;
-  const totalSpent = budget.summary?.totalActualExpenses || 0;
-  const remaining = totalBudget - totalSpent;
-  const spentPercentage = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+  // Extract budget summary data
+  const summary = budget.summary;
+  const plannedIncome = summary?.totalPlannedIncome || 0;
+  const actualIncome = summary?.totalActualIncome || 0;
+  const plannedExpenses = summary?.totalPlannedExpenses || 0;
+  const actualExpenses = summary?.totalActualExpenses || 0;
+  const netActual = summary?.netActual || 0;
+  const netPlanned = summary?.netPlanned || 0;
 
-  // Determine status color
-  const getStatusColor = () => {
-    if (spentPercentage >= 100) return 'text-red-600';
-    if (spentPercentage >= 80) return 'text-yellow-600';
-    return 'text-green-600';
-  };
+  // Calculate progress percentages
+  const incomeProgress = plannedIncome > 0 ? (actualIncome / plannedIncome) * 100 : 0;
+  const expenseProgress = plannedExpenses > 0 ? (actualExpenses / plannedExpenses) * 100 : 0;
 
-  // Helper function to convert hex to rgba - improved version
+  // Helper function to convert hex to rgba
   const hexToRgba = useCallback((hex: string, alpha: number) => {
-    // Remove # if present
     const cleanHex = hex.replace('#', '');
-    
-    // Handle 3-digit hex codes
     let fullHex = cleanHex;
     if (cleanHex.length === 3) {
       fullHex = cleanHex.split('').map(char => char + char).join('');
     }
     
-    // Parse RGB values
     const r = parseInt(fullHex.slice(0, 2), 16);
     const g = parseInt(fullHex.slice(2, 4), 16);
     const b = parseInt(fullHex.slice(4, 6), 16);
     
-    // Return rgba string
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }, []);
 
-  // List View - Horizontal row layout
-  if (viewMode === 'list') {
+  // Determine status color for net amount
+  const getNetStatusColor = (amount: number) => {
+    if (amount > 0) return 'text-green-600';
+    if (amount < 0) return 'text-red-600';
+    return 'text-gray-600';
+  };
+
+  // Grid View
+  if (viewMode === 'grid') {
     return (
       <Link to={`/budgets/${budget.id}`} className="block">
         <div
-          className="rounded-lg border transition-all duration-200 hover:shadow-md"
+          className="relative h-full transition-all duration-200 hover:shadow-lg group bg-white rounded-xl shadow-sm border p-6 flex flex-col"
           style={{
             backgroundColor: hexToRgba(budget.color, 0.15),
             borderColor: hexToRgba(budget.color, 0.4),
@@ -142,208 +145,33 @@ export const BudgetsList: React.FC<BudgetsListProps> = memo(({
             e.currentTarget.style.backgroundColor = hexToRgba(budget.color, 0.15);
           }}
         >
-          <Card 
-            className={cn(
-              'p-4 hover:shadow-md transition-all duration-200 cursor-pointer group border-0 bg-transparent',
-              className
-            )}
-          >
-            <div className="flex items-center justify-between">
-              {/* Left section - Budget info */}
-              <div className="flex items-center gap-4 flex-1 min-w-0">
-                {/* Color indicator */}
-                <div
-                  className="w-4 h-4 rounded-full flex-shrink-0 border-2 border-white shadow-sm"
-                  style={{ backgroundColor: budget.color }}
-                />
-                
-                {/* Budget name and description */}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-gray-900 truncate">
-                      {budget.name}
-                    </h3>
-                    {budget.isArchived && (
-                      <Badge variant="secondary" className="text-xs">
-                        Archived
-                      </Badge>
-                    )}
-                  </div>
-                  {budget.description && (
-                    <p className="text-sm text-gray-600 truncate mt-1">
-                      {budget.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Middle section - Financial info */}
-              <div className="hidden sm:flex items-center gap-6 mx-6">
-                <div className="text-center">
-                  <p className="text-xs text-gray-500">Budget</p>
-                  <p className="font-semibold text-gray-900">
-                    {formatCurrency(totalBudget)}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-500">Spent</p>
-                  <p className="font-semibold text-gray-900">
-                    {formatCurrency(totalSpent)}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-500">Remaining</p>
-                  <p className={cn('font-semibold', getStatusColor())}>
-                    {formatCurrency(remaining)}
-                  </p>
-                </div>
-              </div>
-
-              {/* Progress indicator */}
-              <div className="hidden md:flex items-center gap-3 mx-4">
-                <div className="w-20">
-                  <div className="flex justify-between text-xs text-gray-600 mb-1">
-                    <span>Progress</span>
-                    <span>{Math.round(spentPercentage)}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200/60 rounded-full h-2">
-                    <div
-                      className={cn(
-                        'h-2 rounded-full transition-all duration-300',
-                        spentPercentage >= 100 ? 'bg-red-500' :
-                        spentPercentage >= 80 ? 'bg-yellow-500' : 'bg-green-500'
-                      )}
-                      style={{ width: `${Math.min(spentPercentage, 100)}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Right section - Meta info and actions */}
-              <div className="flex items-center gap-4">
-                {/* Categories count */}
-                <div className="hidden lg:block text-center">
-                  <p className="text-xs text-gray-500">Categories</p>
-                  <p className="font-semibold text-gray-900">
-                    {budget._count?.categories || 0}
-                  </p>
-                </div>
-
-                {/* Created date */}
-                <div className="hidden xl:block text-xs text-gray-500">
-                  {budget.createdAt ? 
-                    formatDistanceToNow(new Date(budget.createdAt), { addSuffix: true }) : 
-                    'No date'
-                  }
-                </div>
-
-                {/* Actions Menu */}
-                <div 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                >
-                  <BudgetActionsMenu
-                    budget={budget}
-                    isOpen={isActionsMenuOpen}
-                    onToggle={handleToggleActionsMenu}
-                    onAction={handleMenuAction}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile-only summary */}
-            <div className="sm:hidden mt-3 pt-3 border-t border-gray-200/40">
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-xs text-gray-500">Budget</p>
-                  <p className="font-semibold text-sm">{formatCurrency(totalBudget)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Spent</p>
-                  <p className="font-semibold text-sm">{formatCurrency(totalSpent)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Remaining</p>
-                  <p className={cn('font-semibold text-sm', getStatusColor())}>
-                    {formatCurrency(remaining)}
-                  </p>
-                </div>
-              </div>
-              
-              {/* Mobile progress bar */}
-              <div className="mt-3">
-                <div className="flex justify-between text-xs text-gray-600 mb-1">
-                  <span>Progress</span>
-                  <span>{Math.round(spentPercentage)}%</span>
-                </div>
-                <div className="w-full bg-gray-200/60 rounded-full h-2">
-                  <div
-                    className={cn(
-                      'h-2 rounded-full transition-all duration-300',
-                      spentPercentage >= 100 ? 'bg-red-500' :
-                      spentPercentage >= 80 ? 'bg-yellow-500' : 'bg-green-500'
-                    )}
-                    style={{ width: `${Math.min(spentPercentage, 100)}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </Link>
-    );
-  }
-
-  // Grid View
-  return (
-    <Link to={`/budgets/${budget.id}`} className="block">
-      <div
-        className="rounded-lg border transition-all duration-200 hover:shadow-lg"
-        style={{
-          backgroundColor: hexToRgba(budget.color, 0.15),
-          borderColor: hexToRgba(budget.color, 0.4),
-        }}
-        onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
-          e.currentTarget.style.backgroundColor = hexToRgba(budget.color, 0.2);
-        }}
-        onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
-          e.currentTarget.style.backgroundColor = hexToRgba(budget.color, 0.15);
-        }}
-      >
-        <Card 
-          className={cn(
-            'p-4 sm:p-6 hover:shadow-lg transition-all duration-200 cursor-pointer group border-0 bg-transparent',
-            className
-          )}
-        >
-          {/* Header */}
+          {/* Header - Fixed Height */}
           <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div
-                className="w-4 h-4 rounded-full flex-shrink-0 border-2 border-white shadow-sm"
-                style={{ backgroundColor: budget.color }}
-              />
-              <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-gray-900 truncate text-sm sm:text-base">
-                  {budget.name}
-                </h3>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-gray-900 truncate text-base mb-2">
+                {budget.name}
+              </h3>
+              {/* Fixed height container for description */}
+              <div className="h-10 overflow-hidden">
                 {budget.description && (
-                  <p className="text-xs sm:text-sm text-gray-600 truncate mt-1">
+                  <p 
+                    className="text-sm text-gray-600 leading-5"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    }}
+                  >
                     {budget.description}
                   </p>
                 )}
               </div>
             </div>
             
-            {/* Actions Menu - REPLACED SimpleDropdown with BudgetActionsMenu */}
-            <div 
+            {/* Actions Menu */}
+            <div
+              className="flex-shrink-0 ml-2"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -362,44 +190,106 @@ export const BudgetsList: React.FC<BudgetsListProps> = memo(({
             </div>
           </div>
 
-          {/* Budget Summary */}
-          <div className="space-y-3">
-            {/* Progress Bar */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs sm:text-sm text-gray-600">
-                <span>Progress</span>
-                <span>{Math.round(spentPercentage)}%</span>
+          {/* Budget Details Grid - Flexible Content */}
+          <div className="flex-1 space-y-4">
+            {/* Income vs Expense Progress Bars */}
+            <div className="space-y-3">
+              {/* Income Progress */}
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <div className="flex items-center gap-1">
+                    <TrendingUp className="h-3 w-3 text-green-600" />
+                    <span className="text-gray-600">Income</span>
+                  </div>
+                  <span className="text-gray-500">{Math.round(incomeProgress)}%</span>
+                </div>
+                <div className="w-full bg-gray-200/60 rounded-full h-1.5">
+                  <div
+                    className="h-1.5 rounded-full bg-green-500 transition-all duration-300"
+                    style={{ width: `${Math.min(incomeProgress, 100)}%` }}
+                  />
+                </div>
               </div>
-              <div className="w-full bg-gray-200/60 rounded-full h-2">
-                <div
-                  className={cn(
-                    'h-2 rounded-full transition-all duration-300',
-                    spentPercentage >= 100 ? 'bg-red-500' :
-                    spentPercentage >= 80 ? 'bg-yellow-500' : 'bg-green-500'
-                  )}
-                  style={{ width: `${Math.min(spentPercentage, 100)}%` }}
-                />
+
+              {/* Expense Progress */}
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <div className="flex items-center gap-1">
+                    <TrendingDown className="h-3 w-3 text-red-600" />
+                    <span className="text-gray-600">Expenses</span>
+                  </div>
+                  <span className="text-gray-500">{Math.round(expenseProgress)}%</span>
+                </div>
+                <div className="w-full bg-gray-200/60 rounded-full h-1.5">
+                  <div
+                    className={cn(
+                      'h-1.5 rounded-full transition-all duration-300',
+                      expenseProgress >= 100 ? 'bg-red-500' :
+                      expenseProgress >= 80 ? 'bg-yellow-500' : 'bg-red-400'
+                    )}
+                    style={{ width: `${Math.min(expenseProgress, 100)}%` }}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Financial Summary */}
-            <div className="grid grid-cols-2 gap-3 text-xs sm:text-sm">
-              <div>
-                <p className="text-gray-500">Total Budget</p>
-                <p className="font-semibold text-gray-900">
-                  {formatCurrency(totalBudget)}
-                </p>
+            {/* Financial Details */}
+            <div className="space-y-3">
+              {/* Income Section */}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <p className="text-gray-500 mb-0.5">Planned Income</p>
+                  <p className="font-medium text-gray-900">
+                    {formatCurrency(plannedIncome)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 mb-0.5">Actual Income</p>
+                  <p className="font-medium text-green-600">
+                    {formatCurrency(actualIncome)}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-gray-500">Remaining</p>
-                <p className={cn('font-semibold', getStatusColor())}>
-                  {formatCurrency(remaining)}
-                </p>
+
+              {/* Expense Section */}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <p className="text-gray-500 mb-0.5">Planned Expenses</p>
+                  <p className="font-medium text-gray-900">
+                    {formatCurrency(plannedExpenses)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 mb-0.5">Actual Expenses</p>
+                  <p className="font-medium text-red-600">
+                    {formatCurrency(actualExpenses)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Net Amount - Highlighted */}
+              <div className="pt-2 border-t border-gray-200/40">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    <PiggyBank className="h-3 w-3 text-gray-500" />
+                    <span className="text-xs text-gray-500">Net Amount</span>
+                  </div>
+                  <div className="text-right">
+                    <p className={cn('font-semibold text-sm', getNetStatusColor(netActual))}>
+                      {formatCurrency(netActual)}
+                    </p>
+                    {netPlanned !== netActual && (
+                      <p className="text-xs text-gray-400">
+                        vs {formatCurrency(netPlanned)} planned
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Meta Info */}
-            <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-200/40">
+            {/* Meta Info - Always at bottom */}
+            <div className="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-200/40 mt-auto">
               <div className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
                 <span>
@@ -416,7 +306,186 @@ export const BudgetsList: React.FC<BudgetsListProps> = memo(({
               )}
             </div>
           </div>
-        </Card>
+        </div>
+      </Link>
+    );
+  }
+
+  // List View - Horizontal layout
+  return (
+    <Link to={`/budgets/${budget.id}`} className="block">
+      <div
+        className="rounded-lg border transition-all duration-200 hover:shadow-md p-4"
+        style={{
+          backgroundColor: hexToRgba(budget.color, 0.15),
+          borderColor: hexToRgba(budget.color, 0.4),
+        }}
+        onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
+          e.currentTarget.style.backgroundColor = hexToRgba(budget.color, 0.2);
+        }}
+        onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
+          e.currentTarget.style.backgroundColor = hexToRgba(budget.color, 0.15);
+        }}
+      >
+        <div className="flex items-start justify-between">
+          {/* Left Section - Budget Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-gray-900 truncate text-base mb-2">
+                  {budget.name}
+                </h3>
+                {/* Fixed height for description in list view too */}
+                <div className="h-5 overflow-hidden">
+                  {budget.description && (
+                    <p 
+                      className="text-sm text-gray-600"
+                      style={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 1,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden'
+                      }}
+                    >
+                      {budget.description}
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              {/* Actions Menu */}
+              <div
+                className="flex-shrink-0 ml-4"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+              >
+                <BudgetActionsMenu
+                  budget={budget}
+                  isOpen={isActionsMenuOpen}
+                  onToggle={handleToggleActionsMenu}
+                  onAction={handleMenuAction}
+                />
+              </div>
+            </div>
+
+            {/* Financial Details in Horizontal Layout */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-3">
+              {/* Planned Income */}
+              <div className="text-center lg:text-left">
+                <div className="flex items-center gap-1 mb-1 justify-center lg:justify-start">
+                  <Wallet className="h-3 w-3 text-gray-500" />
+                  <span className="text-xs text-gray-500">Planned Income</span>
+                </div>
+                <p className="font-medium text-gray-900 text-sm">
+                  {formatCurrency(plannedIncome)}
+                </p>
+              </div>
+
+              {/* Actual Income */}
+              <div className="text-center lg:text-left">
+                <div className="flex items-center gap-1 mb-1 justify-center lg:justify-start">
+                  <TrendingUp className="h-3 w-3 text-green-600" />
+                  <span className="text-xs text-gray-500">Actual Income</span>
+                </div>
+                <p className="font-medium text-green-600 text-sm">
+                  {formatCurrency(actualIncome)}
+                </p>
+              </div>
+
+              {/* Planned Expenses */}
+              <div className="text-center lg:text-left">
+                <div className="flex items-center gap-1 mb-1 justify-center lg:justify-start">
+                  <CreditCard className="h-3 w-3 text-gray-500" />
+                  <span className="text-xs text-gray-500">Planned Expenses</span>
+                </div>
+                <p className="font-medium text-gray-900 text-sm">
+                  {formatCurrency(plannedExpenses)}
+                </p>
+              </div>
+
+              {/* Actual Expenses */}
+              <div className="text-center lg:text-left">
+                <div className="flex items-center gap-1 mb-1 justify-center lg:justify-start">
+                  <TrendingDown className="h-3 w-3 text-red-600" />
+                  <span className="text-xs text-gray-500">Actual Expenses</span>
+                </div>
+                <p className="font-medium text-red-600 text-sm">
+                  {formatCurrency(actualExpenses)}
+                </p>
+              </div>
+
+              {/* Net Amount */}
+              <div className="text-center lg:text-left col-span-2 lg:col-span-1">
+                <div className="flex items-center gap-1 mb-1 justify-center lg:justify-start">
+                  <PiggyBank className="h-3 w-3 text-gray-500" />
+                  <span className="text-xs text-gray-500">Net Amount</span>
+                </div>
+                <p className={cn('font-semibold text-sm', getNetStatusColor(netActual))}>
+                  {formatCurrency(netActual)}
+                </p>
+              </div>
+            </div>
+
+            {/* Progress Bars */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+              {/* Income Progress */}
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-600">Income Progress</span>
+                  <span className="text-gray-500">{Math.round(incomeProgress)}%</span>
+                </div>
+                <div className="w-full bg-gray-200/60 rounded-full h-1.5">
+                  <div
+                    className="h-1.5 rounded-full bg-green-500 transition-all duration-300"
+                    style={{ width: `${Math.min(incomeProgress, 100)}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Expense Progress */}
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-600">Expense Progress</span>
+                  <span className="text-gray-500">{Math.round(expenseProgress)}%</span>
+                </div>
+                <div className="w-full bg-gray-200/60 rounded-full h-1.5">
+                  <div
+                    className={cn(
+                      'h-1.5 rounded-full transition-all duration-300',
+                      expenseProgress >= 100 ? 'bg-red-500' :
+                      expenseProgress >= 80 ? 'bg-yellow-500' : 'bg-red-400'
+                    )}
+                    style={{ width: `${Math.min(expenseProgress, 100)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Meta Info */}
+            <div className="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-200/40">
+              <div className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                <span>
+                  {budget.createdAt ? 
+                    `Created ${formatDistanceToNow(new Date(budget.createdAt), { addSuffix: true })}` : 
+                    'Budget'
+                  }
+                </span>
+              </div>
+              {budget.isArchived && (
+                <Badge variant="secondary" className="text-xs">
+                  Archived
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </Link>
   );

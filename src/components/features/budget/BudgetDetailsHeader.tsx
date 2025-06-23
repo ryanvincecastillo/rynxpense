@@ -49,9 +49,9 @@ export const BudgetDetailsHeader: React.FC<BudgetDetailsHeaderProps> = ({
 
   return (
     <div 
-      className="rounded-lg border transition-all duration-200 mx-4 sm:mx-6 lg:mx-8 mt-6 mb-8 hover:shadow-md"
+      className="rounded-lg border transition-all duration-200 mb-6 hover:shadow-md"
       style={{
-        backgroundColor: budget.color ? hexToRgba(budget.color, 0.15) : hexToRgba('#3B82F6', 0.15),
+        backgroundColor: budget.color ? hexToRgba(budget.color, 0.4) : hexToRgba('#3B82F6', 0.15),
         borderColor: budget.color ? hexToRgba(budget.color, 0.4) : hexToRgba('#3B82F6', 0.4),
       }}
     >
