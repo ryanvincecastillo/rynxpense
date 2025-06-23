@@ -8,7 +8,9 @@ import {
   Edit2,
   Trash2,
   Eye,
-  EyeOff
+  EyeOff,
+  Filter,
+  X,
 } from 'lucide-react';
 import { BudgetCategoriesResponse, BudgetCategory } from '../../../types';
 import { Button } from '../../ui';
@@ -36,6 +38,8 @@ export const BudgetCategoriesTab: React.FC<BudgetCategoriesTabProps> = ({
   formatCurrency,
   isLoading,
 }) => {
+  const [showFilters, setShowFilters] = useState(false);
+
   // Filter categories based on filters
   const filteredCategories = useMemo(() => {
     if (!categoriesData) return { income: [], expense: [] };
@@ -59,6 +63,9 @@ export const BudgetCategoriesTab: React.FC<BudgetCategoriesTabProps> = ({
     if (planned === 0) return actual > 0 ? 100 : 0;
     return (actual / planned) * 100;
   };
+
+  // Check if any filters are active
+  const hasActiveFilters = !!(filters.search || filters.showInactive);
 
   // Compact Category Item Component
   const CategoryItem: React.FC<{ category: BudgetCategory; type: 'INCOME' | 'EXPENSE' }> = ({ 
@@ -196,17 +203,8 @@ export const BudgetCategoriesTab: React.FC<BudgetCategoriesTabProps> = ({
                 }}
                 className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-left text-xs text-gray-700 hover:bg-gray-50 flex items-center"
               >
-                {category.isActive ? (
-                  <>
-                    <EyeOff className="h-3 w-3 mr-1 sm:mr-2" />
-                    Deactivate
-                  </>
-                ) : (
-                  <>
-                    <Eye className="h-3 w-3 mr-1 sm:mr-2" />
-                    Activate
-                  </>
-                )}
+                {category.isActive ? <EyeOff className="h-3 w-3 mr-1 sm:mr-2" /> : <Eye className="h-3 w-3 mr-1 sm:mr-2" />}
+                {category.isActive ? 'Deactivate' : 'Activate'}
               </button>
               <button
                 onClick={(e) => {
@@ -227,35 +225,39 @@ export const BudgetCategoriesTab: React.FC<BudgetCategoriesTabProps> = ({
   };
 
   // Empty State Component
-  const EmptyState: React.FC<{ type: 'INCOME' | 'EXPENSE'; onAdd: () => void }> = ({ 
-    type, 
-    onAdd 
-  }) => (
-    <div className="text-center p-4 sm:p-6 border-2 border-dashed border-gray-200 rounded-lg">
-      <div className={`w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 sm:mb-3 rounded-lg flex items-center justify-center ${
-        type === 'INCOME' ? 'bg-green-100' : 'bg-red-100'
-      }`}>
-        {type === 'INCOME' ? 
-          <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" /> : 
-          <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
-        }
+  const EmptyState: React.FC<{ 
+    type: 'INCOME' | 'EXPENSE'; 
+    onAdd: () => void; 
+  }> = ({ type, onAdd }) => {
+    const isIncome = type === 'INCOME';
+    const IconComponent = isIncome ? TrendingUp : TrendingDown;
+    
+    return (
+      <div className="text-center py-8 px-4">
+        <div className={`w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center ${
+          isIncome ? 'bg-green-100' : 'bg-red-100'
+        }`}>
+          <IconComponent className={`h-6 w-6 ${isIncome ? 'text-green-600' : 'text-red-600'}`} />
+        </div>
+        <h3 className="text-sm font-medium text-gray-900 mb-2">
+          No {isIncome ? 'Income' : 'Expense'} Categories
+        </h3>
+        <p className="text-xs text-gray-600 mb-4">
+          Create categories to organize your {isIncome ? 'income sources' : 'expenses'}
+        </p>
+        <Button
+          size="sm"
+          onClick={onAdd}
+          className={`text-white ${
+            isIncome ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+          }`}
+        >
+          <Plus className="h-3 w-3 mr-1" />
+          Add {isIncome ? 'Income' : 'Expense'} Category
+        </Button>
       </div>
-      <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
-        No {type.toLowerCase()} categories yet
-      </p>
-      <button 
-        onClick={onAdd}
-        className={`text-xs px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg font-medium transition-colors ${
-          type === 'INCOME' 
-            ? 'bg-green-600 hover:bg-green-700 text-white' 
-            : 'bg-red-600 hover:bg-red-700 text-white'
-        }`}
-      >
-        <Plus className="h-3 w-3 mr-1 inline" />
-        Add {type === 'INCOME' ? 'Income' : 'Expense'} Category
-      </button>
-    </div>
-  );
+    );
+  };
 
   // Loading state
   if (isLoading) {
@@ -264,9 +266,10 @@ export const BudgetCategoriesTab: React.FC<BudgetCategoriesTabProps> = ({
         {/* Header Skeleton */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="h-6 sm:h-8 bg-gray-200 rounded w-48 sm:w-64 animate-pulse" />
-          <div className="flex items-center space-x-2 sm:space-x-3">
-            <div className="h-8 sm:h-10 bg-gray-200 rounded w-24 sm:w-32 animate-pulse" />
-            <div className="h-8 sm:h-10 bg-gray-200 rounded w-24 sm:w-32 animate-pulse" />
+          <div className="flex items-center space-x-3">
+            <div className="h-10 bg-gray-200 rounded w-48 animate-pulse" />
+            <div className="h-10 bg-gray-200 rounded w-20 animate-pulse" />
+            <div className="h-10 bg-gray-200 rounded w-32 animate-pulse" />
           </div>
         </div>
 
@@ -297,12 +300,12 @@ export const BudgetCategoriesTab: React.FC<BudgetCategoriesTabProps> = ({
         <div>
           <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Categories Management</h2>
           <p className="text-xs sm:text-sm text-gray-600 mt-1">
-            Organize and track your budget categories
+            {(categoriesData?.income?.length || 0) + (categoriesData?.expense?.length || 0)} total • {filteredCategories.income.length} income • {filteredCategories.expense.length} expense
           </p>
         </div>
 
-        {/* Controls */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 hidden sm:block">
+        {/* Minimalist Controls */}
+        <div className="flex items-center space-x-3">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -311,31 +314,71 @@ export const BudgetCategoriesTab: React.FC<BudgetCategoriesTabProps> = ({
               placeholder="Search categories..."
               value={filters.search}
               onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 w-full sm:w-48"
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 w-48"
             />
           </div>
 
-          {/* Filters */}
-          <div className="flex items-center space-x-3">
-            <label className="flex items-center space-x-2 text-sm text-gray-600 whitespace-nowrap">
+          {/* Filter Toggle */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium border transition-colors ${
+              showFilters || hasActiveFilters
+                ? 'bg-blue-50 border-blue-200 text-blue-700'
+                : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Filter className="h-4 w-4" />
+            <span>Filters</span>
+            {hasActiveFilters && (
+              <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+            )}
+          </button>
+
+          {/* Add Category */}
+          <Button onClick={() => onCategoryAction('create')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Category
+          </Button>
+        </div>
+      </div>
+
+      {/* Collapsible Filters */}
+      {showFilters && (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-900">Filter Options</h3>
+            {hasActiveFilters && (
+              <button
+                onClick={() => {
+                  onFiltersChange({
+                    type: '',
+                    showInactive: false,
+                    search: '',
+                  });
+                }}
+                className="flex items-center space-x-1 text-xs text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-3 w-3" />
+                <span>Clear all</span>
+              </button>
+            )}
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="flex items-center space-x-2 text-sm text-gray-700">
               <input
                 type="checkbox"
                 checked={filters.showInactive}
                 onChange={(e) => onFiltersChange({ ...filters, showInactive: e.target.checked })}
                 className="h-4 w-4 text-blue-600 rounded border-gray-300"
               />
-              <span>Show inactive</span>
+              <span>Show inactive categories</span>
             </label>
-
-            <Button onClick={() => onCategoryAction('create')}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Category
-            </Button>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Main Content - Using BudgetPlanningTab Layout Structure */}
+      {/* Main Content */}
       {!hasCategories ? (
         <div className="bg-white border border-gray-200 rounded-lg p-8">
           <div className="text-center">
@@ -373,10 +416,7 @@ export const BudgetCategoriesTab: React.FC<BudgetCategoriesTabProps> = ({
                 <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
                 <div>
                   <h4 className="text-xs sm:text-sm font-semibold text-gray-900">Income Categories</h4>
-                  <p className="text-xs text-gray-500 hidden sm:block">
-                    {filteredCategories.income.length} categories • Track your earnings
-                  </p>
-                  <p className="text-xs text-gray-500 sm:hidden">
+                  <p className="text-xs text-gray-500">
                     {filteredCategories.income.length} categories
                   </p>
                 </div>
@@ -414,10 +454,7 @@ export const BudgetCategoriesTab: React.FC<BudgetCategoriesTabProps> = ({
                 <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
                 <div>
                   <h4 className="text-xs sm:text-sm font-semibold text-gray-900">Expense Categories</h4>
-                  <p className="text-xs text-gray-500 hidden sm:block">
-                    {filteredCategories.expense.length} categories • Control your spending
-                  </p>
-                  <p className="text-xs text-gray-500 sm:hidden">
+                  <p className="text-xs text-gray-500">
                     {filteredCategories.expense.length} categories
                   </p>
                 </div>

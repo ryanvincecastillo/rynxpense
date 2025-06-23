@@ -9,6 +9,8 @@ import {
   Repeat,
   TrendingUp,
   TrendingDown,
+  Filter,
+  X,
 } from 'lucide-react';
 import { format, isToday, isYesterday, startOfDay } from 'date-fns';
 
@@ -54,6 +56,184 @@ const formatTransactionDate = (date: Date): string => {
   return format(date, 'MMM d, yyyy');
 };
 
+const formatDateKey = (date: Date): string => {
+  return format(startOfDay(date), 'yyyy-MM-dd');
+};
+
+const groupTransactionsByDate = (transactions: Transaction[]) => {
+  const groups: { [key: string]: Transaction[] } = {};
+  
+  transactions.forEach(transaction => {
+    const transactionDate = new Date(transaction.date);
+    const dateKey = formatDateKey(transactionDate);
+    
+    if (!groups[dateKey]) {
+      groups[dateKey] = [];
+    }
+    groups[dateKey].push(transaction);
+  });
+  
+  return groups;
+};
+
+// Empty State Component
+const EmptyState: React.FC<{
+  type: 'INCOME' | 'EXPENSE';
+  onAdd: () => void;
+}> = ({ type, onAdd }) => {
+  const isIncome = type === 'INCOME';
+  const IconComponent = isIncome ? TrendingUp : TrendingDown;
+  
+  return (
+    <div className="text-center py-8 px-4">
+      <div className={`w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center ${
+        isIncome ? 'bg-green-100' : 'bg-red-100'
+      }`}>
+        <IconComponent className={`h-6 w-6 ${isIncome ? 'text-green-600' : 'text-red-600'}`} />
+      </div>
+      <h3 className="text-sm font-medium text-gray-900 mb-2">
+        No {isIncome ? 'Income' : 'Expense'} Transactions
+      </h3>
+      <p className="text-xs text-gray-600 mb-4">
+        Start tracking your {isIncome ? 'income sources' : 'expenses'}
+      </p>
+      <Button
+        size="sm"
+        onClick={onAdd}
+        className={`text-white ${
+          isIncome ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+        }`}
+      >
+        <Plus className="h-3 w-3 mr-1" />
+        Add {isIncome ? 'Income' : 'Expense'} Transaction
+      </Button>
+    </div>
+  );
+};
+
+// Date Group Header Component
+const DateGroupHeader: React.FC<{ date: string }> = ({ date }) => {
+  const dateObj = new Date(date);
+  const formattedDate = formatTransactionDate(dateObj);
+  
+  return (
+    <div className="flex items-center space-x-2 py-1 mb-1">
+      <div className="h-px bg-gray-200 flex-1" />
+      <span className="text-xs font-medium text-gray-500 px-1">
+        {formattedDate}
+      </span>
+      <div className="h-px bg-gray-200 flex-1" />
+    </div>
+  );
+};
+
+// Transaction Item Component
+const TransactionItem: React.FC<{
+  transaction: Transaction;
+  category: any;
+  formatCurrency: (amount: number) => string;
+  onTransactionAction: (action: string, transaction?: Transaction) => void;
+}> = ({ transaction, category, formatCurrency, onTransactionAction }) => {
+  const isIncome = category?.type === 'INCOME';
+  
+  return (
+    <div 
+      className="border rounded-lg p-3 hover:shadow-sm transition-all group cursor-pointer mb-1"
+      style={{ 
+        backgroundColor: `${category?.color || '#6B7280'}08`,
+        borderColor: `${category?.color || '#6B7280'}30`
+      }}
+      onClick={() => onTransactionAction('edit', transaction)}
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex-1 min-w-0">
+          {/* Description */}
+          <h4 className="text-xs sm:text-sm font-medium text-gray-900 mb-1 truncate pr-1">
+            {transaction.description}
+          </h4>
+          
+          {/* Category */}
+          {category && (
+            <div className="flex items-center space-x-1 mb-2 min-w-0">
+              <div 
+                className="w-2 h-2 rounded-full flex-shrink-0" 
+                style={{ backgroundColor: category.color || '#6B7280' }}
+              />
+              <span className="text-xs text-gray-500 truncate">{category.name}</span>
+            </div>
+          )}
+
+          {/* Status and Recurring */}
+          <div className="flex items-center space-x-2">
+            {transaction.isRecurring && (
+              <div className="flex items-center space-x-1">
+                <Repeat className="h-3 w-3 text-gray-400" />
+                <span className="text-xs text-gray-500">Recurring</span>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Amount and Status */}
+        <div className="text-right ml-2 sm:ml-4 flex-shrink-0">
+          <p className={`text-xs sm:text-sm font-medium ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
+            {formatCurrency(Math.abs(transaction.amount))}
+          </p>
+          <p className={`text-xs text-gray-500 ${
+            transaction.isPosted ? '' : 'text-yellow-600'
+          }`}>
+            {transaction.isPosted ? 'Posted' : 'Pending'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Transaction List Component
+const TransactionList: React.FC<{
+  groupedTransactions: { [key: string]: Transaction[] };
+  allCategories: any[];
+  formatCurrency: (amount: number) => string;
+  onTransactionAction: (action: string, transaction?: Transaction, data?: any) => void;
+  type: 'INCOME' | 'EXPENSE';
+}> = ({ groupedTransactions, allCategories, formatCurrency, onTransactionAction, type }) => {
+  const transactionCount = Object.values(groupedTransactions).flat().length;
+  
+  if (transactionCount === 0) {
+    return (
+      <EmptyState 
+        type={type} 
+        onAdd={() => onTransactionAction('create', undefined, { type })} 
+      />
+    );
+  }
+
+  return (
+    <>
+      {Object.keys(groupedTransactions)
+        .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+        .map((dateKey) => (
+          <div key={dateKey} className="min-w-0">
+            <DateGroupHeader date={dateKey} />
+            {groupedTransactions[dateKey].map((transaction) => {
+              const category = allCategories.find(cat => cat.id === transaction.categoryId);
+              return (
+                <TransactionItem
+                  key={transaction.id}
+                  transaction={transaction}
+                  category={category}
+                  formatCurrency={formatCurrency}
+                  onTransactionAction={onTransactionAction}
+                />
+              );
+            })}
+          </div>
+        ))}
+    </>
+  );
+};
+
 // Main Component
 export const BudgetTransactionsTab: React.FC<BudgetTransactionsTabProps> = ({
   transactions,
@@ -65,6 +245,8 @@ export const BudgetTransactionsTab: React.FC<BudgetTransactionsTabProps> = ({
   isLoading,
   pagination,
 }) => {
+  const [showFilters, setShowFilters] = useState(false);
+  
   // Get all categories for filter dropdown
   const allCategories = useMemo(() => {
     if (!categoriesData) return [];
@@ -134,20 +316,44 @@ export const BudgetTransactionsTab: React.FC<BudgetTransactionsTabProps> = ({
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div className="h-6 bg-gray-200 rounded w-48 animate-pulse"></div>
-          <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
+        {/* Header Skeleton */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="h-6 sm:h-8 bg-gray-200 rounded w-48 sm:w-64 animate-pulse" />
+          <div className="flex items-center space-x-3">
+            <div className="h-10 bg-gray-200 rounded w-48 animate-pulse" />
+            <div className="h-10 bg-gray-200 rounded w-20 animate-pulse" />
+            <div className="h-10 bg-gray-200 rounded w-32 animate-pulse" />
+          </div>
         </div>
-        <div className="space-y-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-16 bg-gray-200 rounded animate-pulse"></div>
+
+        {/* Content Skeleton */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-6">
+          {[1, 2].map((col) => (
+            <div key={col} className="space-y-3">
+              <div className="h-4 sm:h-6 bg-gray-200 rounded w-32 sm:w-48 animate-pulse" />
+              <div className="space-y-2">
+                {[1, 2, 3].map((item) => (
+                  <div key={item} className="h-16 sm:h-20 bg-gray-200 rounded animate-pulse" />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>
     );
   }
 
-  const hasTransactions = transactions.length > 0;
+  // Group transactions by date
+  const groupedIncomeTransactions = groupTransactionsByDate(incomeTransactions);
+  const groupedExpenseTransactions = groupTransactionsByDate(expenseTransactions);
+
+  // Check if any filters are active
+  const hasActiveFilters = !!(
+    filters.isPosted !== undefined || 
+    filters.isRecurring !== undefined || 
+    filters.categoryId || 
+    filters.search
+  );
 
   return (
     <div className="space-y-6">
@@ -156,12 +362,12 @@ export const BudgetTransactionsTab: React.FC<BudgetTransactionsTabProps> = ({
         <div>
           <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Transactions</h2>
           <p className="text-xs sm:text-sm text-gray-600 mt-1">
-            Track and manage all budget transactions
+            {incomeTransactions.length + expenseTransactions.length} total • {totals.posted} posted • {totals.pending} pending
           </p>
         </div>
 
-        {/* Controls */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3  hidden sm:block">
+        {/* Minimalist Controls */}
+        <div className="flex items-center space-x-3">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -170,12 +376,71 @@ export const BudgetTransactionsTab: React.FC<BudgetTransactionsTabProps> = ({
               placeholder="Search transactions..."
               value={filters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 w-full sm:w-48"
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 w-48"
             />
           </div>
 
-          {/* Quick Filters */}
-          <div className="flex items-center space-x-2">
+          {/* Filter Toggle */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium border transition-colors ${
+              showFilters || hasActiveFilters
+                ? 'bg-blue-50 border-blue-200 text-blue-700'
+                : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Filter className="h-4 w-4" />
+            <span>Filters</span>
+            {hasActiveFilters && (
+              <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+            )}
+          </button>
+
+          {/* Add Transaction */}
+          <Button onClick={() => onTransactionAction('create')} className="hidden sm:block">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Transaction
+          </Button>
+        </div>
+      </div>
+
+      {/* Collapsible Filters */}
+      {showFilters && (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-900">Filter Options</h3>
+            {hasActiveFilters && (
+              <button
+                onClick={() => {
+                  onFiltersChange({
+                    search: '',
+                    isPosted: undefined,
+                    isRecurring: undefined,
+                    categoryId: undefined,
+                  });
+                }}
+                className="flex items-center space-x-1 text-xs text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-3 w-3" />
+                <span>Clear all</span>
+              </button>
+            )}
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Select
+              value={filters.isRecurring === undefined ? '' : filters.isRecurring.toString()}
+              onChange={(e) => {
+                const value = e.target.value;
+                handleFilterChange('isRecurring', value === '' ? undefined : value === 'true');
+              }}
+              options={[
+                { value: '', label: 'All Types' },
+                { value: 'true', label: 'Recurring' },
+                { value: 'false', label: 'One-time' },
+              ]}
+            />
+
             <Select
               value={filters.isPosted === undefined ? '' : filters.isPosted.toString()}
               onChange={(e) => {
@@ -183,11 +448,10 @@ export const BudgetTransactionsTab: React.FC<BudgetTransactionsTabProps> = ({
                 handleFilterChange('isPosted', value === '' ? undefined : value === 'true');
               }}
               options={[
-                { value: '', label: 'Select an option' },
+                { value: '', label: 'All Status' },
                 { value: 'true', label: 'Posted' },
                 { value: 'false', label: 'Pending' },
               ]}
-              className="w-32"
             />
 
             {allCategories.length > 0 && (
@@ -195,31 +459,22 @@ export const BudgetTransactionsTab: React.FC<BudgetTransactionsTabProps> = ({
                 value={filters.categoryId || ''}
                 onChange={(value) => handleFilterChange('categoryId', value || undefined)}
                 options={[
-                  { value: '', label: 'Select an option' },
+                  { value: '', label: 'All Categories' },
                   ...allCategories.map(cat => ({
                     value: cat.id,
                     label: cat.name,
                   })),
                 ]}
-                className="w-32"
               />
             )}
           </div>
-
-          <Button 
-            onClick={() => onTransactionAction('create')}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Transaction
-          </Button>
         </div>
-      </div>
+      )}
 
       {/* Main Content - Two Column Layout */}
       <div className="grid grid-cols-2 gap-3 sm:gap-6">
         {/* Income Transactions Column */}
-        <div className="space-y-3">
+        <div className="space-y-3 min-w-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
@@ -239,99 +494,19 @@ export const BudgetTransactionsTab: React.FC<BudgetTransactionsTabProps> = ({
             </button>
           </div>
 
-          <div className="space-y-1 sm:space-y-2 max-h-80 sm:max-h-96 overflow-y-auto">
-            {incomeTransactions.length === 0 ? (
-              //Empty State for Income Transactions
-              <div className="text-center py-8 px-4">
-                <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
-                  <TrendingUp className="h-6 w-6 text-green-600" />
-                </div>
-                <h3 className="text-sm font-medium text-gray-900 mb-2">
-                  No Income Transactions
-                </h3>
-                <p className="text-xs text-gray-600 mb-4">
-                  Start tracking your income sources
-                </p>
-                <Button
-                  size="sm"
-                  onClick={() => onTransactionAction('create', undefined, { type: 'INCOME' })}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Add Income Transaction
-                </Button>
-              </div>
-            ) : ( //Transactions Item
-              incomeTransactions.map((transaction) => {
-                const transactionDate = new Date(transaction.date);
-                const category = allCategories.find(cat => cat.id === transaction.categoryId);
-                
-                return (
-                  <div 
-                    key={transaction.id} 
-                    className="border rounded-lg p-3 hover:shadow-sm transition-all group"
-                    style={{ 
-                      backgroundColor: `${category?.color || '#6B7280'}08`,
-                      borderColor: `${category?.color || '#6B7280'}30`
-                    }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        {/* Date */}
-                        <div className="flex items-center space-x-1 mb-1">
-                          <span className="text-xs text-gray-500">
-                            {formatTransactionDate(transactionDate)}
-                          </span>
-                        </div>
-                        
-                        {/* Description */}
-                        <h4 className="font-medium text-gray-900 text-sm mb-1">
-                          {transaction.description}
-                        </h4>
-                        
-                        {/* Category */}
-                        {category && (
-                          <div className="flex items-center space-x-1 mb-2">
-                            <div 
-                              className="w-2 h-2 rounded-full" 
-                              style={{ backgroundColor: category.color || '#6B7280' }}
-                            />
-                            <span className="text-xs text-gray-600">{category.name}</span>
-                          </div>
-                        )}
-
-                        {/* Status and Recurring */}
-                        <div className="flex items-center space-x-2">
-                          {transaction.isRecurring && (
-                            <div className="flex items-center space-x-1">
-                              <Repeat className="h-3 w-3 text-gray-400" />
-                              <span className="text-xs text-gray-500">Recurring</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Amount and Status */}
-                      <div className="text-right ml-4">
-                        <p className="font-semibold text-green-600">
-                          {formatCurrency(Math.abs(transaction.amount))}
-                        </p>
-                        <p className={`text-xs ${
-                          transaction.isPosted ? 'text-gray-600' : 'text-yellow-600'
-                        }`}>
-                          {transaction.isPosted ? 'Posted' : 'Pending'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
+          <div className="space-y-1 sm:space-y-2 max-h-80 sm:max-h-96 overflow-y-auto min-w-0">
+            <TransactionList
+              groupedTransactions={groupedIncomeTransactions}
+              allCategories={allCategories}
+              formatCurrency={formatCurrency}
+              onTransactionAction={onTransactionAction}
+              type="INCOME"
+            />
           </div>
         </div>
 
         {/* Expense Transactions Column */}
-        <div className="space-y-3">
+        <div className="space-y-3 min-w-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
@@ -351,93 +526,14 @@ export const BudgetTransactionsTab: React.FC<BudgetTransactionsTabProps> = ({
             </button>
           </div>
 
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {expenseTransactions.length === 0 ? (
-              <div className="text-center py-8 px-4">
-                <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
-                  <TrendingDown className="h-6 w-6 text-red-600" />
-                </div>
-                <h3 className="text-sm font-medium text-gray-900 mb-2">
-                  No Expense Transactions
-                </h3>
-                <p className="text-xs text-gray-600 mb-4">
-                  Start tracking your expenses
-                </p>
-                <Button
-                  size="sm"
-                  onClick={() => onTransactionAction('create', undefined, { type: 'EXPENSE' })}
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Add Expense
-                </Button>
-              </div>
-            ) : (
-              expenseTransactions.map((transaction) => {
-                const transactionDate = new Date(transaction.date);
-                const category = allCategories.find(cat => cat.id === transaction.categoryId);
-                
-                return (
-                  <div 
-                    key={transaction.id} 
-                    className="border rounded-lg p-3 hover:shadow-sm transition-all group"
-                    style={{ 
-                      backgroundColor: `${category?.color || '#6B7280'}08`,
-                      borderColor: `${category?.color || '#6B7280'}30`
-                    }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        {/* Date */}
-                        <div className="flex items-center space-x-1 mb-1">
-                          <span className="text-xs text-gray-500">
-                            {formatTransactionDate(transactionDate)}
-                          </span>
-                        </div>
-                        
-                        {/* Description */}
-                        <h4 className="font-medium text-gray-900 text-sm mb-1">
-                          {transaction.description}
-                        </h4>
-                        
-                        {/* Category */}
-                        {category && (
-                          <div className="flex items-center space-x-1 mb-2">
-                            <div 
-                              className="w-2 h-2 rounded-full" 
-                              style={{ backgroundColor: category.color || '#6B7280' }}
-                            />
-                            <span className="text-xs text-gray-600">{category.name}</span>
-                          </div>
-                        )}
-
-                        {/* Status and Recurring */}
-                        <div className="flex items-center space-x-2">
-                          {transaction.isRecurring && (
-                            <div className="flex items-center space-x-1">
-                              <Repeat className="h-3 w-3 text-gray-400" />
-                              <span className="text-xs text-gray-500">Recurring</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Amount and Status */}
-                      <div className="text-right ml-4">
-                        <p className="font-semibold text-red-600">
-                          {formatCurrency(Math.abs(transaction.amount))}
-                        </p>
-                        <p className={`text-xs ${
-                          transaction.isPosted ? 'text-gray-600' : 'text-yellow-600'
-                        }`}>
-                          {transaction.isPosted ? 'Posted' : 'Pending'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
+          <div className="space-y-1 sm:space-y-2 max-h-80 sm:max-h-96 overflow-y-auto min-w-0">
+            <TransactionList
+              groupedTransactions={groupedExpenseTransactions}
+              allCategories={allCategories}
+              formatCurrency={formatCurrency}
+              onTransactionAction={onTransactionAction}
+              type="EXPENSE"
+            />
           </div>
         </div>
       </div>
