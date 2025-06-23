@@ -420,26 +420,28 @@ const BudgetsPage: React.FC = () => {
                 Manage and track your budgets
               </p>
             </div>
-            <Tooltip content="Create budget from AI templates">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
+              <Tooltip content="Create budget from AI templates">
+                <Button 
+                  onClick={() => templateModal.open()} 
+                  variant="secondary"
+                  size="sm"
+                  className="flex-1 sm:flex-none border-2 border-dashed border-purple-300 text-purple-600 hover:bg-purple-50 hover:border-purple-400 transition-all duration-200"
+                >
+                  <Sparkles className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">AI Templates</span>
+                </Button>
+              </Tooltip>
+                
               <Button 
-                onClick={() => templateModal.open()} 
-                variant="secondary"
+                onClick={() => createModal.open()} 
                 size="sm"
-                className="flex-1 sm:flex-none border-2 border-dashed border-purple-300 text-purple-600 hover:bg-purple-50 hover:border-purple-400 transition-all duration-200"
+                className="w-full sm:w-auto"
               >
-                <Sparkles className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">AI Templates</span>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Budget
               </Button>
-            </Tooltip>
-              
-            <Button 
-              onClick={() => createModal.open()} 
-              size="sm"
-              className="w-full sm:w-auto"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Budget
-            </Button>
+            </div>
           </div>
 
           {/* Filters and Controls */}
