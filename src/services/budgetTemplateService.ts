@@ -27,6 +27,8 @@ class BudgetTemplateService {
         color: formData.color,
       });
 
+      console.log('Budget creation response:', budgetResponse);
+
       if (!budgetResponse.success) {
         throw new Error(budgetResponse.message || 'Failed to create budget');
       }

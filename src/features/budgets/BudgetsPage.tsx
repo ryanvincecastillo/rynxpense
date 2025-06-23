@@ -8,6 +8,7 @@ import {
   SortAsc,
   Eye,
   EyeOff,
+  Sparkles,
 } from 'lucide-react';
 
 // Hooks
@@ -32,6 +33,7 @@ import {
 
 // Modal Components
 import { BudgetFormModal } from '../../components/modals';
+import { BudgetTemplateModal } from '../../components/modals/BudgetTemplateModal'; 
 import { DuplicateBudgetModal } from '../../components/modals/DuplicateBudgetModal';
 import { DeleteConfirmModal, ArchiveConfirmModal } from '../../components/ui';
 
@@ -40,7 +42,8 @@ import { BudgetsList } from '../../components/features/budget';
 
 // Types
 import { Budget, DuplicateBudgetOptions, CreateBudgetForm } from '../../types';
-
+import { CreateBudgetWithTemplateForm } from '../../types/template';
+import { useCreateBudgetWithTemplate } from '../../hooks/useBudgetTemplate';
 
 // Types and Interfaces
 type SortOption = 'name' | 'created' | 'updated';
@@ -142,6 +145,7 @@ const BudgetsPage: React.FC = () => {
 
   // Modal States
   const createModal = useModal();
+  const templateModal = useModal();
   const deleteModal = useModal();
   const archiveModal = useModal();
   const duplicateModal = useModal();
@@ -177,6 +181,7 @@ const BudgetsPage: React.FC = () => {
   } = useBudgets({ includeArchived: filters.includeArchived });
   
   const createBudgetMutation = useCreateBudget();
+  const createBudgetWithTemplateMutation = useCreateBudgetWithTemplate();
   const updateBudgetMutation = useUpdateBudget();
   const deleteBudgetMutation = useDeleteBudget();
   const duplicateBudgetMutation = useDuplicateBudget();
@@ -265,6 +270,23 @@ const BudgetsPage: React.FC = () => {
       showError(`Failed to ${action} budget`);
     }
   }, [budgetToArchive, updateBudgetMutation, showSuccess, showError, archiveModal]);
+
+  // Added: Handle Template Budget Creation
+  const handleCreateBudgetWithTemplate = useCallback(async (data: CreateBudgetWithTemplateForm) => {
+    try {
+      const result = await createBudgetWithTemplateMutation.mutateAsync(data);
+      templateModal.close();
+      
+      // Show success message based on whether template was applied
+      if (data.applyTemplate && data.templateId) {
+        showSuccess(`Budget created with template! Added categories and sample transactions.`);
+      } else {
+        showSuccess('Budget created successfully!');
+      }
+    } catch (error) {
+      showError('Failed to create budget with template');
+    }
+  }, [createBudgetWithTemplateMutation, templateModal, showSuccess, showError]);
 
   const handleShowDuplicateModal = useCallback((budget: Budget) => {
     setBudgetToDuplicate(budget);
@@ -398,6 +420,18 @@ const BudgetsPage: React.FC = () => {
                 Manage and track your budgets
               </p>
             </div>
+            <Tooltip content="Create budget from AI templates">
+              <Button 
+                onClick={() => templateModal.open()} 
+                variant="secondary"
+                size="sm"
+                className="flex-1 sm:flex-none border-2 border-dashed border-purple-300 text-purple-600 hover:bg-purple-50 hover:border-purple-400 transition-all duration-200"
+              >
+                <Sparkles className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">AI Templates</span>
+              </Button>
+            </Tooltip>
+              
             <Button 
               onClick={() => createModal.open()} 
               size="sm"
@@ -588,6 +622,13 @@ const BudgetsPage: React.FC = () => {
         onSubmit={handleSubmitBudget}
         editingBudget={editingBudget}
         isLoading={createBudgetMutation.isPending || updateBudgetMutation.isPending}
+      />
+
+      <BudgetTemplateModal
+        isOpen={templateModal.isOpen}
+        onClose={templateModal.close}
+        onCreateBudget={handleCreateBudgetWithTemplate}
+        isLoading={createBudgetWithTemplateMutation.isPending}
       />
 
       <DuplicateBudgetModal
