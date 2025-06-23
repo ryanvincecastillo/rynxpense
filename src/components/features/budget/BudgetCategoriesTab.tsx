@@ -335,7 +335,7 @@ export const BudgetCategoriesTab: React.FC<BudgetCategoriesTabProps> = ({
           </button>
 
           {/* Add Category */}
-          <Button onClick={() => onCategoryAction('create')}>
+          <Button onClick={() => onCategoryAction('create')} className="hidden sm:block">
             <Plus className="h-4 w-4 mr-2" />
             Add Category
           </Button>
