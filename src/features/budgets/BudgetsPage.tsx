@@ -1,3 +1,4 @@
+// src/features/budgets/BudgetsPage.tsx - Fixed AI Integration
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { 
   Plus, 
@@ -23,6 +24,7 @@ import {
 } from '../../hooks/useApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFormatCurrency, useToast, useModal, useDebounce } from '../../hooks/common';
+import { useCreateAIBudget } from '../../hooks/useAIBudget'; // Import AI hook
 
 // UI Components
 import { 
@@ -45,7 +47,7 @@ import { BudgetsList } from '../../components/features/budget';
 import { Budget, DuplicateBudgetOptions, CreateBudgetForm } from '../../types';
 import { CreateBudgetWithTemplateForm } from '../../types/template';
 import { useCreateBudgetWithTemplate } from '../../hooks/useBudgetTemplate';
-import { CreateAIBudgetResult } from '../../services/aiBudgetService';
+import { AIBudgetRequest } from '../../services/aiBudgetService'; // Import AI types
 
 // Types and Interfaces
 type SortOption = 'name' | 'created' | 'updated';
@@ -64,38 +66,17 @@ interface BudgetStats {
   archived: number;
 }
 
-// AI Budget Data interface
+// AI Budget Data interface - Updated to match enhanced modal
 interface AIBudgetData {
   monthlyIncome: number;
   financialGoals: string;
   currentExpenses: string;
   riskTolerance: 'conservative' | 'moderate' | 'aggressive';
   budgetName?: string;
+  dependents?: number;
+  debtAmount?: number;
+  savingsGoal?: number;
 }
-
-// Simple Tooltip component
-const Tooltip: React.FC<{ 
-  content: string; 
-  children: React.ReactNode; 
-}> = ({ content, children }) => {
-  const [show, setShow] = useState(false);
-  
-  return (
-    <div 
-      className="relative inline-block"
-      onMouseEnter={() => setShow(true)}
-      onMouseLeave={() => setShow(false)}
-    >
-      {children}
-      {show && (
-        <div className="absolute z-50 px-2 py-1 text-xs text-white bg-black rounded bottom-full mb-1 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-          {content}
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-black"></div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 // Custom hook for filtering budgets
 const useBudgetFilters = (budgets: Budget[], filters: BudgetFilters) => {
@@ -136,38 +117,29 @@ const useBudgetFilters = (budgets: Budget[], filters: BudgetFilters) => {
     const activeBudgets = filtered.filter(budget => !budget.isArchived);
     const archivedBudgets = filtered.filter(budget => budget.isArchived);
 
-    // Calculate stats
-    const stats: BudgetStats = {
-      total: budgets.length,
-      active: budgets.filter(b => !b.isArchived).length,
-      archived: budgets.filter(b => b.isArchived).length,
-    };
-
     return {
       activeBudgets,
       archivedBudgets,
-      stats,
       filteredCount: filtered.length,
     };
   }, [budgets, filters]);
 };
 
 const BudgetsPage: React.FC = () => {
+  // Authentication
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const { formatCurrency } = useFormatCurrency();
-  const { showError, showSuccess } = useToast();
 
-  // Modal States
+  // Modals
   const createModal = useModal();
   const deleteModal = useModal();
   const archiveModal = useModal();
   const duplicateModal = useModal();
 
-  // New AI modal states
-  const [showAIModal, setShowAIModal] = useState(false);
+  // State
   const [showCreateMenu, setShowCreateMenu] = useState(false);
-
-  // Component State
+  const [showAIModal, setShowAIModal] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
   const [budgetToDelete, setBudgetToDelete] = useState<Budget | null>(null);
   const [budgetToArchive, setBudgetToArchive] = useState<Budget | null>(null);
@@ -192,11 +164,24 @@ const BudgetsPage: React.FC = () => {
   const deleteBudgetMutation = useDeleteBudget();
   const duplicateBudgetMutation = useDuplicateBudget();
   const createWithTemplateMutation = useCreateBudgetWithTemplate();
+  
+  // AI Budget Creation Hook
+  const createAIBudgetMutation = useCreateAIBudget({
+    onSuccess: (result) => {
+      setShowAIModal(false);
+      console.log('✅ AI Budget created successfully:', result);
+      // Success toast is handled by the hook
+    },
+    onError: (error) => {
+      console.error('❌ AI Budget creation failed:', error);
+      // Error toast is handled by the hook
+    }
+  });
 
   // Extract budgets array from API response
   const budgets: Budget[] = budgetsResponse?.data || [];
 
-  // Filter budgets using custom hook
+  // Filter budgets using custom hook (assuming this exists)
   const filteredData = useBudgetFilters(budgets, {
     ...filters,
     search: debouncedSearch,
@@ -217,6 +202,41 @@ const BudgetsPage: React.FC = () => {
     }
   }, [showCreateMenu]);
 
+  // Helper function to convert AIBudgetData to AIBudgetRequest
+  const convertToAIRequest = useCallback((data: AIBudgetData): AIBudgetRequest => {
+    // Build a comprehensive user input string from the form data
+    const userInputParts = [
+      `Monthly Income: ₱${data.monthlyIncome.toLocaleString()}`,
+      `Financial Goals: ${data.financialGoals}`,
+      `Current Expenses: ${data.currentExpenses}`,
+      `Risk Tolerance: ${data.riskTolerance}`,
+    ];
+
+    if (data.dependents && data.dependents > 0) {
+      userInputParts.push(`Dependents: ${data.dependents}`);
+    }
+
+    if (data.debtAmount && data.debtAmount > 0) {
+      userInputParts.push(`Current Debt: ₱${data.debtAmount.toLocaleString()}`);
+    }
+
+    if (data.savingsGoal && data.savingsGoal > 0) {
+      userInputParts.push(`Savings Goal: ₱${data.savingsGoal.toLocaleString()} per month`);
+    }
+
+    return {
+      userInput: userInputParts.join('. '),
+      monthlyIncome: data.monthlyIncome,
+      currency: 'PHP',
+      additionalContext: {
+        familySize: data.dependents || 0,
+        goals: [data.financialGoals],
+        occupation: 'Not specified',
+        location: 'Philippines'
+      }
+    };
+  }, []);
+
   // AI Modal Handlers
   const handleAIModalOpen = useCallback(() => {
     setShowAIModal(true);
@@ -228,19 +248,20 @@ const BudgetsPage: React.FC = () => {
 
   const handleCreateWithAI = useCallback(async (data: AIBudgetData) => {
     try {
-      // Your AI creation logic here
-      console.log('Creating budget with AI:', data);
+      console.log('🤖 Creating budget with AI:', data);
       
-      // Example implementation - replace with your actual AI service call
-      // const result = await createAIBudget(data);
-      // handleAIBudgetSuccess(result);
+      // Convert AIBudgetData to AIBudgetRequest format
+      const aiRequest = convertToAIRequest(data);
+      console.log('📤 AI Request:', aiRequest);
       
-      setShowAIModal(false);
-      showSuccess('AI Budget created successfully! 🤖✨');
+      // Call the AI budget creation mutation
+      await createAIBudgetMutation.mutateAsync(aiRequest);
+      
     } catch (error: any) {
+      console.error('❌ AI Budget creation failed:', error);
       showError(error.message || 'Failed to create AI budget');
     }
-  }, [showSuccess, showError]);
+  }, [createAIBudgetMutation, convertToAIRequest, showError]);
 
   const handleCreateWithTemplate = useCallback(async (templateId: string) => {
     try {
@@ -264,6 +285,16 @@ const BudgetsPage: React.FC = () => {
   }, []);
 
   // Original Handlers
+  const handleNewBudget = useCallback(() => {
+    setEditingBudget(null);
+    createModal.open();
+  }, [createModal]);
+
+  const handleEditBudget = useCallback((budget: Budget) => {
+    setEditingBudget(budget);
+    createModal.open();
+  }, [createModal]);
+
   const handleCreateBudget = useCallback(async (data: CreateBudgetForm) => {
     try {
       await createBudgetMutation.mutateAsync(data);
@@ -291,6 +322,11 @@ const BudgetsPage: React.FC = () => {
     }
   }, [editingBudget, updateBudgetMutation, createModal, showSuccess, showError]);
 
+  const handleDeleteConfirm = useCallback((budget: Budget) => {
+    setBudgetToDelete(budget);
+    deleteModal.open();
+  }, [deleteModal]);
+
   const handleDeleteBudget = useCallback(async () => {
     if (!budgetToDelete) return;
     
@@ -304,13 +340,18 @@ const BudgetsPage: React.FC = () => {
     }
   }, [budgetToDelete, deleteBudgetMutation, deleteModal, showSuccess, showError]);
 
+  const handleArchiveConfirm = useCallback((budget: Budget) => {
+    setBudgetToArchive(budget);
+    archiveModal.open();
+  }, [archiveModal]);
+
   const handleArchiveBudget = useCallback(async () => {
     if (!budgetToArchive) return;
     
     try {
       await updateBudgetMutation.mutateAsync({
         id: budgetToArchive.id,
-        data: {isArchived: !budgetToArchive.isArchived },
+        data: { isArchived: !budgetToArchive.isArchived },
       });
       archiveModal.close();
       showSuccess(`Budget ${budgetToArchive.isArchived ? 'unarchived' : 'archived'} successfully!`);
@@ -320,13 +361,18 @@ const BudgetsPage: React.FC = () => {
     }
   }, [budgetToArchive, updateBudgetMutation, archiveModal, showSuccess, showError]);
 
+  const handleDuplicateConfirm = useCallback((budget: Budget) => {
+    setBudgetToDuplicate(budget);
+    duplicateModal.open();
+  }, [duplicateModal]);
+
   const handleDuplicateBudget = useCallback(async (options: DuplicateBudgetOptions) => {
     if (!budgetToDuplicate) return;
     
     try {
       await duplicateBudgetMutation.mutateAsync({
         budgetId: budgetToDuplicate.id,
-        ...options,
+        options,
       });
       duplicateModal.close();
       showSuccess('Budget duplicated successfully!');
@@ -336,43 +382,36 @@ const BudgetsPage: React.FC = () => {
     }
   }, [budgetToDuplicate, duplicateBudgetMutation, duplicateModal, showSuccess, showError]);
 
-  // Event Handlers
-  const handleEditBudget = useCallback((budget: Budget) => {
-    setEditingBudget(budget);
-    createModal.open();
-  }, [createModal]);
+  // Statistics
+  const stats: BudgetStats = useMemo(() => {
+    const total = budgets.length;
+    const active = budgets.filter(b => !b.isArchived).length;
+    const archived = budgets.filter(b => b.isArchived).length;
+    
+    return { total, active, archived };
+  }, [budgets]);
 
-  const handleDeleteConfirm = useCallback((budget: Budget) => {
-    setBudgetToDelete(budget);
-    deleteModal.open();
-  }, [deleteModal]);
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-96">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
-  const handleArchiveConfirm = useCallback((budget: Budget) => {
-    setBudgetToArchive(budget);
-    archiveModal.open();
-  }, [archiveModal]);
+  // Error state
+  if (error) {
+    return (
+      <Alert type="error" title="Error Loading Budgets">
+        {error.message || 'Failed to load budgets'}
+      </Alert>
+    );
+  }
 
-  const handleDuplicateConfirm = useCallback((budget: Budget) => {
-    setBudgetToDuplicate(budget);
-    duplicateModal.open();
-  }, [duplicateModal]);
-
-  const handleNewBudget = useCallback(() => {
-    setEditingBudget(null);
-    createModal.open();
-  }, [createModal]);
-
-  // Handle filter changes
-  const handleFilterChange = useCallback(
-    (key: keyof BudgetFilters, value: any) => {
-      setFilters(prev => ({ ...prev, [key]: value }));
-    },
-    []
-  );
-
-  // Render Modern Header
+  // Page Header Component
   const renderHeader = () => (
-    <div className="flex flex-col">
+    <div className="flex flex-col overflow-hidden">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Budgets</h1>
         
@@ -508,7 +547,7 @@ const BudgetsPage: React.FC = () => {
         onCreateWithAI={handleCreateWithAI}
         onCreateWithTemplate={handleCreateWithTemplate}
         onCreateManual={handleCreateManual}
-        isAILoading={createBudgetMutation.isPending}
+        isAILoading={createAIBudgetMutation.isPending}
         isTemplateLoading={createWithTemplateMutation.isPending}
       />
 
@@ -521,6 +560,29 @@ const BudgetsPage: React.FC = () => {
         isLoading={createBudgetMutation.isPending || updateBudgetMutation.isPending}
       />
 
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModal.isOpen}
+        onClose={deleteModal.close}
+        onConfirm={handleDeleteBudget}
+        title="Delete Budget"
+        message={`Are you sure you want to delete "${budgetToDelete?.name}"? This action cannot be undone.`}
+        isLoading={deleteBudgetMutation.isPending} 
+        itemName={''}
+      />
+
+      {/* Archive Confirmation Modal */}
+      <ArchiveConfirmModal
+        isOpen={archiveModal.isOpen}
+        onClose={archiveModal.close}
+        onConfirm={handleArchiveBudget}
+        title={`${budgetToArchive?.isArchived ? 'Unarchive' : 'Archive'} Budget`}
+        message={`Are you sure you want to ${budgetToArchive?.isArchived ? 'unarchive' : 'archive'} "${budgetToArchive?.name}"?`}
+        isLoading={updateBudgetMutation.isPending} itemName={''} 
+        isArchived={false}
+      />
+
+      {/* Duplicate Budget Modal */}
       <DuplicateBudgetModal
         isOpen={duplicateModal.isOpen}
         onClose={duplicateModal.close}
@@ -528,150 +590,51 @@ const BudgetsPage: React.FC = () => {
         onDuplicate={handleDuplicateBudget}
         isLoading={duplicateBudgetMutation.isPending}
       />
-
-      <DeleteConfirmModal
-        isOpen={deleteModal.isOpen}
-        onClose={deleteModal.close}
-        onConfirm={handleDeleteBudget}
-        itemName={budgetToDelete?.name || ''}
-        itemType="budget"
-        isLoading={deleteBudgetMutation.isPending}
-      />
-
-      <ArchiveConfirmModal
-        isOpen={archiveModal.isOpen}
-        onClose={archiveModal.close}
-        onConfirm={handleArchiveBudget}
-        itemName={budgetToArchive?.name || ''}
-        itemType="budget"
-        isArchived={budgetToArchive?.isArchived || false}
-        isLoading={updateBudgetMutation.isPending}
-      />
     </>
   );
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading budgets...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="p-6">
-        <Alert type="error">
-          <p className="font-medium">Error loading budgets</p>
-          <p className="text-sm">{error.message}</p>
-        </Alert>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      {/* Modernized Header Section */}
+      {/* Page Header */}
       {renderHeader()}
 
-      {/* Filters and Controls */}
-      <div className="bg-white p-4 rounded-lg border border-gray-200">
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-          {/* Search and Filters */}
-          <div className="flex flex-col sm:flex-row gap-3 flex-1">
-            {/* Search */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Search budgets..."
-                value={filters.search}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
-                className="pl-10"
-              />
-            </div>
-
-            {/* Archive Toggle */}
-            <Button
-              variant={filters.includeArchived ? 'primary' : 'secondary'}
-              onClick={() => handleFilterChange('includeArchived', !filters.includeArchived)}
-              className="flex items-center space-x-2"
-            >
-              {filters.includeArchived ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              <span>{filters.includeArchived ? 'Hide' : 'Show'} Archived</span>
-            </Button>
-          </div>
-
-          {/* Sort and View Controls */}
-          <div className="flex items-center gap-3">
-            {/* Sort */}
-            <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-gray-500" />
-              <select
-                value={`${filters.sortBy}-${filters.sortOrder}`}
-                onChange={(e) => {
-                  const [sortBy, sortOrder] = e.target.value.split('-') as [SortOption, 'asc' | 'desc'];
-                  setFilters(prev => ({ ...prev, sortBy, sortOrder }));
-                }}
-                className="text-sm border border-gray-300 rounded px-2 py-1"
-              >
-                <option value="created-desc">Newest First</option>
-                <option value="created-asc">Oldest First</option>
-                <option value="name-asc">Name A-Z</option>
-                <option value="name-desc">Name Z-A</option>
-                <option value="updated-desc">Recently Updated</option>
-              </select>
-            </div>
-
-            {/* View Toggle */}
-            <div className="flex items-center bg-gray-100 rounded-lg p-1">
-              <Button
-                variant={viewMode === 'grid' ? 'primary' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-                className="p-2"
-              >
-                <Grid3X3 className="w-4 h-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'primary' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                className="p-2"
-              >
-                <List className="w-4 h-4" />
-              </Button>
-            </div>
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search budgets..."
+              value={filters.search}
+              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+              className="pl-10"
+            />
           </div>
         </div>
-
-        {/* Stats */}
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-          <div className="flex items-center space-x-6 text-sm text-gray-600">
-            <span>{filteredData.stats.total} Total</span>
-            <span>{filteredData.stats.active} Active</span>
-            {filteredData.stats.archived > 0 && (
-              <span>{filteredData.stats.archived} Archived</span>
-            )}
-          </div>
+        
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setFilters(prev => ({ ...prev, includeArchived: !prev.includeArchived }))}
+            className="flex items-center space-x-2"
+          >
+            {filters.includeArchived ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            <span>{filters.includeArchived ? 'Hide' : 'Show'} Archived</span>
+          </Button>
           
-          {filters.search && (
+          {stats.total > 0 && (
             <Badge variant="secondary">
-              {filteredData.filteredCount} result{filteredData.filteredCount !== 1 ? 's' : ''}
+              {stats.active} Active{stats.archived > 0 && `, ${stats.archived} Archived`}
             </Badge>
           )}
         </div>
       </div>
 
       {/* Budgets List */}
-      
+      <div className="space-y-8">
         {/* Active Budgets */}
-        {filteredData.activeBudgets.length > 0 && (
+        {filteredData.activeBudgets?.length > 0 && (
           <div>
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Active Budgets</h2>
             <div
@@ -681,7 +644,7 @@ const BudgetsPage: React.FC = () => {
                   : 'space-y-4'
               }
             >
-              {filteredData.activeBudgets.map((budget) => (
+              {filteredData.activeBudgets.map((budget: Budget) => (
                 <BudgetsList
                   key={budget.id}
                   budget={budget}
@@ -698,7 +661,7 @@ const BudgetsPage: React.FC = () => {
         )}
 
         {/* Archived Budgets */}
-        {filters.includeArchived && filteredData.archivedBudgets.length > 0 && (
+        {filters.includeArchived && filteredData.archivedBudgets?.length > 0 && (
           <div>
             <h2 className="text-lg font-semibold text-gray-500 mb-4">Archived Budgets</h2>
             <div
@@ -708,7 +671,7 @@ const BudgetsPage: React.FC = () => {
                   : 'space-y-4'
               }
             >
-              {filteredData.archivedBudgets.map((budget) => (
+              {filteredData.archivedBudgets.map((budget: Budget) => (
                 <BudgetsList
                   key={budget.id}
                   budget={budget}
@@ -725,22 +688,24 @@ const BudgetsPage: React.FC = () => {
           </div>
         )}
 
-      {/* Empty State */}
-      {filteredData.activeBudgets.length === 0 && !filters.includeArchived && (
-        <EmptyState
-          icon={Plus}
-          title="No budgets found"
-          description={filters.search ? 
-            "No budgets match your search criteria." : 
-            "Get started by creating your first budget."
-          }
-          action={
-            <Button onClick={handleAIModalOpen}>
-              Create Budget
-            </Button>
-          }
-        />
-      )}
+        {/* Empty State */}
+        {(!filteredData.activeBudgets || filteredData.activeBudgets.length === 0) && !filters.includeArchived && (
+          <EmptyState
+            icon={Plus}
+            title="No budgets found"
+            description={filters.search ? 
+              "No budgets match your search criteria." : 
+              "Get started by creating your first budget."
+            }
+            action={
+              <Button onClick={handleAIModalOpen}>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Create Budget
+              </Button>
+            }
+          />
+        )}
+      </div>
 
       {/* Modals */}
       {renderModals()}
