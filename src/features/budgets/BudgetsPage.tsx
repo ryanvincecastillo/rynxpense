@@ -34,10 +34,9 @@ import {
 } from '../../components/ui';
 
 // Modal Components
-import { BudgetFormModal } from '../../components/modals';
+import { AIBudgetCreationModal, BudgetFormModal } from '../../components/modals';
 import { DuplicateBudgetModal } from '../../components/modals/DuplicateBudgetModal';
 import { DeleteConfirmModal, ArchiveConfirmModal } from '../../components/ui';
-import { AIBudgetCreationModal } from '../../components/modals/AIBudgetCreationModal';
 
 // Feature Components
 import { BudgetsList } from '../../components/features/budget';
