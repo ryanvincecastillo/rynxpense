@@ -373,131 +373,128 @@ const BudgetsPage: React.FC = () => {
 
   // Render Modern Header
   const renderHeader = () => (
-    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">My Budgets</h1>
+    <div className="flex flex-col">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Budgets</h1>
+        
+        {/* Action Button */}
+        <div className="flex items-center">
+          <div className="relative group">
+            <Button
+              onClick={handleAIModalOpen}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 
+                        text-white rounded-xl shadow-lg transition-all duration-300 
+                        hover:shadow-xl hover:scale-105 group relative overflow-hidden font-medium
+                        px-3 py-2 sm:px-6 sm:py-3"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 opacity-0 
+                              group-hover:opacity-20 transition-opacity duration-300"></div>
+              <div className="relative flex items-center space-x-1.5 sm:space-x-2">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 group-hover:animate-pulse" />
+                <span className="hidden sm:inline">Create Budget</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowCreateMenu(!showCreateMenu);
+                  }}
+                  className="p-0.5 sm:ml-1 sm:p-1 rounded-lg hover:bg-white/20 transition-colors duration-200"
+                  aria-label="Show creation options"
+                >
+                  <ChevronDown 
+                    className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-200 ${
+                      showCreateMenu ? 'rotate-180' : ''
+                    }`} 
+                  />
+                </button>
+              </div>
+            </Button>
+
+            {/* Tooltip */}
+            <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 
+                            group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+              <div className="bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap">
+                AI, Templates, or Manual creation
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 
+                                border-transparent border-t-gray-900"></div>
+              </div>
+            </div>
+
+            {/* Dropdown Menu */}
+            {showCreateMenu && (
+              <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl 
+                              border border-gray-200 py-2 z-50 animate-in slide-in-from-top-2 
+                              duration-200">
+                
+                {/* Smart Creation Option */}
+                <button
+                  onClick={() => {
+                    handleAIModalOpen();
+                    setShowCreateMenu(false);
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors 
+                            duration-150 flex items-center space-x-3 group"
+                >
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-100 to-blue-100 
+                                  rounded-lg flex items-center justify-center group-hover:scale-105 
+                                  transition-transform duration-200">
+                    <Sparkles className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">Smart Creation</p>
+                    <p className="text-sm text-gray-500">AI, templates, or manual</p>
+                  </div>
+                </button>
+
+                {/* Manual Creation Option */}
+                <button
+                  onClick={() => {
+                    handleNewBudget();
+                    setShowCreateMenu(false);
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors 
+                            duration-150 flex items-center space-x-3 group"
+                >
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-green-100 
+                                  rounded-lg flex items-center justify-center group-hover:scale-105 
+                                  transition-transform duration-200">
+                    <Plus className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">Quick Manual</p>
+                    <p className="text-sm text-gray-500">Start from scratch now</p>
+                  </div>
+                </button>
+
+                {/* Divider */}
+                <div className="border-t border-gray-100 my-2"></div>
+
+                {/* Import Option (Future feature) */}
+                <button
+                  onClick={() => setShowCreateMenu(false)}
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors 
+                            duration-150 flex items-center space-x-3 group opacity-50 cursor-not-allowed"
+                  disabled
+                >
+                  <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 
+                                  rounded-lg flex items-center justify-center">
+                    <Upload className="w-5 h-5 text-gray-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-600">Import Budget</p>
+                    <p className="text-sm text-gray-400">Coming soon...</p>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Description */}
+      <div>
         <p className="text-gray-600">
           Manage your budgets and track your financial goals
         </p>
-      </div>
-
-      {/* Modern Action Buttons */}
-      <div className="flex items-center gap-3">
-        {/* Primary CTA - Smart Budget Creation */}
-        <div className="relative group">
-          <Button
-            onClick={handleAIModalOpen}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 
-                       text-white px-6 py-3 rounded-xl shadow-lg transition-all duration-300 
-                       hover:shadow-xl hover:scale-105 group relative overflow-hidden font-medium"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 opacity-0 
-                            group-hover:opacity-20 transition-opacity duration-300"></div>
-            <div className="relative flex items-center space-x-2.5">
-              <Sparkles className="w-5 h-5 group-hover:animate-pulse" />
-              <span>Create Budget</span>
-              <div className="hidden sm:block w-px h-4 bg-white/30 ml-1"></div>
-              <span className="hidden sm:inline text-xs opacity-90">Smart</span>
-            </div>
-          </Button>
-
-          {/* Tooltip */}
-          <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 
-                          group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
-            <div className="bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap">
-              AI, Templates, or Manual creation
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 
-                              border-transparent border-t-gray-900"></div>
-            </div>
-          </div>
-        </div>
-
-        {/* Secondary Actions - Dropdown Menu */}
-        <div className="relative" data-dropdown>
-          <Button
-            onClick={() => setShowCreateMenu(!showCreateMenu)}
-            variant="secondary"
-            className="px-4 py-3 bg-white border-2 border-gray-200 hover:border-gray-300 
-                       text-gray-700 hover:text-gray-900 rounded-xl transition-all duration-200
-                       hover:shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            <div className="flex items-center space-x-2">
-              <Plus className="w-5 h-5" />
-              <span className="hidden sm:inline font-medium">Quick Actions</span>
-              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${
-                showCreateMenu ? 'rotate-180' : ''
-              }`} />
-            </div>
-          </Button>
-
-          {/* Dropdown Menu */}
-          {showCreateMenu && (
-            <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl 
-                            border border-gray-200 py-2 z-50 animate-in slide-in-from-top-2 
-                            duration-200">
-              
-              {/* Smart Creation Option */}
-              <button
-                onClick={() => {
-                  handleAIModalOpen();
-                  setShowCreateMenu(false);
-                }}
-                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors 
-                           duration-150 flex items-center space-x-3 group"
-              >
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-100 to-blue-100 
-                                rounded-lg flex items-center justify-center group-hover:scale-105 
-                                transition-transform duration-200">
-                  <Sparkles className="w-5 h-5 text-purple-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">Smart Creation</p>
-                  <p className="text-sm text-gray-500">AI, templates, or manual</p>
-                </div>
-              </button>
-
-              {/* Manual Creation Option */}
-              <button
-                onClick={() => {
-                  handleNewBudget();
-                  setShowCreateMenu(false);
-                }}
-                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors 
-                           duration-150 flex items-center space-x-3 group"
-              >
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-green-100 
-                                rounded-lg flex items-center justify-center group-hover:scale-105 
-                                transition-transform duration-200">
-                  <Plus className="w-5 h-5 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">Quick Manual</p>
-                  <p className="text-sm text-gray-500">Start from scratch now</p>
-                </div>
-              </button>
-
-              {/* Divider */}
-              <div className="border-t border-gray-100 my-2"></div>
-
-              {/* Import Option (Future feature) */}
-              <button
-                onClick={() => setShowCreateMenu(false)}
-                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors 
-                           duration-150 flex items-center space-x-3 group opacity-60 cursor-not-allowed"
-                disabled
-              >
-                <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 
-                                rounded-lg flex items-center justify-center">
-                  <Upload className="w-5 h-5 text-gray-400" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">Import Budget</p>
-                  <p className="text-sm text-gray-500">Coming soon</p>
-                </div>
-              </button>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
