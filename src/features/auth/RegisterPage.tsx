@@ -1,13 +1,15 @@
+// src/features/auth/RegisterPage.tsx - Enhanced with email verification
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
-import { Eye, EyeOff, ArrowRight, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, UserPlus, Mail } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button, Input, Select, Alert } from '../../components/ui';
 import { CURRENCIES, DEFAULT_CURRENCY } from '../../constants/currency';
+import { ROUTES } from '../../constants/routes';
 
 // Validation schema
 const registerSchema = z.object({
@@ -24,11 +26,17 @@ const registerSchema = z.object({
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
-
 const RegisterPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { register: registerUser, isLoading, error } = useAuth();
+  const { 
+    register: registerUser, 
+    isLoading, 
+    error, 
+    requiresVerification, 
+    user,
+    resendVerificationEmail 
+  } = useAuth(); // ENHANCED: Get verification states
   const navigate = useNavigate();
 
   const {
@@ -51,13 +59,92 @@ const RegisterPage: React.FC = () => {
         password: data.password,
         currency: data.currency,
       });
-      toast.success('Account created successfully! Welcome to RYNXPENSE.');
-      navigate('/dashboard');
+      
+      // NEW: Don't navigate immediately - let verification flow handle it
+      if (!requiresVerification) {
+        toast.success('Account created successfully! Welcome to RYNXPENSE.');
+        navigate(ROUTES.BUDGETS);
+      }
+      // If verification required, the login page will show verification message
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
       toast.error(errorMessage);
     }
   };
+
+  // NEW: Handle resend verification email
+  const handleResendVerification = async () => {
+    if (!user?.email) return;
+    
+    try {
+      await resendVerificationEmail(user.email);
+      toast.success('Verification email sent successfully!');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send verification email');
+    }
+  };
+
+  // NEW: If verification is required, show verification message
+  if (requiresVerification && user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <div className="flex justify-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-2xl">R</span>
+              </div>
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900">Registration Successful! 🎉</h2>
+            <p className="mt-2 text-gray-600">
+              Please check your email to verify your account
+            </p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="text-center space-y-4">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                <Mail className="w-6 h-6 text-green-600" />
+              </div>
+              
+              <div>
+                <p className="text-sm text-gray-600 mb-2">
+                  We've sent a verification link to:
+                </p>
+                <p className="font-semibold text-gray-900">{user.email}</p>
+              </div>
+              
+              <p className="text-sm text-gray-600">
+                Click the link in your email to verify your account and start using RYNXPENSE.
+              </p>
+              
+              <p className="text-xs text-gray-500">
+                Didn't receive the email? Check your spam folder or request a new one below.
+              </p>
+            </div>
+
+            <div className="mt-6 flex flex-col space-y-3">
+              <Button
+                onClick={handleResendVerification}
+                variant="secondary"
+                className="w-full"
+              >
+                <Mail className="w-4 h-4 mr-2" />
+                Resend verification email
+              </Button>
+              
+              <Link
+                to={ROUTES.LOGIN}
+                className="text-sm text-blue-600 hover:text-blue-500 font-medium text-center"
+              >
+                Back to login
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">
@@ -142,37 +229,11 @@ const RegisterPage: React.FC = () => {
             </div>
 
             <Select
-              label="Default currency"
-              options={CURRENCIES.map((currency) => ({
-                value: currency.value,
-                label: `${currency.label} (${currency.value})`,
-              }))}
+              label="Preferred currency"
+              options={CURRENCIES.slice()}
               error={errors.currency?.message}
               {...register('currency')}
             />
-
-            <div className="flex items-start">
-              <div className="flex items-center h-5">
-                <input
-                  id="terms"
-                  type="checkbox"
-                  required
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-              </div>
-              <div className="ml-3 text-sm">
-                <label htmlFor="terms" className="text-gray-700">
-                  I agree to the{' '}
-                  <Link to="/terms" className="text-blue-600 hover:text-blue-500 font-medium">
-                    Terms of Service
-                  </Link>{' '}
-                  and{' '}
-                  <Link to="/privacy" className="text-blue-600 hover:text-blue-500 font-medium">
-                    Privacy Policy
-                  </Link>
-                </label>
-              </div>
-            </div>
 
             <Button
               type="submit"
@@ -180,8 +241,8 @@ const RegisterPage: React.FC = () => {
               size="lg"
               isLoading={isSubmitting || isLoading}
             >
-              <UserPlus className="mr-2 h-4 w-4" />
               Create account
+              <UserPlus className="ml-2 h-4 w-4" />
             </Button>
           </form>
 
@@ -197,16 +258,50 @@ const RegisterPage: React.FC = () => {
 
             <div className="mt-6">
               <Link
-                to="/login"
+                to={ROUTES.LOGIN}
                 className="w-full flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 Sign in to your account
-                <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Right side - Hero section */}
+      {/* <div className="hidden lg:flex lg:flex-1 relative bg-gradient-to-br from-green-600 via-blue-600 to-purple-700">
+        <div className="flex flex-col justify-center px-12 text-white">
+          <h1 className="text-4xl font-bold leading-tight mb-6">
+            Start your financial journey with RYNXPENSE
+          </h1>
+          <p className="text-xl text-green-100 mb-8">
+            Create smart budgets, track expenses, and achieve your financial goals with ease.
+          </p>
+          
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-white rounded-full"></div>
+              <span className="text-green-100">Quick and secure registration</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-white rounded-full"></div>
+              <span className="text-green-100">Multi-currency support</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-white rounded-full"></div>
+              <span className="text-green-100">Advanced budget templates</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-white rounded-full"></div>
+              <span className="text-green-100">Real-time financial insights</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="absolute top-10 right-10 w-20 h-20 bg-white/10 rounded-full"></div>
+        <div className="absolute bottom-10 left-10 w-16 h-16 bg-white/10 rounded-full"></div>
+        <div className="absolute top-1/2 right-20 w-12 h-12 bg-white/10 rounded-full"></div>
+      </div> */}
 
       {/* Right side - Feature showcase */}
       <div className="hidden lg:flex lg:flex-1 lg:flex-col lg:justify-center lg:items-center bg-gradient-to-br from-green-600 to-blue-700 text-white p-12">

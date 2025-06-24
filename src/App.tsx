@@ -12,6 +12,8 @@ import AuthLayout from './components/layout/AuthLayout';
 // Page components
 import LoginPage from './features/auth/LoginPage';
 import RegisterPage from './features/auth/RegisterPage';
+import EmailVerificationPage from './features/auth/EmailVerificationPage';
+import EmailVerificationNeededPage from './features/auth/EmailVerificationNeededPage'; // NEW
 import BudgetsPage from './features/budgets/BudgetsPage';
 import BudgetDetailsPage from './features/budgets/BudgetDetailsPage';
 import SettingsPage from './features/settings/SettingsPage';
@@ -36,9 +38,9 @@ const queryClient = new QueryClient({
   },
 });
 
-// Protected Route Component
+// UPDATED: Protected Route Component with email verification check
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, requiresVerification } = useAuth();
 
   if (isLoading) {
     return (
@@ -50,6 +52,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // FIX: Check if user needs email verification
+  if (requiresVerification || !user.isEmailVerified) {
+    return <Navigate to="/email-verification-needed" replace />;
   }
 
   return <>{children}</>;
@@ -65,7 +72,7 @@ const App: React.FC = () => {
               <Routes>
                 {/* Auth Routes */}
                 <Route
-                  path="/login"
+                  path={ROUTES.LOGIN}
                   element={
                     <AuthLayout>
                       <LoginPage />
@@ -73,25 +80,32 @@ const App: React.FC = () => {
                   }
                 />
                 <Route
-                  path="/register"
+                  path={ROUTES.REGISTER}
                   element={
                     <AuthLayout>
                       <RegisterPage />
                     </AuthLayout>
                   }
                 />
+                <Route
+                  path={ROUTES.VERIFY_EMAIL}
+                  element={
+                    <AuthLayout>
+                      <EmailVerificationPage />
+                    </AuthLayout>
+                  }
+                />
+                {/* NEW: Email verification needed page */}
+                <Route
+                  path="/email-verification-needed"
+                  element={
+                    <AuthLayout>
+                      <EmailVerificationNeededPage />
+                    </AuthLayout>
+                  }
+                />
 
                 {/* Protected App Routes */}
-                {/* <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <AppLayout>
-                        <DashboardPage />
-                      </AppLayout>
-                    </ProtectedRoute>
-                  }
-                /> */}
                 <Route
                   path="/budgets"
                   element={
@@ -123,27 +137,9 @@ const App: React.FC = () => {
                   }
                 />
 
-                {/* Default redirect */}
-                <Route path="/" element={<Navigate to={ROUTES.BUDGETS} replace />} />
-
-                {/* 404 route */}
-                <Route
-                  path="*"
-                  element={
-                    <div className="min-h-screen flex items-center justify-center">
-                      <div className="text-center">
-                        <h1 className="text-4xl font-bold text-gray-900 mb-4">404</h1>
-                        <p className="text-gray-600 mb-8">Page not found</p>
-                        <button
-                          onClick={() => (window.location.href = ROUTES.BUDGETS)}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                        >
-                          Go to Budgets
-                        </button>
-                      </div>
-                    </div>
-                  }
-                />
+                {/* Default Routes */}
+                <Route path="/" element={<Navigate to="/budgets" replace />} />
+                <Route path="*" element={<Navigate to="/login" replace />} />
               </Routes>
 
               {/* Global Toast Notifications */}
@@ -155,24 +151,14 @@ const App: React.FC = () => {
                     background: '#363636',
                     color: '#fff',
                   },
-                  success: {
-                    duration: 3000,
-                    style: {
-                      background: '#10B981',
-                    },
-                  },
-                  error: {
-                    duration: 5000,
-                    style: {
-                      background: '#EF4444',
-                    },
-                  },
                 }}
               />
+
+              {/* React Query DevTools (only in development) */}
+              {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
             </div>
           </Router>
         </AuthProvider>
-        <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
     </ErrorBoundary>
   );

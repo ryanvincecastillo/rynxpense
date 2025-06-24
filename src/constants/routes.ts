@@ -3,6 +3,8 @@ export const ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
   FORGOT_PASSWORD: '/forgot-password',
+  VERIFY_EMAIL: '/verify-email',
+  VERIFY_EMAIL_NEEDED: '/email-verification-needed', // NEW
   
   // App routes
   DASHBOARD: '/dashboard',

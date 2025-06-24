@@ -1,16 +1,18 @@
+// src/services/api.ts - Enhanced with email verification and remember me
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { DuplicateBudgetOptions } from '../types';
 
 // Base API configuration
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
 
-// Create axios instance
+// Create axios instance with credentials support for remember me cookies
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // NEW: Enable credentials for remember me cookies
 });
 
 // Request interceptor to add auth token
@@ -37,7 +39,7 @@ apiClient.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refreshToken');
         if (refreshToken) {
-          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+          const response = await axios.post(`${API_BASE_URL}/auth/refresh-token`, {
             refreshToken,
           });
 
@@ -49,7 +51,7 @@ apiClient.interceptors.response.use(
           return apiClient(originalRequest);
         }
       } catch (refreshError) {
-        // Refresh failed, redirect to login
+        // Refresh failed, clear storage and redirect to login
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         window.location.href = '/login';
@@ -95,8 +97,9 @@ export const api = {
     apiClient.delete(url),
 };
 
-// Auth API
+// ENHANCED: Auth API with email verification and remember me
 export const authAPI = {
+  // ENHANCED: Register now returns requiresVerification
   register: (data: {
     email: string;
     password: string;
@@ -105,14 +108,33 @@ export const authAPI = {
     currency?: string;
   }) => api.post('/auth/register', data),
 
-  login: (data: { email: string; password: string }) =>
-    api.post('/auth/login', data),
+  // ENHANCED: Login now supports remember me
+  login: (data: { 
+    email: string; 
+    password: string;
+    rememberMe?: boolean; // NEW: Remember me option
+  }) => api.post('/auth/login', data),
 
+  // NEW: Auto-login with remember me
+  loginWithRememberMe: () => api.post('/auth/login-remember-me'),
+
+  // NEW: Email verification
+  verifyEmail: (token: string) => api.get(`/auth/verify-email?token=${token}`),
+
+  // NEW: Resend verification email
+  resendVerificationEmail: (email: string) => 
+    api.post('/auth/resend-verification', { email }),
+
+  // ENHANCED: Logout now clears remember me cookies
   logout: (refreshToken: string) =>
     api.post('/auth/logout', { refreshToken }),
 
+  // NEW: Revoke all sessions including remember me
+  revokeAllSessions: () => api.post('/auth/revoke-all-sessions'),
+
+  // EXISTING: Keep existing methods
   refreshToken: (refreshToken: string) =>
-    api.post('/auth/refresh', { refreshToken }),
+    api.post('/auth/refresh-token', { refreshToken }),
 
   getProfile: () => api.get('/auth/profile'),
 
@@ -122,7 +144,7 @@ export const authAPI = {
   }) => api.post('/auth/change-password', data),
 };
 
-// Budget API
+// Budget API (keep existing)
 export const budgetAPI = {
   create: (data: {
     name: string;
@@ -148,12 +170,12 @@ export const budgetAPI = {
 
   delete: (id: string) => api.delete(`/budgets/${id}`),
 
-  duplicate: (id: string, data : DuplicateBudgetOptions) => api.post(`/budgets/${id}/duplicate`, data),
+  duplicate: (id: string, data: DuplicateBudgetOptions) => api.post(`/budgets/${id}/duplicate`, data),
 
   getSummary: (id: string) => api.get(`/budgets/${id}/summary`)
 };
 
-// Category API
+// Category API (keep existing)
 export const categoryAPI = {
   create: (data: {
     budgetId: string;
@@ -188,7 +210,7 @@ export const categoryAPI = {
   updateActuals: () => api.post('/categories/update-actuals'),
 };
 
-// Transaction API
+// Transaction API (keep existing - add any missing methods you need)
 export const transactionAPI = {
   create: (data: {
     budgetId: string;
@@ -204,15 +226,10 @@ export const transactionAPI = {
     budgetId?: string;
     categoryId?: string;
     isPosted?: boolean;
-    startDate?: string;
-    endDate?: string;
-    minAmount?: number;
-    maxAmount?: number;
-    search?: string;
-    sortBy?: 'date' | 'amount' | 'description' | 'createdAt';
-    sortOrder?: 'asc' | 'desc';
     page?: number;
     limit?: number;
+    startDate?: string;
+    endDate?: string;
   }) => api.get('/transactions', params),
 
   getById: (id: string) => api.get(`/transactions/${id}`),
@@ -236,8 +253,5 @@ export const transactionAPI = {
     };
   }) => api.patch('/transactions/bulk-update', data),
 
-  getBudgetSummary: (budgetId: string) =>
-    api.get(`/transactions/budget/${budgetId}/summary`),
+  getBudgetSummary: (budgetId: string) => api.get(`/transactions/budget/${budgetId}/summary`),
 };
-
-export default api;

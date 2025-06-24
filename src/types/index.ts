@@ -5,6 +5,7 @@ export interface User {
   firstName: string;
   lastName: string;
   currency: string;
+  isEmailVerified: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -17,6 +18,7 @@ export interface AuthTokens {
 export interface AuthResponse {
   user: User;
   tokens: AuthTokens;
+  requiresVerification?: boolean;
 }
 
 // Budget types
