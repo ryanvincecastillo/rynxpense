@@ -1,13 +1,28 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { X, Palette, Check, AlertCircle, Save, DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { 
+  X, 
+  Palette, 
+  Check, 
+  AlertCircle, 
+  Save,
+  Loader2,
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  Eye,
+  EyeOff,
+  Info,
+  Shuffle,
+  Calculator
+} from 'lucide-react';
 
 // UI Components
 import { 
-  Modal,
   Button, 
   Input,
   Alert
 } from '../ui';
+import Modal from '../ui/Modal/Modal';
 
 // Types
 import { CreateCategoryForm, BudgetCategory } from '../../types';
@@ -15,35 +30,38 @@ import { CreateCategoryForm, BudgetCategory } from '../../types';
 // Utils
 import { isValidHexColor } from '../../utils';
 
-// Constants
+// ============================================================================
+// CONSTANTS & CONFIGURATION
+// ============================================================================
+
 const PRESET_COLORS = {
   INCOME: [
-    '#22C55E', // Green
-    '#10B981', // Emerald  
-    '#16A34A', // Green-600
-    '#15803D', // Green-700
-    '#84CC16', // Lime
-    '#65A30D', // Lime-600
-    '#059669', // Emerald-600
-    '#047857', // Emerald-700
-    '#14B8A6', // Teal
-    '#0D9488', // Teal-600
-    '#06B6D4', // Cyan
-    '#0891B2', // Cyan-600
+    { value: '#22C55E', name: 'Green' },
+    { value: '#10B981', name: 'Emerald' },
+    { value: '#16A34A', name: 'Green-600' },
+    { value: '#15803D', name: 'Green-700' },
+    { value: '#84CC16', name: 'Lime' },
+    { value: '#65A30D', name: 'Lime-600' },
+    { value: '#059669', name: 'Emerald-600' },
+    { value: '#047857', name: 'Emerald-700' },
+    { value: '#14B8A6', name: 'Teal' },
+    { value: '#0D9488', name: 'Teal-600' },
+    { value: '#06B6D4', name: 'Cyan' },
+    { value: '#0891B2', name: 'Cyan-600' },
   ],
   EXPENSE: [
-    '#EF4444', // Red
-    '#DC2626', // Red-600
-    '#B91C1C', // Red-700
-    '#F97316', // Orange
-    '#EA580C', // Orange-600
-    '#F59E0B', // Amber
-    '#D97706', // Amber-600
-    '#EC4899', // Pink
-    '#DB2777', // Pink-600
-    '#8B5CF6', // Violet
-    '#7C3AED', // Violet-600
-    '#6366F1', // Indigo
+    { value: '#EF4444', name: 'Red' },
+    { value: '#DC2626', name: 'Red-600' },
+    { value: '#B91C1C', name: 'Red-700' },
+    { value: '#F97316', name: 'Orange' },
+    { value: '#EA580C', name: 'Orange-600' },
+    { value: '#F59E0B', name: 'Amber' },
+    { value: '#D97706', name: 'Amber-600' },
+    { value: '#EC4899', name: 'Pink' },
+    { value: '#DB2777', name: 'Pink-600' },
+    { value: '#8B5CF6', name: 'Violet' },
+    { value: '#7C3AED', name: 'Violet-600' },
+    { value: '#6366F1', name: 'Indigo' },
   ],
 };
 
@@ -52,7 +70,13 @@ const DEFAULT_COLORS = {
   EXPENSE: '#EF4444',
 };
 
-// Simple color generation function
+const MAX_NAME_LENGTH = 50;
+const MAX_PLANNED_AMOUNT = 999999999;
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
 const generateRandomColor = (): string => {
   const letters = '0123456789ABCDEF';
   let color = '#';
@@ -61,6 +85,23 @@ const generateRandomColor = (): string => {
   }
   return color;
 };
+
+const getColorName = (colorValue: string, type: 'INCOME' | 'EXPENSE'): string => {
+  const preset = PRESET_COLORS[type].find((color: { value: string; name: string }) => color.value === colorValue);
+  return preset ? preset.name : 'Custom';
+};
+
+const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    minimumFractionDigits: 2,
+  }).format(amount);
+};
+
+// ============================================================================
+// TYPES & INTERFACES
+// ============================================================================
 
 interface CategoryFormModalProps {
   isOpen: boolean;
@@ -87,16 +128,271 @@ interface FormErrors {
   general?: string;
 }
 
-// Simple Label component
-const Label: React.FC<{ htmlFor?: string; className?: string; children: React.ReactNode }> = ({
-  htmlFor,
-  className = '',
-  children
-}) => (
-  <label htmlFor={htmlFor} className={`block text-sm font-medium text-gray-700 ${className}`}>
+// ============================================================================
+// SUB-COMPONENTS
+// ============================================================================
+
+const Label: React.FC<{ 
+  htmlFor?: string; 
+  className?: string; 
+  children: React.ReactNode;
+  required?: boolean;
+}> = ({ htmlFor, className = '', children, required = false }) => (
+  <label 
+    htmlFor={htmlFor} 
+    className={`block text-sm font-semibold text-gray-800 mb-2 ${className}`}
+  >
     {children}
+    {required && <span className="text-red-500 ml-1">*</span>}
   </label>
 );
+
+const CategoryTypeSelector: React.FC<{
+  selectedType: 'INCOME' | 'EXPENSE';
+  onTypeChange: (type: 'INCOME' | 'EXPENSE') => void;
+  disabled?: boolean;
+}> = ({ selectedType, onTypeChange, disabled = false }) => {
+  return (
+    <div className="space-y-2">
+      <Label required>Category Type</Label>
+      <div className="relative">
+        <div className="flex bg-gray-100 rounded-lg p-1">
+          <button
+            type="button"
+            onClick={() => onTypeChange('INCOME')}
+            disabled={disabled}
+            className={`
+              flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-md text-sm font-medium
+              transition-all duration-200 relative overflow-hidden
+              ${selectedType === 'INCOME'
+                ? 'bg-green-500 text-white shadow-md ring-1 ring-green-400'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+              }
+              ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+            `}
+          >
+            <TrendingUp className="w-4 h-4" />
+            Income
+          </button>
+          <button
+            type="button"
+            onClick={() => onTypeChange('EXPENSE')}
+            disabled={disabled}
+            className={`
+              flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-md text-sm font-medium
+              transition-all duration-200 relative overflow-hidden
+              ${selectedType === 'EXPENSE'
+                ? 'bg-red-500 text-white shadow-md ring-1 ring-red-400'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+              }
+              ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+            `}
+          >
+            <TrendingDown className="w-4 h-4" />
+            Expense
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ColorPicker: React.FC<{
+  selectedColor: string;
+  categoryType: 'INCOME' | 'EXPENSE';
+  onColorChange: (color: string) => void;
+  showCustomInput: boolean;
+  onToggleCustomInput: () => void;
+  disabled?: boolean;
+}> = ({ 
+  selectedColor, 
+  categoryType, 
+  onColorChange, 
+  showCustomInput, 
+  onToggleCustomInput, 
+  disabled = false 
+}) => {
+  const [customColorInput, setCustomColorInput] = useState(selectedColor);
+  const currentPresetColors = PRESET_COLORS[categoryType];
+
+  const handleCustomColorChange = useCallback((value: string) => {
+    setCustomColorInput(value);
+    if (isValidHexColor(value)) {
+      onColorChange(value);
+    }
+  }, [onColorChange]);
+
+  const handleRandomColor = useCallback(() => {
+    const randomColor = generateRandomColor();
+    onColorChange(randomColor);
+    setCustomColorInput(randomColor);
+  }, [onColorChange]);
+
+  return (
+    <div className="space-y-4">
+      {/* Color Preview */}
+      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+        <div 
+          className="w-8 h-8 rounded-full border-2 border-white shadow-sm flex-shrink-0"
+          style={{ backgroundColor: selectedColor }}
+        />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-700 truncate">
+            {getColorName(selectedColor, categoryType)}
+          </p>
+          <p className="text-xs text-gray-500 font-mono">
+            {selectedColor.toUpperCase()}
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={handleRandomColor}
+          disabled={disabled}
+          className="p-2 h-8 w-8"
+          title="Generate random color"
+        >
+          <Shuffle className="w-4 h-4" />
+        </Button>
+      </div>
+
+      {/* Preset Colors */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-medium text-gray-700">
+            {categoryType === 'INCOME' ? 'Income Colors' : 'Expense Colors'}
+          </span>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={onToggleCustomInput}
+            disabled={disabled}
+            className="text-xs"
+          >
+            {showCustomInput ? (
+              <>
+                <EyeOff className="w-3 h-3 mr-1" />
+                Hide Custom
+              </>
+            ) : (
+              <>
+                <Eye className="w-3 h-3 mr-1" />
+                Custom Color
+              </>
+            )}
+          </Button>
+        </div>
+        
+        <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-2">
+          {currentPresetColors.map((color) => (
+            <button
+              key={color.value}
+              type="button"
+              onClick={() => onColorChange(color.value)}
+              disabled={disabled}
+              className={`
+                relative w-8 h-8 rounded-lg border-2 transition-all duration-200
+                hover:scale-110 hover:border-gray-400 focus:outline-none focus:ring-2 
+                focus:ring-blue-500 focus:ring-offset-1 disabled:opacity-50 
+                disabled:cursor-not-allowed
+                ${selectedColor === color.value 
+                  ? 'border-gray-600 ring-2 ring-blue-500 ring-offset-1' 
+                  : 'border-gray-200'
+                }
+              `}
+              style={{ backgroundColor: color.value }}
+              title={color.name}
+            >
+              {selectedColor === color.value && (
+                <Check className="w-4 h-4 text-white absolute inset-0 m-auto drop-shadow-sm" />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Custom Color Input */}
+      {showCustomInput && (
+        <div className="space-y-2">
+          <Label htmlFor="custom-color">Custom Color (Hex)</Label>
+          <div className="flex gap-2">
+            <Input
+              id="custom-color"
+              type="text"
+              value={customColorInput}
+              onChange={(e) => handleCustomColorChange(e.target.value)}
+              placeholder="#22C55E"
+              disabled={disabled}
+              className="font-mono text-sm"
+              maxLength={7}
+            />
+            <input
+              type="color"
+              value={selectedColor}
+              onChange={(e) => onColorChange(e.target.value)}
+              disabled={disabled}
+              className="w-12 h-10 rounded border border-gray-300 cursor-pointer disabled:cursor-not-allowed"
+              title="Color picker"
+            />
+          </div>
+          {customColorInput && !isValidHexColor(customColorInput) && (
+            <p className="text-xs text-red-600 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              Please enter a valid hex color (e.g., #22C55E)
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const CategoryPreview: React.FC<{
+  name: string;
+  type: 'INCOME' | 'EXPENSE';
+  plannedAmount: number;
+  color: string;
+}> = ({ name, type, plannedAmount, color }) => {
+  return (
+    <div className="p-4 border rounded-lg bg-gradient-to-r from-gray-50 to-gray-100">
+      <div className="flex items-center gap-3">
+        <div
+          className="w-10 h-10 rounded-full border-2 border-white shadow-sm flex items-center justify-center flex-shrink-0"
+          style={{ backgroundColor: color }}
+        >
+          {type === 'INCOME' ? (
+            <TrendingUp className="w-5 h-5 text-white drop-shadow-sm" />
+          ) : (
+            <TrendingDown className="w-5 h-5 text-white drop-shadow-sm" />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="text-sm font-semibold text-gray-900 truncate">
+            {name || 'Category Name'}
+          </h4>
+          <div className="flex items-center gap-2 text-xs text-gray-600">
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              type === 'INCOME' 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {type === 'INCOME' ? '💰 Income' : '💸 Expense'}
+            </span>
+            <span className="font-mono">
+              {formatCurrency(plannedAmount)}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 
 export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
   isOpen,
@@ -107,7 +403,10 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
   budgetId,
   preselectedType,
 }) => {
-  // Form state
+  // ========================================
+  // STATE MANAGEMENT
+  // ========================================
+
   const [formData, setFormData] = useState<FormData>({
     name: '',
     type: preselectedType || 'EXPENSE',
@@ -119,22 +418,42 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCustomColor, setShowCustomColor] = useState(false);
 
-  // Get current preset colors based on type
-  const currentPresetColors = PRESET_COLORS[formData.type];
+  // ========================================
+  // COMPUTED VALUES
+  // ========================================
 
-  // Initialize form when modal opens or editing category changes
+  const isFormLoading = isLoading || isSubmitting;
+  const isEditMode = Boolean(editingCategory);
+
+  const isFormValid = useMemo(() => {
+    return formData.name.trim().length >= 2 && 
+           formData.name.trim().length <= MAX_NAME_LENGTH &&
+           formData.plannedAmount >= 0 &&
+           formData.plannedAmount <= MAX_PLANNED_AMOUNT &&
+           isValidHexColor(formData.color);
+  }, [formData]);
+
+  // ========================================
+  // FORM INITIALIZATION
+  // ========================================
+
   useEffect(() => {
     if (isOpen) {
       if (editingCategory) {
-        setFormData({
+        const newFormData = {
           name: editingCategory.name,
           type: editingCategory.type,
           plannedAmount: editingCategory.plannedAmount,
           color: editingCategory.color,
-        });
+        };
+        setFormData(newFormData);
+        
         // Check if the editing category uses a custom color
-        const allPresetColors = [...PRESET_COLORS.INCOME, ...PRESET_COLORS.EXPENSE];
-        setShowCustomColor(!allPresetColors.includes(editingCategory.color));
+        const allPresetColors: string[] = [
+          ...PRESET_COLORS.INCOME.map((c: { value: string; name: string }) => c.value),
+          ...PRESET_COLORS.EXPENSE.map((c: { value: string; name: string }) => c.value)
+        ];
+        setShowCustomColor(!allPresetColors.includes(newFormData.color));
       } else {
         const defaultType = preselectedType || 'EXPENSE';
         setFormData({
@@ -160,64 +479,63 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
     }
   }, [formData.type, editingCategory, showCustomColor]);
 
-  // Validation function
-  const validateForm = useCallback((): boolean => {
+  // ========================================
+  // VALIDATION
+  // ========================================
+
+  const validateForm = useCallback((): FormErrors => {
     const newErrors: FormErrors = {};
 
     // Name validation
-    if (!formData.name.trim()) {
+    const trimmedName = formData.name.trim();
+    if (!trimmedName) {
       newErrors.name = 'Category name is required';
-    } else if (formData.name.length > 50) {
-      newErrors.name = 'Category name must be 50 characters or less';
-    } else if (formData.name.trim().length < 2) {
+    } else if (trimmedName.length < 2) {
       newErrors.name = 'Category name must be at least 2 characters';
-    }
-
-    // Type validation
-    if (!formData.type) {
-      newErrors.type = 'Category type is required';
+    } else if (trimmedName.length > MAX_NAME_LENGTH) {
+      newErrors.name = `Category name must be ${MAX_NAME_LENGTH} characters or less`;
     }
 
     // Planned amount validation
     if (formData.plannedAmount < 0) {
       newErrors.plannedAmount = 'Planned amount cannot be negative';
-    } else if (formData.plannedAmount > 999999999) {
+    } else if (formData.plannedAmount > MAX_PLANNED_AMOUNT) {
       newErrors.plannedAmount = 'Planned amount is too large';
     }
 
     // Color validation
-    if (!formData.color || !isValidHexColor(formData.color)) {
-      newErrors.color = 'Please select a valid color';
+    if (!isValidHexColor(formData.color)) {
+      newErrors.color = 'Please select or enter a valid color';
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return newErrors;
   }, [formData]);
 
-  // Input change handlers
-  const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setFormData(prev => ({ ...prev, name: value }));
-    if (errors.name) {
-      setErrors(prev => ({ ...prev, name: undefined }));
-    }
-  }, [errors.name]);
+  // ========================================
+  // EVENT HANDLERS
+  // ========================================
 
-  const handleTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value as 'INCOME' | 'EXPENSE';
-    setFormData(prev => ({ ...prev, type: value }));
+  const handleInputChange = useCallback((field: keyof FormData) => (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const value = field === 'plannedAmount' 
+      ? Math.max(0, parseFloat(e.target.value) || 0)
+      : e.target.value;
+    
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Clear related errors
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  }, [errors]);
+
+  const handleTypeChange = useCallback((type: 'INCOME' | 'EXPENSE') => {
+    setFormData(prev => ({ ...prev, type }));
     if (errors.type) {
       setErrors(prev => ({ ...prev, type: undefined }));
     }
   }, [errors.type]);
-
-  const handleAmountChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Math.max(0, parseFloat(e.target.value) || 0);
-    setFormData(prev => ({ ...prev, plannedAmount: value }));
-    if (errors.plannedAmount) {
-      setErrors(prev => ({ ...prev, plannedAmount: undefined }));
-    }
-  }, [errors.plannedAmount]);
 
   const handleColorChange = useCallback((color: string) => {
     setFormData(prev => ({ ...prev, color }));
@@ -226,21 +544,14 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
     }
   }, [errors.color]);
 
-  const handleCustomColorChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    handleColorChange(value);
-  }, [handleColorChange]);
-
-  const handleGenerateRandomColor = useCallback(() => {
-    const randomColor = generateRandomColor();
-    handleColorChange(randomColor);
-  }, [handleColorChange]);
-
-  // Form submission
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm() || isSubmitting) {
+    if (isSubmitting) return;
+
+    const formErrors = validateForm();
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
       return;
     }
 
@@ -257,265 +568,171 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
       };
 
       await onSubmit(submitData);
-      // Note: onClose should be called by the parent after successful submission
-    } catch (error) {
-      console.error('Form submission error:', error);
+      // Modal will be closed by parent component on success
+    } catch (error: any) {
+      console.error('Category form submission error:', error);
       setErrors({
-        general: error instanceof Error 
-          ? error.message 
-          : 'An unexpected error occurred. Please try again.',
+        general: error?.message || 'An unexpected error occurred. Please try again.',
       });
     } finally {
       setIsSubmitting(false);
     }
   }, [formData, validateForm, isSubmitting, onSubmit, budgetId]);
 
-  // Handle modal close
   const handleClose = useCallback(() => {
     if (!isSubmitting) {
       onClose();
     }
   }, [isSubmitting, onClose]);
 
-  const isFormLoading = isLoading || isSubmitting;
+  // ========================================
+  // RENDER
+  // ========================================
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={editingCategory ? 'Edit Category' : 'Create Category'}
-      size="md"
+      title={isEditMode ? 'Edit Category' : 'Create Category'}
+      size="lg"
+      className="sm:max-w-md md:max-w-lg"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* General Error Alert */}
+        {/* Error Alert */}
         {errors.general && (
           <Alert type="error" className="mb-4">
-            {errors.general}
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-red-800 mb-1">Something went wrong</p>
+                <p className="text-red-700 text-sm">{errors.general}</p>
+              </div>
+            </div>
           </Alert>
         )}
 
-        {/* Category Name */}
-        <div className="space-y-2">
-          <Label htmlFor="category-name">
-            Category Name *
+        {/* Category Name Field */}
+        <div className="space-y-1">
+          <Label htmlFor="category-name" required>
+            Category Name
           </Label>
           <Input
             id="category-name"
             type="text"
             value={formData.name}
-            onChange={handleNameChange}
-            placeholder="Enter category name"
+            onChange={handleInputChange('name')}
+            placeholder="e.g., Groceries, Salary, Entertainment"
             disabled={isFormLoading}
-            className={errors.name ? 
-              'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
-            maxLength={50}
+            className={`
+              ${errors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
+              text-base sm:text-sm
+            `}
+            maxLength={MAX_NAME_LENGTH}
+            autoFocus
+            autoComplete="off"
           />
-          {errors.name && (
-            <p className="text-sm text-red-600 flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" />
-              {errors.name}
-            </p>
-          )}
-          <p className="text-xs text-gray-500">
-            {formData.name.length}/50 characters
-          </p>
-        </div>
-
-        {/* Category Type - Segmented Control */}
-        <div className="space-y-3">
-          <Label>
-            Category Type *
-          </Label>
-          <div className="relative">
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              <button
-                type="button"
-                onClick={() => handleTypeChange({ target: { value: 'INCOME' } } as any)}
-                disabled={isFormLoading}
-                className={`
-                  flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-md text-sm font-medium
-                  transition-all duration-200 relative overflow-hidden
-                  ${formData.type === 'INCOME'
-                    ? 'bg-green-500 text-white shadow-md ring-1 ring-green-400'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-                  }
-                  ${isFormLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                `}
-              >
-                <TrendingUp className="h-4 w-4" />
-                <span>Income</span>
-                {formData.type === 'INCOME' && (
-                  <div className="absolute inset-0 bg-green-600/10 rounded-md -z-10"></div>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => handleTypeChange({ target: { value: 'EXPENSE' } } as any)}
-                disabled={isFormLoading}
-                className={`
-                  flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-md text-sm font-medium
-                  transition-all duration-200 relative overflow-hidden
-                  ${formData.type === 'EXPENSE'
-                    ? 'bg-red-500 text-white shadow-md ring-1 ring-red-400'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-                  }
-                  ${isFormLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                `}
-              >
-                <TrendingDown className="h-4 w-4" />
-                <span>Expense</span>
-                {formData.type === 'EXPENSE' && (
-                  <div className="absolute inset-0 bg-red-600/10 rounded-md -z-10"></div>
-                )}
-              </button>
-            </div>
+          <div className="flex justify-between items-start">
+            {errors.name ? (
+              <p className="text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                {errors.name}
+              </p>
+            ) : (
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <Info className="w-3 h-3" />
+                Choose a descriptive name for this category
+              </div>
+            )}
+            <span className="text-xs text-gray-400 ml-2">
+              {formData.name.length}/{MAX_NAME_LENGTH}
+            </span>
           </div>
-          {errors.type && (
-            <p className="text-sm text-red-600 flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" />
-              {errors.type}
-            </p>
-          )}
         </div>
 
-        {/* Planned Amount */}
-        <div className="space-y-2">
-          <Label htmlFor="planned-amount">
-            Planned Amount *
+        {/* Category Type Selector */}
+        <CategoryTypeSelector
+          selectedType={formData.type}
+          onTypeChange={handleTypeChange}
+          disabled={isFormLoading}
+        />
+
+        {/* Planned Amount Field */}
+        <div className="space-y-1">
+          <Label htmlFor="planned-amount" required>
+            Planned Amount
           </Label>
           <div className="relative">
-            <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <span className="text-gray-500 sm:text-sm">₱</span>
+            </div>
             <Input
               id="planned-amount"
               type="number"
-              value={formData.plannedAmount || ''}
-              onChange={handleAmountChange}
+              value={formData.plannedAmount}
+              onChange={handleInputChange('plannedAmount')}
               placeholder="0.00"
               disabled={isFormLoading}
-              className={`pl-10 ${errors.plannedAmount ? 
-                'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+              className={`
+                pl-8 text-base sm:text-sm
+                ${errors.plannedAmount ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
+              `}
               min="0"
+              max={MAX_PLANNED_AMOUNT}
               step="0.01"
             />
           </div>
-          {errors.plannedAmount && (
-            <p className="text-sm text-red-600 flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" />
-              {errors.plannedAmount}
-            </p>
-          )}
+          <div className="flex justify-between items-start">
+            {errors.plannedAmount ? (
+              <p className="text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                {errors.plannedAmount}
+              </p>
+            ) : (
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <Calculator className="w-3 h-3" />
+                Set your budget limit for this category
+              </div>
+            )}
+            {formData.plannedAmount > 0 && (
+              <span className="text-xs text-gray-500 ml-2 font-mono">
+                {formatCurrency(formData.plannedAmount)}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Color Selection */}
-        <div className="space-y-3">
-          <Label>
-            Category Color *
-          </Label>
-          
-          {/* Preset Colors */}
-          <div className="grid grid-cols-6 gap-2">
-            {currentPresetColors.map((color) => (
-              <button
-                key={color}
-                type="button"
-                onClick={() => handleColorChange(color)}
-                disabled={isFormLoading}
-                className={`
-                  relative w-10 h-10 rounded-lg border-2 transition-all
-                  hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                  ${formData.color === color 
-                    ? 'border-gray-900 ring-2 ring-blue-500' 
-                    : 'border-gray-300 hover:border-gray-400'
-                  }
-                  ${isFormLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                `}
-                style={{ backgroundColor: color }}
-                aria-label={`Select color ${color}`}
-              >
-                {formData.color === color && (
-                  <Check className="h-4 w-4 text-white absolute inset-0 m-auto drop-shadow-sm" />
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Custom Color */}
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setShowCustomColor(!showCustomColor)}
-              disabled={isFormLoading}
-              className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50"
-            >
-              <Palette className="h-4 w-4" />
-              {showCustomColor ? 'Use Preset Colors' : 'Custom Color'}
-            </button>
-            
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={handleGenerateRandomColor}
-              disabled={isFormLoading}
-              className="text-xs"
-            >
-              Random
-            </Button>
-          </div>
-
-          {/* Custom Color Input */}
-          {showCustomColor && (
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 flex-1">
-                <Input
-                  type="color"
-                  value={formData.color}
-                  onChange={handleCustomColorChange}
-                  disabled={isFormLoading}
-                  className="w-12 h-10 p-1 border rounded cursor-pointer"
-                />
-                <Input
-                  type="text"
-                  value={formData.color}
-                  onChange={handleCustomColorChange}
-                  placeholder="#22C55E"
-                  disabled={isFormLoading}
-                  className="flex-1"
-                  pattern="^#[0-9A-Fa-f]{6}$"
-                />
-              </div>
-            </div>
-          )}
-
+        <div className="space-y-1">
+          <Label>Category Color</Label>
+          <ColorPicker
+            selectedColor={formData.color}
+            categoryType={formData.type}
+            onColorChange={handleColorChange}
+            showCustomInput={showCustomColor}
+            onToggleCustomInput={() => setShowCustomColor(prev => !prev)}
+            disabled={isFormLoading}
+          />
           {errors.color && (
             <p className="text-sm text-red-600 flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" />
+              <AlertCircle className="w-3 h-3" />
               {errors.color}
             </p>
           )}
         </div>
 
-        {/* Color Preview */}
-        <div className="p-4 border rounded-lg bg-gray-50">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-6 h-6 rounded-full border border-gray-300"
-              style={{ backgroundColor: formData.color }}
-            />
-            <div>
-              <p className="text-sm font-medium text-gray-900">
-                {formData.name || 'Category Name'}
-              </p>
-              <p className="text-xs text-gray-600">
-                {formData.type === 'INCOME' ? '💰 Income' : '💸 Expense'} • 
-                ₱{formData.plannedAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-          </div>
+        {/* Category Preview */}
+        <div className="space-y-2">
+          <Label>Preview</Label>
+          <CategoryPreview
+            name={formData.name}
+            type={formData.type}
+            plannedAmount={formData.plannedAmount}
+            color={formData.color}
+          />
         </div>
 
         {/* Form Actions */}
-        <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-6 border-t border-gray-200">
           <Button
             type="button"
             variant="secondary"
@@ -527,21 +744,25 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
           </Button>
           <Button
             type="submit"
-            disabled={isFormLoading || !formData.name.trim()}
+            disabled={!isFormValid || isFormLoading}
             className="w-full sm:w-auto sm:flex-1 order-1 sm:order-2"
           >
-            <Save className="h-4 w-4 mr-2" />
-            
-            {isFormLoading && (
-              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            {isFormLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {isEditMode ? 'Updating...' : 'Creating...'}
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                {isEditMode ? 'Update Category' : 'Create Category'}
+              </>
             )}
-            {editingCategory 
-              ? (isFormLoading ? 'Updating...' : 'Update Category')
-              : (isFormLoading ? 'Creating...' : 'Create Category')
-            }
           </Button>
         </div>
       </form>
     </Modal>
   );
 };
+
+export default CategoryFormModal;
