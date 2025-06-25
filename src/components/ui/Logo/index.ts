@@ -1,0 +1,1 @@
+export { RLogo } from './RLogo';

@@ -12,6 +12,7 @@ import {
   Search,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { RLogo } from '../ui/Logo';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -96,14 +97,15 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       >
         {/* Sidebar header */}
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-          <div className="flex items-center space-x-3">
+          {/* <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">R</span>
             </div>
             <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               RYNXPENSE
             </h1>
-          </div>
+          </div> */}
+          <RLogo size={32} showText={true} />
           <button
             onClick={closeSidebar}
             className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-colors"
