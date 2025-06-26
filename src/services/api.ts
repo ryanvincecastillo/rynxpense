@@ -99,7 +99,7 @@ export const api = {
 
 // ENHANCED: Auth API with email verification and remember me
 export const authAPI = {
-  // ENHANCED: Register now returns requiresVerification
+  // Register now returns requiresVerification
   register: (data: {
     email: string;
     password: string;
@@ -108,31 +108,41 @@ export const authAPI = {
     currency?: string;
   }) => api.post('/auth/register', data),
 
-  // ENHANCED: Login now supports remember me
+  // Login now supports remember me
   login: (data: { 
     email: string; 
     password: string;
-    rememberMe?: boolean; // NEW: Remember me option
+    rememberMe?: boolean;
   }) => api.post('/auth/login', data),
 
-  // NEW: Auto-login with remember me
+  // Auto-login with remember me
   loginWithRememberMe: () => api.post('/auth/login-remember-me'),
 
-  // NEW: Email verification
+  // Email verification
   verifyEmail: (token: string) => api.get(`/auth/verify-email?token=${token}`),
 
-  // NEW: Resend verification email
+  // Resend verification email
   resendVerificationEmail: (email: string) => 
     api.post('/auth/resend-verification', { email }),
 
-  // ENHANCED: Logout now clears remember me cookies
+  // NEW: Forgot password functionality
+  forgotPassword: (email: string) => 
+    api.post('/auth/forgot-password', { email }),
+
+  // NEW: Reset password functionality
+  resetPassword: (data: {
+    token: string;
+    newPassword: string;
+  }) => api.post('/auth/reset-password', data),
+
+  // Logout now clears remember me cookies
   logout: (refreshToken: string) =>
     api.post('/auth/logout', { refreshToken }),
 
-  // NEW: Revoke all sessions including remember me
+  // Revoke all sessions including remember me
   revokeAllSessions: () => api.post('/auth/revoke-all-sessions'),
 
-  // EXISTING: Keep existing methods
+  // Existing methods
   refreshToken: (refreshToken: string) =>
     api.post('/auth/refresh-token', { refreshToken }),
 

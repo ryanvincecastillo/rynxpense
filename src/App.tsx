@@ -1,3 +1,4 @@
+// rynxpense/src/App.tsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -12,8 +13,10 @@ import AuthLayout from './components/layout/AuthLayout';
 // Page components
 import LoginPage from './features/auth/LoginPage';
 import RegisterPage from './features/auth/RegisterPage';
+import ForgotPasswordPage from './features/auth/ForgotPasswordPage'; // NEW
+import ResetPasswordPage from './features/auth/ResetPasswordPage'; // NEW
 import EmailVerificationPage from './features/auth/EmailVerificationPage';
-import EmailVerificationNeededPage from './features/auth/EmailVerificationNeededPage'; // NEW
+import EmailVerificationNeededPage from './features/auth/EmailVerificationNeededPage';
 import BudgetsPage from './features/budgets/BudgetsPage';
 import BudgetDetailsPage from './features/budgets/BudgetDetailsPage';
 import SettingsPage from './features/settings/SettingsPage';
@@ -38,7 +41,7 @@ const queryClient = new QueryClient({
   },
 });
 
-// UPDATED: Protected Route Component with email verification check
+// Protected Route Component with email verification check
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isLoading, requiresVerification } = useAuth();
 
@@ -54,7 +57,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return <Navigate to="/login" replace />;
   }
 
-  // FIX: Check if user needs email verification
+  // Check if user needs email verification
   if (requiresVerification || !user.isEmailVerified) {
     return <Navigate to="/email-verification-needed" replace />;
   }
@@ -88,6 +91,23 @@ const App: React.FC = () => {
                   }
                 />
                 <Route
+                  path={ROUTES.FORGOT_PASSWORD}
+                  element={
+                    <AuthLayout>
+                      <ForgotPasswordPage />
+                    </AuthLayout>
+                  }
+                />
+                {/* NEW: Reset Password Route */}
+                <Route
+                  path={ROUTES.RESET_PASSWORD}
+                  element={
+                    <AuthLayout>
+                      <ResetPasswordPage />
+                    </AuthLayout>
+                  }
+                />
+                <Route
                   path={ROUTES.VERIFY_EMAIL}
                   element={
                     <AuthLayout>
@@ -95,7 +115,6 @@ const App: React.FC = () => {
                     </AuthLayout>
                   }
                 />
-                {/* NEW: Email verification needed page */}
                 <Route
                   path="/email-verification-needed"
                   element={
