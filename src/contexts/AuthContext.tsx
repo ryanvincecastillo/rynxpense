@@ -1,40 +1,39 @@
-// src/contexts/AuthContext.tsx - Fixed infinite loop issue
 import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react';
-import { User, AuthTokens } from '../types';
 import { authAPI } from '../services/api';
+import { AuthTokens, User } from '../types';
 
-// ENHANCED: Auth state interface with email verification
+// Auth state interface
 interface AuthState {
   user: User | null;
   tokens: AuthTokens | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  requiresVerification: boolean; // NEW: Email verification required
+  requiresVerification: boolean;
 }
 
-// ENHANCED: Auth actions with email verification states
-type AuthAction =
-  | { type: 'AUTH_START' }
-  | { type: 'AUTH_SUCCESS'; payload: { user: User; tokens: AuthTokens } }
-  | { type: 'AUTH_FAILURE'; payload: string }
-  | { type: 'VERIFICATION_REQUIRED'; payload: { user: User } } // NEW
-  | { type: 'EMAIL_VERIFIED'; payload: { user: User; tokens: AuthTokens } } // NEW
-  | { type: 'LOGOUT' }
-  | { type: 'UPDATE_USER'; payload: User }
-  | { type: 'CLEAR_ERROR' };
-
-// ENHANCED: Initial state with email verification
+// Initial state
 const initialState: AuthState = {
   user: null,
   tokens: null,
   isAuthenticated: false,
-  isLoading: true,
+  isLoading: true, // Start with loading true
   error: null,
-  requiresVerification: false, // NEW
+  requiresVerification: false,
 };
 
-// ENHANCED: Auth reducer with email verification cases
+// Auth actions
+type AuthAction =
+  | { type: 'AUTH_START' }
+  | { type: 'AUTH_SUCCESS'; payload: { user: User; tokens: AuthTokens } }
+  | { type: 'AUTH_FAILURE'; payload: string }
+  | { type: 'VERIFICATION_REQUIRED'; payload: { user: User } }
+  | { type: 'EMAIL_VERIFIED'; payload: { user: User; tokens: AuthTokens } }
+  | { type: 'LOGOUT' }
+  | { type: 'UPDATE_USER'; payload: User }
+  | { type: 'CLEAR_ERROR' };
+
+// Auth reducer
 const authReducer = (state: AuthState, action: AuthAction): AuthState => {
   switch (action.type) {
     case 'AUTH_START':
@@ -51,7 +50,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         isAuthenticated: true,
         isLoading: false,
         error: null,
-        requiresVerification: false, // NEW
+        requiresVerification: false,
       };
     case 'AUTH_FAILURE':
       return {
@@ -61,9 +60,9 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         isAuthenticated: false,
         isLoading: false,
         error: action.payload,
-        requiresVerification: false, // NEW
+        requiresVerification: false,
       };
-    case 'VERIFICATION_REQUIRED': // NEW
+    case 'VERIFICATION_REQUIRED':
       return {
         ...state,
         user: action.payload.user,
@@ -73,7 +72,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         error: null,
         requiresVerification: true,
       };
-    case 'EMAIL_VERIFIED': // NEW
+    case 'EMAIL_VERIFIED':
       return {
         ...state,
         user: action.payload.user,
@@ -91,7 +90,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         isAuthenticated: false,
         isLoading: false,
         error: null,
-        requiresVerification: false, // NEW
+        requiresVerification: false,
       };
     case 'UPDATE_USER':
       return {
@@ -108,9 +107,9 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
   }
 };
 
-// ENHANCED: Auth context interface with new methods
+// Auth context interface
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>; // ENHANCED
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (data: {
     email: string;
     password: string;
@@ -119,26 +118,43 @@ interface AuthContextType extends AuthState {
     currency?: string;
   }) => Promise<void>;
   logout: () => Promise<void>;
-  verifyEmail: (token: string) => Promise<void>; // NEW
-  resendVerificationEmail: (email: string) => Promise<void>; // NEW
+  verifyEmail: (token: string) => Promise<void>;
+  resendVerificationEmail: (email: string) => Promise<void>;
   updateUser: (user: User) => void;
   clearError: () => void;
-  checkRememberMe: () => Promise<void>; // NEW
+  checkRememberMe: () => Promise<void>;
 }
 
 // Create context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// ENHANCED: Auth provider with email verification and remember me
+// 🔧 FIXED: Auth provider with proper public route handling
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // ENHANCED: Check for existing session or remember me on mount
+  // 🔧 CRITICAL FIX: Check for existing session or remember me on mount
   useEffect(() => {
     const initializeAuth = async () => {
       dispatch({ type: 'AUTH_START' });
+
+      // 🔧 FIX: Check if we're on a public route that shouldn't auto-login
+      const currentPath = window.location.pathname;
+      const publicPaths = [
+        '/login', 
+        '/register', 
+        '/forgot-password', 
+        '/reset-password',
+        '/verify-email',
+        '/email-verification-needed'
+      ];
+      
+      // 🔧 FIX: Don't auto-login on public pages
+      if (publicPaths.includes(currentPath)) {
+        dispatch({ type: 'LOGOUT' }); // Set loading to false without authentication
+        return;
+      }
 
       // First, try to get tokens from localStorage
       const accessToken = localStorage.getItem('accessToken');
@@ -165,7 +181,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         }
       }
 
-      // NEW: Try remember me if no valid tokens
+      // Try remember me if no valid tokens
       try {
         const response = await authAPI.loginWithRememberMe();
         const { user, tokens } = response.data.data;
@@ -185,9 +201,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     };
 
     initializeAuth();
-  }, []);
+  }, []); // 🔧 FIX: Empty dependency array, only run once
 
-  // ENHANCED: Login function with remember me support
+  // Login function with remember me support
   const login = async (email: string, password: string, rememberMe?: boolean) => {
     dispatch({ type: 'AUTH_START' });
 
@@ -196,7 +212,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       const { user, tokens, requiresVerification } = response.data.data;
 
       if (requiresVerification) {
-        // NEW: Handle email verification required
         dispatch({
           type: 'VERIFICATION_REQUIRED',
           payload: { user },
@@ -219,7 +234,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  // ENHANCED: Register function with email verification support
+  // Register function with email verification support
   const register = async (data: {
     email: string;
     password: string;
@@ -234,7 +249,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       const { user, tokens, requiresVerification } = response.data.data;
 
       if (requiresVerification) {
-        // NEW: Handle email verification required
         dispatch({
           type: 'VERIFICATION_REQUIRED',
           payload: { user },
@@ -257,7 +271,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  // NEW: Email verification function
+  // Email verification function
   const verifyEmail = async (token: string) => {
     dispatch({ type: 'AUTH_START' });
 
@@ -275,13 +289,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       });
     } catch (error: any) {
       const errorMessage =
-        error.response?.data?.message || 'Email verification failed.';
+        error.response?.data?.message || 'Email verification failed. Please try again.';
       dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
       throw error;
     }
   };
 
-  // NEW: Resend verification email
+  // Resend verification email
   const resendVerificationEmail = async (email: string) => {
     try {
       await authAPI.resendVerificationEmail(email);
@@ -292,7 +306,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  // NEW: Check remember me function
+  // 🔧 FIX: Manual check remember me function (for specific use cases)
   const checkRememberMe = async () => {
     try {
       const response = await authAPI.loginWithRememberMe();
@@ -311,7 +325,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  // EXISTING: Logout function (unchanged)
+  // Logout function
   const logout = async () => {
     try {
       const refreshToken = localStorage.getItem('refreshToken');
@@ -328,7 +342,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  // 🔧 FIX: Wrap functions in useCallback to prevent infinite loops
+  // Wrap functions in useCallback to prevent infinite loops
   const updateUser = useCallback((user: User) => {
     dispatch({ type: 'UPDATE_USER', payload: user });
   }, []);
@@ -342,11 +356,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     login,
     register,
     logout,
-    verifyEmail, // NEW
-    resendVerificationEmail, // NEW
+    verifyEmail,
+    resendVerificationEmail,
     updateUser,
     clearError,
-    checkRememberMe, // NEW
+    checkRememberMe,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

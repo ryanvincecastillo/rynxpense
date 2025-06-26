@@ -13,8 +13,8 @@ import AuthLayout from './components/layout/AuthLayout';
 // Page components
 import LoginPage from './features/auth/LoginPage';
 import RegisterPage from './features/auth/RegisterPage';
-import ForgotPasswordPage from './features/auth/ForgotPasswordPage'; // NEW
-import ResetPasswordPage from './features/auth/ResetPasswordPage'; // NEW
+import ForgotPasswordPage from './features/auth/ForgotPasswordPage';
+import ResetPasswordPage from './features/auth/ResetPasswordPage';
 import EmailVerificationPage from './features/auth/EmailVerificationPage';
 import EmailVerificationNeededPage from './features/auth/EmailVerificationNeededPage';
 import BudgetsPage from './features/budgets/BudgetsPage';
@@ -41,7 +41,7 @@ const queryClient = new QueryClient({
   },
 });
 
-// Protected Route Component with email verification check
+// 🔧 FIXED: Protected Route Component with proper public route handling
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isLoading, requiresVerification } = useAuth();
 
@@ -65,6 +65,27 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
+// 🔧 FIXED: Public Route Component (prevents authenticated users from accessing auth pages)
+const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, isLoading, requiresVerification } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // If user is authenticated and verified, redirect to budgets
+  if (user && !requiresVerification && user.isEmailVerified) {
+    return <Navigate to="/budgets" replace />;
+  }
+
+  // Allow access to public routes
+  return <>{children}</>;
+};
+
 const App: React.FC = () => {
   return (
     <ErrorBoundary>
@@ -73,48 +94,61 @@ const App: React.FC = () => {
           <Router>
             <div className="App">
               <Routes>
-                {/* Auth Routes */}
+                {/* 🔧 FIXED: Public Auth Routes with PublicRoute wrapper */}
                 <Route
                   path={ROUTES.LOGIN}
                   element={
-                    <AuthLayout>
-                      <LoginPage />
-                    </AuthLayout>
+                    <PublicRoute>
+                      <AuthLayout>
+                        <LoginPage />
+                      </AuthLayout>
+                    </PublicRoute>
                   }
                 />
                 <Route
                   path={ROUTES.REGISTER}
                   element={
-                    <AuthLayout>
-                      <RegisterPage />
-                    </AuthLayout>
+                    <PublicRoute>
+                      <AuthLayout>
+                        <RegisterPage />
+                      </AuthLayout>
+                    </PublicRoute>
                   }
                 />
                 <Route
                   path={ROUTES.FORGOT_PASSWORD}
                   element={
-                    <AuthLayout>
-                      <ForgotPasswordPage />
-                    </AuthLayout>
+                    <PublicRoute>
+                      <AuthLayout>
+                        <ForgotPasswordPage />
+                      </AuthLayout>
+                    </PublicRoute>
                   }
                 />
-                {/* NEW: Reset Password Route */}
+                
+                {/* 🔧 CRITICAL FIX: Reset Password Route - Public, no authentication */}
                 <Route
                   path={ROUTES.RESET_PASSWORD}
                   element={
-                    <AuthLayout>
-                      <ResetPasswordPage />
-                    </AuthLayout>
+                    <PublicRoute>
+                      <AuthLayout>
+                        <ResetPasswordPage />
+                      </AuthLayout>
+                    </PublicRoute>
                   }
                 />
+                
                 <Route
                   path={ROUTES.VERIFY_EMAIL}
                   element={
-                    <AuthLayout>
-                      <EmailVerificationPage />
-                    </AuthLayout>
+                    <PublicRoute>
+                      <AuthLayout>
+                        <EmailVerificationPage />
+                      </AuthLayout>
+                    </PublicRoute>
                   }
                 />
+                
                 <Route
                   path="/email-verification-needed"
                   element={
@@ -124,7 +158,7 @@ const App: React.FC = () => {
                   }
                 />
 
-                {/* Protected App Routes */}
+                {/* 🔧 FIXED: Protected App Routes */}
                 <Route
                   path="/budgets"
                   element={
