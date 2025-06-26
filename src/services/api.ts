@@ -1,6 +1,6 @@
 // src/services/api.ts - Enhanced with email verification and remember me
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { DuplicateBudgetOptions } from '../types';
+import { AddCollaboratorRequest, ApiResponse, BudgetCollaborator, BudgetCollaboratorsResponse, DuplicateBudgetOptions, UpdateCollaboratorRoleRequest } from '../types';
 
 // Base API configuration
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
@@ -61,23 +61,6 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-// API Response types
-export interface ApiResponse<T = any> {
-  success: boolean;
-  message: string;
-  data?: T;
-  errors?: string[];
-}
-
-export interface PaginatedResponse<T = any> extends ApiResponse<T[]> {
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
 
 // Generic API methods
 export const api = {
@@ -264,4 +247,30 @@ export const transactionAPI = {
   }) => api.patch('/transactions/bulk-update', data),
 
   getBudgetSummary: (budgetId: string) => api.get(`/transactions/budget/${budgetId}/summary`),
+};
+
+// Budget Collaborator API
+export const budgetCollaboratorAPI = {
+  // Get all collaborators for a budget
+  getCollaborators: (budgetId: string) => 
+    api.get<BudgetCollaboratorsResponse>(`/budgets/${budgetId}/collaborators`),
+
+  // Add a collaborator to a budget
+  addCollaborator: (budgetId: string, data: AddCollaboratorRequest) => 
+    api.post<BudgetCollaborator>(`/budgets/${budgetId}/collaborators`, data),
+
+  // Update collaborator role
+  updateCollaboratorRole: (
+    budgetId: string,
+    collaboratorId: string,
+    data: UpdateCollaboratorRoleRequest
+  ) => api.patch<BudgetCollaborator>(`/budgets/${budgetId}/collaborators/${collaboratorId}`, data),
+
+  // Remove a collaborator
+  removeCollaborator: (budgetId: string, collaboratorId: string) => 
+    api.delete<{ message: string }>(`/budgets/${budgetId}/collaborators/${collaboratorId}`),
+
+  // Leave a shared budget
+  leaveBudget: (budgetId: string) => 
+    api.post<{ message: string }>(`/budgets/${budgetId}/leave`),
 };

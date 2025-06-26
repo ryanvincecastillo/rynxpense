@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { MoreVertical, Copy, Archive, Trash2, Edit } from 'lucide-react';
+import { MoreVertical, Copy, Archive, Trash2, Edit, Share2, Download, LogOut, ArchiveRestore } from 'lucide-react';
 import { Budget } from '../../../types';
 import { Button } from '../../ui';
 
@@ -8,6 +8,8 @@ interface BudgetActionsMenuProps {
   isOpen: boolean;
   onToggle: () => void;
   onAction: (action: string) => void;
+  currentUserRole?: 'OWNER' | 'EDITOR' | 'VIEWER';
+  isSharedBudget?: boolean;
 }
 
 export const BudgetActionsMenu: React.FC<BudgetActionsMenuProps> = ({
@@ -15,6 +17,8 @@ export const BudgetActionsMenu: React.FC<BudgetActionsMenuProps> = ({
   isOpen,
   onToggle,
   onAction,
+  currentUserRole = 'OWNER',
+  isSharedBudget = false,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -41,6 +45,7 @@ export const BudgetActionsMenu: React.FC<BudgetActionsMenuProps> = ({
       icon: Edit,
       onClick: () => onAction('edit'),
       className: 'text-gray-700 hover:bg-gray-100',
+      show: currentUserRole === 'OWNER' || currentUserRole === 'EDITOR',
     },
     {
       id: 'duplicate',
@@ -48,14 +53,41 @@ export const BudgetActionsMenu: React.FC<BudgetActionsMenuProps> = ({
       icon: Copy,
       onClick: () => onAction('duplicate'),
       className: 'text-gray-700 hover:bg-gray-100',
+      show: true,
+    },
+    {
+      id: 'share',
+      label: 'Share Budget',
+      icon: Share2,
+      onClick: () => onAction('share'),
+      className: 'text-gray-700 hover:bg-gray-100',
+      show: currentUserRole === 'OWNER',
+    },
+    {
+      id: 'export',
+      label: 'Export Budget',
+      icon: Download,
+      onClick: () => onAction('export'),
+      className: 'text-gray-700 hover:bg-gray-100',
+      show: true,
     },
     {
       id: 'archive',
       label: budget.isArchived ? 'Unarchive Budget' : 'Archive Budget',
-      icon: Archive,
+      icon: budget.isArchived ? ArchiveRestore : Archive,
       onClick: () => onAction('archive'),
       className: 'text-gray-700 hover:bg-gray-100',
       separator: true,
+      show: currentUserRole === 'OWNER',
+    },
+    {
+      id: 'leave',
+      label: 'Leave Budget',
+      icon: LogOut,
+      onClick: () => onAction('leave'),
+      className: 'text-red-600 hover:bg-red-50',
+      separator: !currentUserRole || currentUserRole === 'OWNER' ? false : true,
+      show: isSharedBudget && currentUserRole !== 'OWNER',
     },
     {
       id: 'delete',
@@ -63,8 +95,9 @@ export const BudgetActionsMenu: React.FC<BudgetActionsMenuProps> = ({
       icon: Trash2,
       onClick: () => onAction('delete'),
       className: 'text-red-600 hover:bg-red-50',
+      show: currentUserRole === 'OWNER',
     },
-  ];
+  ].filter(item => item.show);
 
   return (
     <div className="relative" ref={menuRef}>

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { budgetAPI, categoryAPI, transactionAPI } from '../services/api';
+import { budgetAPI, budgetCollaboratorAPI, categoryAPI, transactionAPI } from '../services/api';
 import {
   Budget,
   BudgetCategory,
@@ -12,6 +12,8 @@ import {
   CreateTransactionForm,
   TransactionsResponse,
   DuplicateBudgetOptions,
+  AddCollaboratorRequest,
+  UpdateCollaboratorRoleRequest,
 } from '../types';
 
 // Query keys
@@ -25,6 +27,7 @@ export const queryKeys = {
   transactions: ['transactions'] as const,
   transaction: (id: string) => ['transactions', id] as const,
   transactionSummary: (budgetId: string) => ['transactions', 'summary', budgetId] as const,
+  collaborators: (budgetId: string) => ['budgets', budgetId, 'collaborators'] as const,
 };
 
 // Budget hooks
@@ -274,6 +277,92 @@ export const useBulkUpdateTransactions = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.transactions });
       queryClient.invalidateQueries({ queryKey: queryKeys.categories });
+    },
+  });
+};
+
+// ===== BUDGET COLLABORATOR HOOKS =====
+
+// Get budget collaborators
+export const useBudgetCollaborators = (budgetId: string) => {
+  return useQuery({
+    queryKey: queryKeys.collaborators(budgetId),
+    queryFn: () => budgetCollaboratorAPI.getCollaborators(budgetId),
+    select: (response) => response.data.data,
+    enabled: !!budgetId,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+};
+
+// Add collaborator mutation
+export const useAddCollaborator = (budgetId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: AddCollaboratorRequest) => 
+      budgetCollaboratorAPI.addCollaborator(budgetId, data),
+    onSuccess: () => {
+      // Invalidate collaborators query
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.collaborators(budgetId)
+      });
+      
+      // Also invalidate budgets list to update sharing indicators
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.budgets
+      });
+    },
+  });
+};
+
+// Update collaborator role mutation
+export const useUpdateCollaboratorRole = (budgetId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ collaboratorId, data }: { 
+      collaboratorId: string; 
+      data: UpdateCollaboratorRoleRequest;
+    }) => budgetCollaboratorAPI.updateCollaboratorRole(budgetId, collaboratorId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.collaborators(budgetId)
+      });
+    },
+  });
+};
+
+// Remove collaborator mutation
+export const useRemoveCollaborator = (budgetId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (collaboratorId: string) => 
+      budgetCollaboratorAPI.removeCollaborator(budgetId, collaboratorId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.collaborators(budgetId)
+      });
+      
+      // Also invalidate budgets list
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.budgets
+      });
+    },
+  });
+};
+
+// Leave budget mutation
+export const useLeaveBudget = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (budgetId: string) => budgetCollaboratorAPI.leaveBudget(budgetId),
+    onSuccess: () => {
+      // Invalidate all budget-related queries
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.budgets
+      });
     },
   });
 };

@@ -31,23 +31,47 @@ export interface Budget {
   isArchived: boolean;
   createdAt: string;
   updatedAt: string;
-  owner?: Pick<User, 'id' | 'firstName' | 'lastName' | 'email'>;
+  
+  // ADD THESE COLLABORATION FIELDS
+  userRole?: 'OWNER' | 'EDITOR' | 'VIEWER';
+  isShared?: boolean;
+  owner?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
   collaborators?: BudgetCollaborator[];
+  
+  // Existing optional fields
   categories?: BudgetCategory[];
   summary?: BudgetSummary;
   _count?: {
     categories: number;
     transactions: number;
+    collaborators: number; // ADD this line
   };
 }
 
 export interface BudgetCollaborator {
   id: string;
-  budgetId: string;
-  userId: string;
   role: 'OWNER' | 'EDITOR' | 'VIEWER';
   createdAt: string;
-  user: Pick<User, 'id' | 'firstName' | 'lastName' | 'email'>;
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+export interface AddCollaboratorRequest {
+  email: string;
+  role: 'VIEWER' | 'EDITOR';
+}
+
+export interface UpdateCollaboratorRoleRequest {
+  role: 'VIEWER' | 'EDITOR';
 }
 
 // Category types
@@ -119,10 +143,7 @@ export interface ApiResponse<T = any> {
   errors?: string[];
 }
 
-export interface PaginatedResponse<T = any> {
-  success: boolean;
-  message: string;
-  data: T[];
+export interface PaginatedResponse<T = any> extends ApiResponse<T[]> {
   pagination: {
     page: number;
     limit: number;
@@ -156,6 +177,11 @@ export interface BudgetCategoriesResponse {
     netPlanned: number;
     netActual: number;
   };
+}
+
+export interface BudgetCollaboratorsResponse {
+  owner: BudgetCollaborator | null;
+  collaborators: BudgetCollaborator[];
 }
 
 // Form types

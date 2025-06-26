@@ -14,7 +14,6 @@ import {
   useCreateCategory,
   useUpdateCategory,
   useDeleteCategory,
-  // ADDED: Transaction API hooks
   useCreateTransaction,
   useUpdateTransaction,
   useDeleteTransaction,
@@ -31,7 +30,9 @@ import { Button, Alert, LoadingSpinner, Badge, DeleteConfirmModal, ArchiveConfir
 import { 
   BudgetFormModal, 
   CategoryFormModal,
-  TransactionFormModal  // ADDED: Import TransactionFormModal
+  TransactionFormModal,
+  ShareBudgetModal,
+  LeaveBudgetModal
 } from '../../components/modals';
 import { DuplicateBudgetModal } from '../../components/modals/DuplicateBudgetModal';
 
@@ -46,11 +47,11 @@ import {
   Budget,
   CreateBudgetForm,
   CreateCategoryForm,
-  CreateTransactionForm,  // ADDED: Import CreateTransactionForm
+  CreateTransactionForm,
   DuplicateBudgetOptions,
 } from '../../types';
 
-// Constants - defined to match BudgetTabs ActiveTab type
+// Constants
 const TABS = {
   OVERVIEW: 'overview' as const,
   CATEGORIES: 'categories' as const, 
@@ -73,6 +74,8 @@ interface BudgetDetailsState {
     showDuplicateModal: boolean;
     showArchiveModal: boolean;
     showDeleteModal: boolean;
+    showShareBudgetModal: boolean;
+    showLeaveBudgetModal: boolean;
   };
   editingItem: Transaction | BudgetCategory | null;
   deleteConfirmation: {
@@ -122,6 +125,8 @@ const BudgetDetailsPage: React.FC = () => {
       showDuplicateModal: false,
       showArchiveModal: false,
       showDeleteModal: false,
+      showShareBudgetModal: false,
+      showLeaveBudgetModal: false,
     },
     editingItem: null,
     deleteConfirmation: {
@@ -142,10 +147,9 @@ const BudgetDetailsPage: React.FC = () => {
     },
   });
 
-  // ADDED: Track preselected type for transaction modals
   const [preselectedType, setPreselectedType] = useState<'INCOME' | 'EXPENSE' | undefined>(undefined);
 
-  // API queries (MOVED TO TOP - BEFORE ALL CALLBACKS)
+  // API queries
   const { data: budget, isLoading: budgetLoading, error: budgetError } = useBudget(budgetId!);
   const { data: summary, isLoading: summaryLoading } = useBudgetSummary(budgetId!);
   const { data: categoriesData, isLoading: categoriesLoading } = useBudgetCategories(budgetId!);
@@ -153,13 +157,13 @@ const BudgetDetailsPage: React.FC = () => {
   const transactionsParams = useMemo(() => ({
     budgetId: budgetId!,
     page: state.currentPage,
-    limit: 1000, //changed to 1000 from 50, need to view all transactions
+    limit: 1000,
     ...state.filters.transactions,
   }), [budgetId, state.currentPage, state.filters.transactions]);
   
   const { data: transactionsResponse, isLoading: transactionsLoading } = useTransactions(transactionsParams);
 
-  // API mutations (MOVED TO TOP - BEFORE ALL CALLBACKS)
+  // API mutations
   const updateBudgetMutation = useUpdateBudget();
   const duplicateBudgetMutation = useDuplicateBudget();
   const deleteBudgetMutation = useDeleteBudget();
@@ -203,30 +207,13 @@ const BudgetDetailsPage: React.FC = () => {
   }, []);
 
   // Share Budget Handler
-  const handleShareBudget = useCallback(async () => {
-    try {
-      if (navigator.share && budget) {
-        await navigator.share({
-          title: `Budget: ${budget.name}`,
-          text: budget.description || `Check out my ${budget.name} budget`,
-          url: window.location.href,
-        });
-        showSuccess('Budget shared successfully');
-      } else {
-        // Fallback to clipboard
-        navigator.clipboard.writeText(window.location.href);
-        showSuccess('Budget link copied to clipboard');
-      }
-    } catch (error) {
-      console.error('Share error:', error);
-      showError('Failed to share budget');
-    }
-  }, [budget, showSuccess, showError]);
+  const handleShareBudget = useCallback(() => {
+    updateModalState({ showShareBudgetModal: true });
+  }, [updateModalState]);
 
   // Export Budget Handler
   const handleExportBudget = useCallback(async () => {
     try {
-      // Create budget data export
       const exportData = {
         budget,
         summary,
@@ -252,7 +239,7 @@ const BudgetDetailsPage: React.FC = () => {
     }
   }, [budget, summary, allCategories, transactionsResponse, showSuccess, showError]);
 
-  // Menu Actions Handler (ADDED SHARE AND EXPORT HANDLING)
+  // Menu Actions Handler
   const handleMenuAction = useCallback((action: string) => {
     switch (action) {
       case 'edit':
@@ -260,6 +247,12 @@ const BudgetDetailsPage: React.FC = () => {
         break;
       case 'duplicate':
         updateModalState({ showDuplicateModal: true });
+        break;
+      case 'share':
+        updateModalState({ showShareBudgetModal: true });
+        break;
+      case 'leave':
+        updateModalState({ showLeaveBudgetModal: true });
         break;
       case 'archive':
         updateModalState({ showArchiveModal: true });
@@ -270,14 +263,11 @@ const BudgetDetailsPage: React.FC = () => {
       case 'export':
         handleExportBudget();
         break;
-      case 'share':
-        handleShareBudget();
-        break;
       default:
         console.warn('Unknown menu action:', action);
     }
     updateModalState({ showActionsMenu: false });
-  }, [updateModalState, handleExportBudget, handleShareBudget]);
+  }, [updateModalState, handleExportBudget]);
 
   // Quick Action Handler
   const handleQuickAction = useCallback((action: string, type?: string) => {
@@ -307,13 +297,12 @@ const BudgetDetailsPage: React.FC = () => {
     switch (action) {
       case 'create':
         setEditingItem(null);
-        setPreselectedType(data?.type || data?.preselectedType);
+        setPreselectedType(data?.type);
         updateModalState({ showCreateCategoryModal: true });
         break;
       case 'edit':
         if (category) {
           setEditingItem(category);
-          setPreselectedType(undefined);
           updateModalState({ showEditCategoryModal: true });
         }
         break;
@@ -328,26 +317,7 @@ const BudgetDetailsPage: React.FC = () => {
     }
   }, [setEditingItem, setPreselectedType, updateModalState]);
 
-  // ADDED: Transaction Delete Handler (MOVED BEFORE handleTransactionAction)
-  const handleTransactionDelete = useCallback(async (transactionId: string) => {
-    try {
-      await deleteTransactionMutation.mutateAsync(transactionId);
-      showSuccess('Transaction deleted successfully');
-      setState(prev => ({
-        ...prev,
-        deleteConfirmation: {
-          isOpen: false,
-          type: null,
-          item: null,
-          onConfirm: null,
-        }
-      }));
-    } catch (error) {
-      showError('Failed to delete transaction');
-    }
-  }, [deleteTransactionMutation, showSuccess, showError]);
-
-  // ADDED: Transaction Actions Handler
+  // Transaction Actions Handler
   const handleTransactionAction = useCallback((action: string, transaction?: Transaction, data?: any) => {
     switch (action) {
       case 'create':
@@ -358,49 +328,42 @@ const BudgetDetailsPage: React.FC = () => {
       case 'edit':
         if (transaction) {
           setEditingItem(transaction);
-          setPreselectedType(undefined);
           updateModalState({ showEditTransactionModal: true });
         }
         break;
       case 'delete':
         if (transaction) {
-          setEditingItem(transaction);
           setState(prev => ({
             ...prev,
             deleteConfirmation: {
               isOpen: true,
               type: 'transaction',
               item: transaction,
-              onConfirm: () => handleTransactionDelete(transaction.id),
-            }
+              onConfirm: () => handleTransactionDelete(transaction),
+            },
           }));
         }
         break;
       default:
         console.warn('Unknown transaction action:', action);
     }
-  }, [setEditingItem, setPreselectedType, updateModalState, handleTransactionDelete]);
+  }, [setEditingItem, setPreselectedType, updateModalState]);
 
-  // Category Form Submit Handler
-  const handleCategorySubmit = useCallback(async (formData: CreateCategoryForm) => {
+  // Form Submit Handlers
+  const handleCategorySubmit = useCallback(async (data: CreateCategoryForm) => {
     try {
       if (state.editingItem && 'id' in state.editingItem) {
-        // Update existing category
         await updateCategoryMutation.mutateAsync({
           id: state.editingItem.id,
-          data: formData
+          data,
         });
         showSuccess('Category updated successfully');
+        updateModalState({ showEditCategoryModal: false });
       } else {
-        // Create new category
-        await createCategoryMutation.mutateAsync(formData);
+        await createCategoryMutation.mutateAsync(data);
         showSuccess('Category created successfully');
+        updateModalState({ showCreateCategoryModal: false });
       }
-      
-      updateModalState({ 
-        showCreateCategoryModal: false, 
-        showEditCategoryModal: false 
-      });
       setEditingItem(null);
       setPreselectedType(undefined);
     } catch (error) {
@@ -418,26 +381,20 @@ const BudgetDetailsPage: React.FC = () => {
     setPreselectedType
   ]);
 
-  // ADDED: Transaction Form Submit Handler
-  const handleTransactionSubmit = useCallback(async (formData: CreateTransactionForm) => {
+  const handleTransactionSubmit = useCallback(async (data: CreateTransactionForm) => {
     try {
       if (state.editingItem && 'id' in state.editingItem) {
-        // Update existing transaction
         await updateTransactionMutation.mutateAsync({
           id: state.editingItem.id,
-          data: formData
+          data,
         });
         showSuccess('Transaction updated successfully');
+        updateModalState({ showEditTransactionModal: false });
       } else {
-        // Create new transaction
-        await createTransactionMutation.mutateAsync(formData);
+        await createTransactionMutation.mutateAsync(data);
         showSuccess('Transaction created successfully');
+        updateModalState({ showCreateTransactionModal: false });
       }
-      
-      updateModalState({ 
-        showCreateTransactionModal: false, 
-        showEditTransactionModal: false 
-      });
       setEditingItem(null);
       setPreselectedType(undefined);
     } catch (error) {
@@ -455,7 +412,7 @@ const BudgetDetailsPage: React.FC = () => {
     setPreselectedType
   ]);
 
-  // Category Delete Handler
+  // Delete Handlers
   const handleCategoryDelete = useCallback(async () => {
     if (state.editingItem && 'id' in state.editingItem) {
       try {
@@ -468,6 +425,24 @@ const BudgetDetailsPage: React.FC = () => {
       }
     }
   }, [state.editingItem, deleteCategoryMutation, showSuccess, showError, updateModalState, setEditingItem]);
+
+  const handleTransactionDelete = useCallback(async (transaction: Transaction) => {
+    try {
+      await deleteTransactionMutation.mutateAsync(transaction.id);
+      showSuccess('Transaction deleted successfully');
+      setState(prev => ({
+        ...prev,
+        deleteConfirmation: {
+          isOpen: false,
+          type: null,
+          item: null,
+          onConfirm: null,
+        }
+      }));
+    } catch (error) {
+      showError('Failed to delete transaction');
+    }
+  }, [deleteTransactionMutation, showSuccess, showError]);
 
   // Budget Form Submit Handler
   const handleBudgetSubmit = useCallback(async (data: CreateBudgetForm) => {
@@ -482,32 +457,6 @@ const BudgetDetailsPage: React.FC = () => {
       showError('Failed to update budget');
     }
   }, [updateBudgetMutation, budgetId, showSuccess, showError, updateModalState]);
-
-  // Close Modal Handler
-  const handleCloseModal = useCallback(() => {
-    updateModalState({ 
-      showEditBudgetModal: false,
-      showDuplicateModal: false,
-      showArchiveModal: false,
-      showDeleteModal: false,
-      showCreateCategoryModal: false,
-      showEditCategoryModal: false,
-      showDeleteConfirmModal: false,
-      showCreateTransactionModal: false,
-      showEditTransactionModal: false,
-    });
-    setEditingItem(null);
-    setPreselectedType(undefined);
-    setState(prev => ({
-      ...prev,
-      deleteConfirmation: {
-        isOpen: false,
-        type: null,
-        item: null,
-        onConfirm: null,
-      }
-    }));
-  }, [updateModalState, setEditingItem, setPreselectedType]);
 
   // Duplicate Budget Handler
   const handleDuplicateBudget = useCallback(async (options: DuplicateBudgetOptions) => {
@@ -553,7 +502,41 @@ const BudgetDetailsPage: React.FC = () => {
     }
   }, [deleteBudgetMutation, budgetId, showSuccess, showError, navigate, updateModalState]);
 
-  // Error handling (AFTER ALL HOOKS)
+  // Leave Budget Success Handler
+  const handleLeaveBudgetSuccess = useCallback(() => {
+    navigate('/budgets');
+    showSuccess('You have left the budget successfully');
+  }, [navigate, showSuccess]);
+
+  // Close Modal Handler
+  const handleCloseModal = useCallback(() => {
+    updateModalState({ 
+      showEditBudgetModal: false,
+      showDuplicateModal: false,
+      showArchiveModal: false,
+      showDeleteModal: false,
+      showCreateCategoryModal: false,
+      showEditCategoryModal: false,
+      showDeleteConfirmModal: false,
+      showCreateTransactionModal: false,
+      showEditTransactionModal: false,
+      showShareBudgetModal: false,
+      showLeaveBudgetModal: false,
+    });
+    setEditingItem(null);
+    setPreselectedType(undefined);
+    setState(prev => ({
+      ...prev,
+      deleteConfirmation: {
+        isOpen: false,
+        type: null,
+        item: null,
+        onConfirm: null,
+      }
+    }));
+  }, [updateModalState, setEditingItem, setPreselectedType]);
+
+  // Error handling
   if (budgetError) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -564,7 +547,7 @@ const BudgetDetailsPage: React.FC = () => {
     );
   }
 
-  // Loading state (AFTER ALL HOOKS)
+  // Loading state
   if (budgetLoading || !budget) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -589,12 +572,13 @@ const BudgetDetailsPage: React.FC = () => {
           onToggle={() => updateModalState({ 
             showActionsMenu: !state.modalState.showActionsMenu 
           })}
+          currentUserRole={budget.currentUserRole}
+          isSharedBudget={budget.isShared}
         />
       </BudgetDetailsHeader>
 
       {/* Main Content */}
       <div className="pb-16">
-        {/* Content with same container structure as header */}
         <div className="max-w-7xl mx-auto">
           <div className="space-y-6">
             {/* Tabs */}
@@ -683,7 +667,7 @@ const BudgetDetailsPage: React.FC = () => {
         warningText="All transactions in this category will be moved to 'Uncategorized'."
       />
 
-      {/* ADDED: Transaction Create Modal */}
+      {/* Transaction Create Modal */}
       <TransactionFormModal
         isOpen={state.modalState.showCreateTransactionModal}
         onClose={handleCloseModal}
@@ -694,7 +678,7 @@ const BudgetDetailsPage: React.FC = () => {
         isLoading={createTransactionMutation.isPending}
       />
 
-      {/* ADDED: Transaction Edit Modal */}
+      {/* Transaction Edit Modal */}
       <TransactionFormModal
         isOpen={state.modalState.showEditTransactionModal}
         onClose={handleCloseModal}
@@ -705,7 +689,7 @@ const BudgetDetailsPage: React.FC = () => {
         isLoading={updateTransactionMutation.isPending}
       />
 
-      {/* ADDED: Transaction Delete Confirmation Modal */}
+      {/* Transaction Delete Confirmation Modal */}
       <DeleteConfirmModal
         isOpen={state.deleteConfirmation.isOpen && state.deleteConfirmation.type === 'transaction'}
         onClose={handleCloseModal}
@@ -744,6 +728,21 @@ const BudgetDetailsPage: React.FC = () => {
         itemType="budget"
         isLoading={deleteBudgetMutation.isPending}
         warningText="All categories and transactions in this budget will also be deleted."
+      />
+
+      {/* Share Budget Modal */}
+      <ShareBudgetModal
+        isOpen={state.modalState.showShareBudgetModal}
+        onClose={handleCloseModal}
+        budget={budget}
+      />
+
+      {/* Leave Budget Modal */}
+      <LeaveBudgetModal
+        isOpen={state.modalState.showLeaveBudgetModal}
+        onClose={handleCloseModal}
+        budget={budget}
+        onSuccess={handleLeaveBudgetSuccess}
       />
     </div>
   );
