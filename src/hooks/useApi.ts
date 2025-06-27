@@ -1,3 +1,4 @@
+// src/hooks/useApi.ts - Enhanced version for better UX
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { budgetAPI, budgetCollaboratorAPI, categoryAPI, transactionAPI } from '../services/api';
 import {
@@ -37,6 +38,9 @@ export const useBudgets = (params?: BudgetQueryParams) => {
     queryFn: () => budgetAPI.getAll(params),
     select: (response) => response.data,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    // 🚀 ANTI-FLICKER: Keep previous data while fetching new data
+    placeholderData: (previousData) => previousData,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -46,6 +50,8 @@ export const useBudget = (id: string) => {
     queryFn: () => budgetAPI.getById(id),
     select: (response) => response.data.data,
     enabled: !!id,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    placeholderData: (previousData) => previousData,
   });
 };
 
@@ -55,6 +61,8 @@ export const useBudgetSummary = (id: string) => {
     queryFn: () => budgetAPI.getSummary(id),
     select: (response) => response.data.data,
     enabled: !!id,
+    staleTime: 30 * 1000, // 30 seconds
+    placeholderData: (previousData) => previousData,
   });
 };
 
@@ -63,7 +71,25 @@ export const useCreateBudget = () => {
 
   return useMutation({
     mutationFn: (data: CreateBudgetForm) => budgetAPI.create(data),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      // 🚀 OPTIMISTIC UPDATE: Add new budget to cache
+      queryClient.setQueriesData(
+        { queryKey: queryKeys.budgets },
+        (oldData: any) => {
+          if (!oldData?.data) return oldData;
+          
+          return {
+            ...oldData,
+            data: [response.data.data, ...oldData.data],
+            pagination: oldData.pagination ? {
+              ...oldData.pagination,
+              total: oldData.pagination.total + 1,
+            } : undefined,
+          };
+        }
+      );
+      
+      // Invalidate to ensure server state sync
       queryClient.invalidateQueries({ queryKey: queryKeys.budgets });
     },
   });
@@ -75,9 +101,33 @@ export const useUpdateBudget = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Budget> }) =>
       budgetAPI.update(id, data),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.budgets });
-      queryClient.invalidateQueries({ queryKey: queryKeys.budget(id) });
+    onSuccess: (response, { id }) => {
+      // 🚀 OPTIMISTIC UPDATE: Update budget in all caches
+      const updatedBudget = response.data.data;
+      
+      // Update budgets list cache
+      queryClient.setQueriesData(
+        { queryKey: queryKeys.budgets },
+        (oldData: any) => {
+          if (!oldData?.data) return oldData;
+          
+          return {
+            ...oldData,
+            data: oldData.data.map((budget: Budget) => 
+              budget.id === id ? updatedBudget : budget
+            ),
+          };
+        }
+      );
+      
+      // Update specific budget cache
+      queryClient.setQueryData(queryKeys.budget(id), (oldData: any) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          data: { data: updatedBudget },
+        };
+      });
     },
   });
 };
@@ -87,8 +137,26 @@ export const useDeleteBudget = () => {
 
   return useMutation({
     mutationFn: (id: string) => budgetAPI.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.budgets });
+    onSuccess: (_, deletedId) => {
+      // 🚀 OPTIMISTIC UPDATE: Remove from cache
+      queryClient.setQueriesData(
+        { queryKey: queryKeys.budgets },
+        (oldData: any) => {
+          if (!oldData?.data) return oldData;
+          
+          return {
+            ...oldData,
+            data: oldData.data.filter((budget: Budget) => budget.id !== deletedId),
+            pagination: oldData.pagination ? {
+              ...oldData.pagination,
+              total: oldData.pagination.total - 1,
+            } : undefined,
+          };
+        }
+      );
+      
+      // Remove specific budget cache
+      queryClient.removeQueries({ queryKey: queryKeys.budget(deletedId) });
     },
   });
 };
@@ -107,8 +175,27 @@ export const useDuplicateBudget = () => {
       const response = await budgetAPI.duplicate(budgetId, options);
       return response.data;
     },
-    onSuccess: () => {
-      // Invalidate and refetch budgets list
+    onSuccess: (response) => {
+      // 🚀 OPTIMISTIC UPDATE: Add duplicated budget to cache
+      const newBudget = response.data;
+      
+      queryClient.setQueriesData(
+        { queryKey: queryKeys.budgets },
+        (oldData: any) => {
+          if (!oldData?.data) return oldData;
+          
+          return {
+            ...oldData,
+            data: [newBudget, ...oldData.data],
+            pagination: oldData.pagination ? {
+              ...oldData.pagination,
+              total: oldData.pagination.total + 1,
+            } : undefined,
+          };
+        }
+      );
+      
+      // Invalidate to ensure server state sync
       queryClient.invalidateQueries({ queryKey: queryKeys.budgets });
     },
   });
@@ -121,6 +208,7 @@ export const useCategories = (params?: CategoryQueryParams) => {
     queryFn: () => categoryAPI.getAll(params),
     select: (response) => response.data,
     staleTime: 5 * 60 * 1000,
+    placeholderData: (previousData) => previousData,
   });
 };
 
@@ -130,6 +218,8 @@ export const useCategory = (id: string) => {
     queryFn: () => categoryAPI.getById(id),
     select: (response) => response.data.data,
     enabled: !!id,
+    staleTime: 2 * 60 * 1000,
+    placeholderData: (previousData) => previousData,
   });
 };
 
@@ -139,6 +229,8 @@ export const useBudgetCategories = (budgetId: string) => {
     queryFn: () => categoryAPI.getByBudget(budgetId),
     select: (response) => response.data.data,
     enabled: !!budgetId,
+    staleTime: 2 * 60 * 1000,
+    placeholderData: (previousData) => previousData,
   });
 };
 
@@ -147,10 +239,14 @@ export const useCreateCategory = () => {
 
   return useMutation({
     mutationFn: (data: CreateCategoryForm) => categoryAPI.create(data),
-    onSuccess: (_, { budgetId }) => {
+    onSuccess: (response) => {
+      const newCategory = response.data.data;
+      
+      // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: queryKeys.categories });
-      queryClient.invalidateQueries({ queryKey: queryKeys.budgetCategories(budgetId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.budgetSummary(budgetId) });
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.budgetCategories(newCategory.budgetId) 
+      });
     },
   });
 };
@@ -162,13 +258,19 @@ export const useUpdateCategory = () => {
     mutationFn: ({ id, data }: { id: string; data: Partial<BudgetCategory> }) =>
       categoryAPI.update(id, data),
     onSuccess: (response, { id }) => {
-      const category = response.data.data;
+      const updatedCategory = response.data.data;
+      
+      // Update category cache
+      queryClient.setQueryData(queryKeys.category(id), (oldData: any) => {
+        if (!oldData) return oldData;
+        return { ...oldData, data: { data: updatedCategory } };
+      });
+      
+      // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: queryKeys.categories });
-      queryClient.invalidateQueries({ queryKey: queryKeys.category(id) });
-      if (category.budgetId) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.budgetCategories(category.budgetId) });
-        queryClient.invalidateQueries({ queryKey: queryKeys.budgetSummary(category.budgetId) });
-      }
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.budgetCategories(updatedCategory.budgetId) 
+      });
     },
   });
 };
@@ -189,11 +291,10 @@ export const useTransactions = (params?: TransactionQueryParams) => {
   return useQuery({
     queryKey: [...queryKeys.transactions, params],
     queryFn: () => transactionAPI.getAll(params),
-    select: (response): TransactionsResponse => {
-      // The API returns the data in the format we expect
-      return response.data as TransactionsResponse;
-    },
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    select: (response) => response.data,
+    staleTime: 30 * 1000, // 30 seconds
+    placeholderData: (previousData) => previousData,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -203,6 +304,8 @@ export const useTransaction = (id: string) => {
     queryFn: () => transactionAPI.getById(id),
     select: (response) => response.data.data,
     enabled: !!id,
+    staleTime: 30 * 1000,
+    placeholderData: (previousData) => previousData,
   });
 };
 
@@ -212,6 +315,8 @@ export const useTransactionSummary = (budgetId: string) => {
     queryFn: () => transactionAPI.getBudgetSummary(budgetId),
     select: (response) => response.data.data,
     enabled: !!budgetId,
+    staleTime: 30 * 1000,
+    placeholderData: (previousData) => previousData,
   });
 };
 
@@ -220,12 +325,9 @@ export const useCreateTransaction = () => {
 
   return useMutation({
     mutationFn: (data: CreateTransactionForm) => transactionAPI.create(data),
-    onSuccess: (_, { budgetId, categoryId }) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.transactions });
-      queryClient.invalidateQueries({ queryKey: queryKeys.budgetCategories(budgetId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.budgetSummary(budgetId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.category(categoryId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.transactionSummary(budgetId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories });
     },
   });
 };
@@ -236,18 +338,10 @@ export const useUpdateTransaction = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Transaction> }) =>
       transactionAPI.update(id, data),
-    onSuccess: (response, { id }) => {
-      const transaction = response.data.data;
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.transactions });
       queryClient.invalidateQueries({ queryKey: queryKeys.transaction(id) });
-      if (transaction.budgetId) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.budgetCategories(transaction.budgetId) });
-        queryClient.invalidateQueries({ queryKey: queryKeys.budgetSummary(transaction.budgetId) });
-        queryClient.invalidateQueries({ queryKey: queryKeys.transactionSummary(transaction.budgetId) });
-      }
-      if (transaction.categoryId) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.category(transaction.categoryId) });
-      }
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories });
     },
   });
 };
@@ -259,6 +353,7 @@ export const useDeleteTransaction = () => {
     mutationFn: (id: string) => transactionAPI.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.transactions });
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories });
     },
   });
 };
@@ -290,112 +385,69 @@ export const useBudgetCollaborators = (budgetId: string) => {
     queryFn: () => budgetCollaboratorAPI.getCollaborators(budgetId),
     select: (response) => response.data.data,
     enabled: !!budgetId,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 2 * 60 * 1000,
+    placeholderData: (previousData) => previousData,
   });
 };
 
-// Add collaborator mutation
-export const useAddCollaborator = (budgetId: string) => {
+// Add collaborator
+export const useAddCollaborator = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: AddCollaboratorRequest) => 
+    mutationFn: ({ budgetId, data }: { budgetId: string; data: AddCollaboratorRequest }) =>
       budgetCollaboratorAPI.addCollaborator(budgetId, data),
-    onSuccess: () => {
-      // Invalidate collaborators query
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.collaborators(budgetId)
-      });
-      
-      // Also invalidate budgets list to update sharing indicators
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.budgets
-      });
+    onSuccess: (_, { budgetId }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.collaborators(budgetId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.budget(budgetId) });
     },
   });
 };
 
-// Update collaborator role mutation
-export const useUpdateCollaboratorRole = (budgetId: string) => {
+// Update collaborator role
+export const useUpdateCollaboratorRole = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ collaboratorId, data }: { 
+    mutationFn: ({ 
+      budgetId, 
+      collaboratorId, 
+      data 
+    }: { 
+      budgetId: string; 
       collaboratorId: string; 
-      data: UpdateCollaboratorRoleRequest;
-    }) => budgetCollaboratorAPI.updateCollaboratorRole(budgetId, collaboratorId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.collaborators(budgetId)
-      });
+      data: UpdateCollaboratorRoleRequest 
+    }) =>
+      budgetCollaboratorAPI.updateCollaboratorRole(budgetId, collaboratorId, data),
+    onSuccess: (_, { budgetId }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.collaborators(budgetId) });
     },
   });
 };
 
-// Remove collaborator mutation
-export const useRemoveCollaborator = (budgetId: string) => {
+// Remove collaborator
+export const useRemoveCollaborator = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (collaboratorId: string) => 
+    mutationFn: ({ budgetId, collaboratorId }: { budgetId: string; collaboratorId: string }) =>
       budgetCollaboratorAPI.removeCollaborator(budgetId, collaboratorId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.collaborators(budgetId)
-      });
-      
-      // Also invalidate budgets list
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.budgets
-      });
+    onSuccess: (_, { budgetId }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.collaborators(budgetId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.budget(budgetId) });
     },
   });
 };
 
-// Leave budget mutation
+// Leave budget (for collaborators)
 export const useLeaveBudget = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (budgetId: string) => budgetCollaboratorAPI.leaveBudget(budgetId),
-    onSuccess: () => {
-      // Invalidate all budget-related queries
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.budgets
-      });
+    onSuccess: (_, budgetId) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.budgets });
+      queryClient.invalidateQueries({ queryKey: queryKeys.budget(budgetId) });
     },
   });
-};
-
-// Utility hooks for optimistic updates
-export const useOptimisticBudgetUpdate = () => {
-  const queryClient = useQueryClient();
-
-  return (budgetId: string, updater: (old: Budget) => Budget) => {
-    queryClient.setQueryData(queryKeys.budget(budgetId), (old: any) => {
-      if (old?.data) {
-        return {
-          ...old,
-          data: updater(old.data),
-        };
-      }
-      return old;
-    });
-  };
-};
-
-export const useOptimisticCategoryUpdate = () => {
-  const queryClient = useQueryClient();
-
-  return (categoryId: string, updater: (old: BudgetCategory) => BudgetCategory) => {
-    queryClient.setQueryData(queryKeys.category(categoryId), (old: any) => {
-      if (old?.data) {
-        return {
-          ...old,
-          data: updater(old.data),
-        };
-      }
-      return old;
-    });
-  };
 };

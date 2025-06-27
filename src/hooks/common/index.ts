@@ -3,3 +3,4 @@ export * from './useToast';
 export * from './useModal';
 export * from './useConfirm';
 export { useDebounce } from './useDebounce';
+export { useSearch, useBudgetSearch } from './useSearch';

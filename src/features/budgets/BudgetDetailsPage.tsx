@@ -614,7 +614,7 @@ const BudgetDetailsPage: React.FC = () => {
               onTabChange={(tab) => updateState({ activeTab: tab })}
               summary={summary}
               categoriesCount={(categoriesData?.income?.length || 0) + (categoriesData?.expense?.length || 0)}
-              transactionsCount={transactionsResponse?.pagination?.total || 0}
+              transactionsCount={transactionsResponse?.data.pagination?.total || 0}
             />
           </div>
 

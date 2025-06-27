@@ -72,11 +72,11 @@ export const ShareBudgetModal: React.FC<ShareBudgetModalProps> = ({
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // API hooks
+  // API hooks - Fixed: Remove arguments since hooks don't accept parameters
   const { data: collaboratorsData, isLoading } = useBudgetCollaborators(budget?.id || '');
-  const addCollaboratorMutation = useAddCollaborator(budget?.id || '');
-  const updateRoleMutation = useUpdateCollaboratorRole(budget?.id || '');
-  const removeCollaboratorMutation = useRemoveCollaborator(budget?.id || '');
+  const addCollaboratorMutation = useAddCollaborator();
+  const updateRoleMutation = useUpdateCollaboratorRole();
+  const removeCollaboratorMutation = useRemoveCollaborator();
 
   // Form setup
   const form = useForm<AddCollaboratorForm>({
@@ -90,10 +90,18 @@ export const ShareBudgetModal: React.FC<ShareBudgetModalProps> = ({
   // Check if current user is owner
   const isOwner = budget?.userId === user?.id || collaboratorsData?.owner?.user.id === user?.id;
 
-  // Handle form submission
+  // Handle form submission - Fixed: Pass budgetId and data structure
   const handleAddCollaborator = async (data: AddCollaboratorForm) => {
+    if (!budget?.id) return;
+    
     try {
-      await addCollaboratorMutation.mutateAsync(data);
+      await addCollaboratorMutation.mutateAsync({
+        budgetId: budget.id,
+        data: {
+          email: data.email,
+          role: data.role
+        }
+      });
       form.reset();
       setShowAddForm(false);
     } catch (error) {
@@ -101,10 +109,13 @@ export const ShareBudgetModal: React.FC<ShareBudgetModalProps> = ({
     }
   };
 
-  // Handle role update
+  // Handle role update - Fixed: Pass budgetId in the request
   const handleUpdateRole = async (collaboratorId: string, newRole: 'VIEWER' | 'EDITOR') => {
+    if (!budget?.id) return;
+    
     try {
       await updateRoleMutation.mutateAsync({
+        budgetId: budget.id,
         collaboratorId,
         data: { role: newRole }
       });
@@ -114,11 +125,16 @@ export const ShareBudgetModal: React.FC<ShareBudgetModalProps> = ({
     }
   };
 
-  // Handle remove collaborator
+  // Handle remove collaborator - Fixed: Pass object with budgetId and collaboratorId
   const handleRemoveCollaborator = async (collaboratorId: string) => {
+    if (!budget?.id) return;
+    
     if (window.confirm('Are you sure you want to remove this collaborator?')) {
       try {
-        await removeCollaboratorMutation.mutateAsync(collaboratorId);
+        await removeCollaboratorMutation.mutateAsync({
+          budgetId: budget.id,
+          collaboratorId
+        });
         setActiveDropdown(null);
       } catch (error) {
         // Error handled by mutation
@@ -223,19 +239,16 @@ export const ShareBudgetModal: React.FC<ShareBudgetModalProps> = ({
                   >
                     {addCollaboratorMutation.isPending ? (
                       <>
-                        <LoadingSpinner size="sm" />
-                        <span>Adding...</span>
+                        <LoadingSpinner className="h-4 w-4 mr-2" />
+                        Adding...
                       </>
                     ) : (
-                      <>
-                        <Mail className="h-4 w-4" />
-                        <span>Send Invitation</span>
-                      </>
+                      'Add Collaborator'
                     )}
                   </Button>
                   <Button
                     type="button"
-                    variant="secondary"
+                    variant="ghost"
                     onClick={() => {
                       setShowAddForm(false);
                       form.reset();
@@ -244,73 +257,80 @@ export const ShareBudgetModal: React.FC<ShareBudgetModalProps> = ({
                     Cancel
                   </Button>
                 </div>
+
+                {/* Error display */}
+                {addCollaboratorMutation.isError && (
+                  <Alert type="error">
+                    Failed to add collaborator. Please try again.
+                  </Alert>
+                )}
               </form>
             )}
           </div>
         )}
 
-        {/* Show error if any */}
-        {(addCollaboratorMutation.error || updateRoleMutation.error || removeCollaboratorMutation.error) && (
-          <Alert type="error">
-            {addCollaboratorMutation.error?.message || 
-             updateRoleMutation.error?.message || 
-             removeCollaboratorMutation.error?.message}
-          </Alert>
-        )}
-
         {/* Collaborators List */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h4 className="font-medium text-gray-900 flex items-center space-x-2">
-              <Users className="h-4 w-4" />
-              <span>People with access</span>
-            </h4>
-          </div>
+          <h4 className="text-sm font-medium text-gray-900 flex items-center space-x-2">
+            <Users className="h-4 w-4" />
+            <span>People with access</span>
+          </h4>
 
           {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <LoadingSpinner />
+            <div className="space-y-3">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg animate-pulse">
+                  <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
+                  <div className="flex-1 space-y-1">
+                    <div className="w-32 h-3 bg-gray-300 rounded"></div>
+                    <div className="w-24 h-2 bg-gray-300 rounded"></div>
+                  </div>
+                  <div className="w-16 h-6 bg-gray-300 rounded"></div>
+                </div>
+              ))}
             </div>
           ) : (
-            <div className="space-y-3">
-              {allCollaborators.map((collaborator) => {
-                const RoleIcon = getRoleIcon(collaborator.role);
+            <div className="space-y-2">
+              {allCollaborators.map((collaborator: any) => {
+                const IconComponent = getRoleIcon(collaborator.role);
                 const isCurrentUser = collaborator.user.id === user?.id;
                 
                 return (
                   <div
-                    key={collaborator.id || 'owner'}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    key={collaborator.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                   >
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-blue-600">
-                          {collaborator.user.firstName.charAt(0).toUpperCase()}
+                        <span className="text-xs font-semibold text-blue-700">
+                          {collaborator.user.firstName?.[0]?.toUpperCase() || 
+                           collaborator.user.email[0]?.toUpperCase()}
                         </span>
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-2">
-                          <p className="font-medium text-gray-900">
-                            {collaborator.user.firstName}
-                            {isCurrentUser && (
-                              <span className="text-sm text-gray-500 ml-1">(You)</span>
-                            )}
-                          </p>
+                          <h5 className="text-sm font-medium text-gray-900">
+                            {collaborator.user.firstName && collaborator.user.lastName 
+                              ? `${collaborator.user.firstName} ${collaborator.user.lastName}`
+                              : collaborator.user.email
+                            }
+                          </h5>
+                          {isCurrentUser && (
+                            <Badge variant="secondary" size="sm">You</Badge>
+                          )}
                         </div>
-                        <p className="text-sm text-gray-600">{collaborator.user.email}</p>
+                        <p className="text-xs text-gray-600">{collaborator.user.email}</p>
                       </div>
                     </div>
 
                     <div className="flex items-center space-x-3">
-                      <Badge className={`flex items-center space-x-1 ${getRoleColor(collaborator.role)}`}>
-                        <RoleIcon className="h-3 w-3" />
-                        <span className="text-xs font-medium">
-                          {collaborator.role.charAt(0) + collaborator.role.slice(1).toLowerCase()}
-                        </span>
+                      <Badge className={getRoleColor(collaborator.role)}>
+                        <IconComponent className="h-3 w-3 mr-1" />
+                        {collaborator.role}
                       </Badge>
 
-                      {/* Only show dropdown for non-owners and if current user is owner */}
-                      {isOwner && collaborator.role !== 'OWNER' && !isCurrentUser && (
+                      {/* Actions Menu (only for owners, not for self) */}
+                      {isOwner && !isCurrentUser && collaborator.role !== 'OWNER' && (
                         <div className="relative">
                           <Button
                             variant="ghost"
@@ -318,22 +338,24 @@ export const ShareBudgetModal: React.FC<ShareBudgetModalProps> = ({
                             onClick={() => setActiveDropdown(
                               activeDropdown === collaborator.id ? null : collaborator.id
                             )}
+                            className="p-1 h-auto w-auto"
                           >
                             <MoreVertical className="h-4 w-4" />
                           </Button>
 
                           {activeDropdown === collaborator.id && (
-                            <div className="absolute right-0 top-8 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                            <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10">
                               <div className="py-1">
-                                <div className="px-3 py-2 text-sm font-medium text-gray-700 border-b border-gray-100">
+                                <div className="px-3 py-2 text-xs font-medium text-gray-500 border-b border-gray-100">
                                   Change Role
                                 </div>
-                                {roleOptions.map(option => (
+                                {roleOptions.map((option) => (
                                   <button
                                     key={option.value}
                                     onClick={() => handleUpdateRole(collaborator.id, option.value as 'VIEWER' | 'EDITOR')}
-                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${
-                                      collaborator.role === option.value ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${
+                                      collaborator.role === option.value ? 
+                                        'bg-blue-50 text-blue-700' : 'text-gray-700'
                                     }`}
                                     disabled={updateRoleMutation.isPending}
                                   >
