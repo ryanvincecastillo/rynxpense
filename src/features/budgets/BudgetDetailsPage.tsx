@@ -1,3 +1,4 @@
+// src/features/budgets/BudgetDetailsPage.tsx
 import React, { useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -24,21 +25,47 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useFormatCurrency, useToast } from '../../hooks/common';
 
 // UI Components
-import { Button, Alert, LoadingSpinner, Badge, DeleteConfirmModal, ArchiveConfirmModal } from '../../components/ui';
+import { 
+  Button, 
+  Alert, 
+  LoadingSpinner, 
+  Badge, 
+  DeleteConfirmModal, 
+  ArchiveConfirmModal 
+} from '../../components/ui';
 
 // Modal Components
 import { 
   BudgetFormModal, 
   CategoryFormModal,
-  TransactionFormModal,
-  ShareBudgetModal,
-  LeaveBudgetModal
+  TransactionFormModal
 } from '../../components/modals';
 import { DuplicateBudgetModal } from '../../components/modals/DuplicateBudgetModal';
 
 // Feature Components
-import { BudgetActionsMenu, BudgetOverviewTab, BudgetTabs, BudgetTransactionsTab, BudgetDetailsHeader } from '../../components/features/budget';
+import { 
+  BudgetActionsMenu, 
+  BudgetOverviewTab, 
+  BudgetTabs, 
+  BudgetTransactionsTab, 
+  BudgetDetailsHeader 
+} from '../../components/features/budget';
 import { BudgetCategoriesTab } from '../../components/features/budget/BudgetCategoriesTab';
+
+// Icons
+import { 
+  MoreVertical, 
+  Plus, 
+  Filter, 
+  Download,
+  Share2,
+  AlertCircle,
+  Sparkles,
+  Edit,
+  Copy,
+  Archive,
+  Trash2
+} from 'lucide-react';
 
 // Types
 import { 
@@ -74,8 +101,6 @@ interface BudgetDetailsState {
     showDuplicateModal: boolean;
     showArchiveModal: boolean;
     showDeleteModal: boolean;
-    showShareBudgetModal: boolean;
-    showLeaveBudgetModal: boolean;
   };
   editingItem: Transaction | BudgetCategory | null;
   deleteConfirmation: {
@@ -103,53 +128,52 @@ interface BudgetDetailsState {
   };
 }
 
+const initialState: BudgetDetailsState = {
+  activeTab: 'overview',
+  currentPage: 1,
+  modalState: {
+    showCreateCategoryModal: false,
+    showEditCategoryModal: false,
+    showCreateTransactionModal: false,
+    showEditTransactionModal: false,
+    showDeleteConfirmModal: false,
+    showActionsMenu: false,
+    showEditBudgetModal: false,
+    showDuplicateModal: false,
+    showArchiveModal: false,
+    showDeleteModal: false,
+  },
+  editingItem: null,
+  deleteConfirmation: {
+    isOpen: false,
+    type: null,
+    item: null,
+    onConfirm: null,
+  },
+  filters: {
+    categories: {
+      type: '',
+      showInactive: false,
+      search: '',
+    },
+    transactions: {
+      search: '',
+    },
+  },
+};
+
 const BudgetDetailsPage: React.FC = () => {
   const { budgetId } = useParams<{ budgetId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { formatCurrency } = useFormatCurrency();
-  const { showSuccess, showError } = useToast();
+  const { toast } = useToast();
 
-  // State management
-  const [state, setState] = useState<BudgetDetailsState>({
-    activeTab: 'overview',
-    currentPage: 1,
-    modalState: {
-      showCreateCategoryModal: false,
-      showEditCategoryModal: false,
-      showCreateTransactionModal: false,
-      showEditTransactionModal: false,
-      showDeleteConfirmModal: false,
-      showActionsMenu: false,
-      showEditBudgetModal: false,
-      showDuplicateModal: false,
-      showArchiveModal: false,
-      showDeleteModal: false,
-      showShareBudgetModal: false,
-      showLeaveBudgetModal: false,
-    },
-    editingItem: null,
-    deleteConfirmation: {
-      isOpen: false,
-      type: null,
-      item: null,
-      onConfirm: null,
-    },
-    filters: {
-      categories: {
-        type: '',
-        showInactive: false,
-        search: '',
-      },
-      transactions: {
-        search: '',
-      },
-    },
-  });
+  // State
+  const [state, setState] = useState<BudgetDetailsState>(initialState);
+  const [preselectedType, setPreselectedType] = useState<'INCOME' | 'EXPENSE' | undefined>();
 
-  const [preselectedType, setPreselectedType] = useState<'INCOME' | 'EXPENSE' | undefined>(undefined);
-
-  // API queries
+  // API Queries
   const { data: budget, isLoading: budgetLoading, error: budgetError } = useBudget(budgetId!);
   const { data: summary, isLoading: summaryLoading } = useBudgetSummary(budgetId!);
   const { data: categoriesData, isLoading: categoriesLoading } = useBudgetCategories(budgetId!);
@@ -163,7 +187,13 @@ const BudgetDetailsPage: React.FC = () => {
   
   const { data: transactionsResponse, isLoading: transactionsLoading } = useTransactions(transactionsParams);
 
-  // API mutations
+  // Get all categories for modals - moved before conditional returns
+  const allCategories = useMemo(() => {
+    if (!categoriesData) return [];
+    return [...(categoriesData.income || []), ...(categoriesData.expense || [])];
+  }, [categoriesData]);
+
+  // API Mutations
   const updateBudgetMutation = useUpdateBudget();
   const duplicateBudgetMutation = useDuplicateBudget();
   const deleteBudgetMutation = useDeleteBudget();
@@ -174,13 +204,7 @@ const BudgetDetailsPage: React.FC = () => {
   const updateTransactionMutation = useUpdateTransaction();
   const deleteTransactionMutation = useDeleteTransaction();
 
-  // Get all categories for modals
-  const allCategories = useMemo(() => {
-    if (!categoriesData) return [];
-    return [...(categoriesData.income || []), ...(categoriesData.expense || [])];
-  }, [categoriesData]);
-
-  // Helper functions for state updates
+  // Helper functions
   const updateState = useCallback((updates: Partial<BudgetDetailsState>) => {
     setState(prev => ({ ...prev, ...updates }));
   }, []);
@@ -195,51 +219,29 @@ const BudgetDetailsPage: React.FC = () => {
   const updateFilters = useCallback((filterType: keyof BudgetDetailsState['filters'], updates: any) => {
     setState(prev => ({
       ...prev,
-      filters: {
-        ...prev.filters,
-        [filterType]: { ...prev.filters[filterType], ...updates }
-      }
+      filters: { ...prev.filters, [filterType]: { ...prev.filters[filterType], ...updates }}
     }));
   }, []);
 
-  const setEditingItem = useCallback((item: Transaction | BudgetCategory | null) => {
-    setState(prev => ({ ...prev, editingItem: item }));
-  }, []);
-
-  // Share Budget Handler
-  const handleShareBudget = useCallback(() => {
-    updateModalState({ showShareBudgetModal: true });
+  // Event Handlers
+  const handleQuickAction = useCallback((action: string, type?: string) => {
+    switch (action) {
+      case 'addIncome':
+        setPreselectedType('INCOME');
+        updateModalState({ showCreateCategoryModal: true });
+        break;
+      case 'addExpense':
+        setPreselectedType('EXPENSE');
+        updateModalState({ showCreateCategoryModal: true });
+        break;
+      case 'addTransaction':
+        updateModalState({ showCreateTransactionModal: true });
+        break;
+      default:
+        console.warn('Unknown quick action:', action);
+    }
   }, [updateModalState]);
 
-  // Export Budget Handler
-  const handleExportBudget = useCallback(async () => {
-    try {
-      const exportData = {
-        budget,
-        summary,
-        categories: allCategories,
-        transactions: transactionsResponse?.data || [],
-        exportedAt: new Date().toISOString(),
-      };
-      
-      const dataStr = JSON.stringify(exportData, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      
-      const url = window.URL.createObjectURL(dataBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `budget-${budget?.name.toLowerCase().replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}.json`;
-      link.click();
-      
-      window.URL.revokeObjectURL(url);
-      showSuccess('Budget exported successfully');
-    } catch (error) {
-      console.error('Export error:', error);
-      showError('Failed to export budget');
-    }
-  }, [budget, summary, allCategories, transactionsResponse, showSuccess, showError]);
-
-  // Menu Actions Handler
   const handleMenuAction = useCallback((action: string) => {
     switch (action) {
       case 'edit':
@@ -248,12 +250,6 @@ const BudgetDetailsPage: React.FC = () => {
       case 'duplicate':
         updateModalState({ showDuplicateModal: true });
         break;
-      case 'share':
-        updateModalState({ showShareBudgetModal: true });
-        break;
-      case 'leave':
-        updateModalState({ showLeaveBudgetModal: true });
-        break;
       case 'archive':
         updateModalState({ showArchiveModal: true });
         break;
@@ -261,327 +257,358 @@ const BudgetDetailsPage: React.FC = () => {
         updateModalState({ showDeleteModal: true });
         break;
       case 'export':
-        handleExportBudget();
+        toast.success('Export functionality coming soon!');
+        break;
+      case 'share':
+        toast.success('Share functionality coming soon!');
         break;
       default:
         console.warn('Unknown menu action:', action);
     }
     updateModalState({ showActionsMenu: false });
-  }, [updateModalState, handleExportBudget]);
+  }, [updateModalState, toast]);
 
-  // Quick Action Handler
-  const handleQuickAction = useCallback((action: string, type?: string) => {
-    switch (action) {
-      case 'addIncome':
-        setEditingItem(null);
-        setPreselectedType('INCOME');
-        updateModalState({ showCreateCategoryModal: true });
-        break;
-      case 'addExpense':
-        setEditingItem(null);
-        setPreselectedType('EXPENSE');
-        updateModalState({ showCreateCategoryModal: true });
-        break;
-      case 'addTransaction':
-        setEditingItem(null);
-        setPreselectedType(undefined);
-        updateModalState({ showCreateTransactionModal: true });
-        break;
-      default:
-        console.warn('Unknown quick action:', action);
-    }
-  }, [setEditingItem, setPreselectedType, updateModalState]);
-
-  // Category Actions Handler
-  const handleCategoryAction = useCallback((action: string, category?: BudgetCategory, data?: any) => {
-    switch (action) {
-      case 'create':
-        setEditingItem(null);
-        setPreselectedType(data?.type);
-        updateModalState({ showCreateCategoryModal: true });
-        break;
-      case 'edit':
-        if (category) {
-          setEditingItem(category);
-          updateModalState({ showEditCategoryModal: true });
-        }
-        break;
-      case 'delete':
-        if (category) {
-          setEditingItem(category);
-          updateModalState({ showDeleteConfirmModal: true });
-        }
-        break;
-      default:
-        console.warn('Unknown category action:', action);
-    }
-  }, [setEditingItem, setPreselectedType, updateModalState]);
-
-  // Transaction Actions Handler
   const handleTransactionAction = useCallback((action: string, transaction?: Transaction, data?: any) => {
     switch (action) {
       case 'create':
-        setEditingItem(null);
-        setPreselectedType(data?.type);
+        setState(prev => ({ ...prev, editingItem: null }));
         updateModalState({ showCreateTransactionModal: true });
         break;
       case 'edit':
         if (transaction) {
-          setEditingItem(transaction);
+          setState(prev => ({ ...prev, editingItem: transaction }));
           updateModalState({ showEditTransactionModal: true });
         }
         break;
       case 'delete':
         if (transaction) {
-          setState(prev => ({
-            ...prev,
+          setState(prev => ({ 
+            ...prev, 
             deleteConfirmation: {
               isOpen: true,
               type: 'transaction',
               item: transaction,
-              onConfirm: () => handleTransactionDelete(transaction),
-            },
+              onConfirm: () => handleDeleteTransaction(transaction)
+            }
           }));
         }
         break;
       default:
         console.warn('Unknown transaction action:', action);
     }
-  }, [setEditingItem, setPreselectedType, updateModalState]);
+  }, [updateModalState]);
 
-  // Form Submit Handlers
+  const handleCategoryAction = useCallback((action: string, category?: BudgetCategory, data?: any) => {
+    switch (action) {
+      case 'create':
+        setState(prev => ({ ...prev, editingItem: null }));
+        updateModalState({ showCreateCategoryModal: true });
+        break;
+      case 'edit':
+        if (category) {
+          setState(prev => ({ ...prev, editingItem: category }));
+          updateModalState({ showEditCategoryModal: true });
+        }
+        break;
+      case 'delete':
+        if (category) {
+          setState(prev => ({ 
+            ...prev, 
+            deleteConfirmation: {
+              isOpen: true,
+              type: 'category',
+              item: category,
+              onConfirm: () => handleDeleteCategory(category)
+            }
+          }));
+        }
+        break;
+      default:
+        console.warn('Unknown category action:', action);
+    }
+  }, [updateModalState]);
+
+  // Modal submission handlers
+  const handleBudgetSubmit = useCallback(async (data: CreateBudgetForm) => {
+    if (!budget) return;
+    
+    try {
+      await updateBudgetMutation.mutateAsync({
+        id: budget.id,
+        data
+      });
+      toast.success('Budget updated successfully!');
+      handleCloseModal();
+    } catch (error) {
+      toast.error('Failed to update budget');
+    }
+  }, [budget, updateBudgetMutation, toast]);
+
   const handleCategorySubmit = useCallback(async (data: CreateCategoryForm) => {
     try {
-      if (state.editingItem && 'id' in state.editingItem) {
+      if (state.editingItem && 'type' in state.editingItem) {
         await updateCategoryMutation.mutateAsync({
           id: state.editingItem.id,
-          data,
+          data
         });
-        showSuccess('Category updated successfully');
-        updateModalState({ showEditCategoryModal: false });
+        toast.success('Category updated successfully!');
       } else {
         await createCategoryMutation.mutateAsync(data);
-        showSuccess('Category created successfully');
-        updateModalState({ showCreateCategoryModal: false });
+        toast.success('Category created successfully!');
       }
-      setEditingItem(null);
-      setPreselectedType(undefined);
+      handleCloseModal();
     } catch (error) {
-      const action = state.editingItem ? 'update' : 'create';
-      showError(`Failed to ${action} category`);
+      toast.error('Failed to save category');
     }
-  }, [
-    state.editingItem, 
-    createCategoryMutation, 
-    updateCategoryMutation, 
-    showSuccess, 
-    showError, 
-    updateModalState, 
-    setEditingItem,
-    setPreselectedType
-  ]);
+  }, [state.editingItem, createCategoryMutation, updateCategoryMutation, toast]);
 
   const handleTransactionSubmit = useCallback(async (data: CreateTransactionForm) => {
     try {
-      if (state.editingItem && 'id' in state.editingItem) {
+      if (state.editingItem && 'amount' in state.editingItem) {
         await updateTransactionMutation.mutateAsync({
           id: state.editingItem.id,
-          data,
+          data
         });
-        showSuccess('Transaction updated successfully');
-        updateModalState({ showEditTransactionModal: false });
+        toast.success('Transaction updated successfully!');
       } else {
         await createTransactionMutation.mutateAsync(data);
-        showSuccess('Transaction created successfully');
-        updateModalState({ showCreateTransactionModal: false });
+        toast.success('Transaction created successfully!');
       }
-      setEditingItem(null);
-      setPreselectedType(undefined);
+      handleCloseModal();
     } catch (error) {
-      const action = state.editingItem ? 'update' : 'create';
-      showError(`Failed to ${action} transaction`);
+      toast.error('Failed to save transaction');
     }
-  }, [
-    state.editingItem, 
-    createTransactionMutation, 
-    updateTransactionMutation, 
-    showSuccess, 
-    showError, 
-    updateModalState, 
-    setEditingItem,
-    setPreselectedType
-  ]);
+  }, [state.editingItem, createTransactionMutation, updateTransactionMutation, toast]);
 
-  // Delete Handlers
-  const handleCategoryDelete = useCallback(async () => {
-    if (state.editingItem && 'id' in state.editingItem) {
-      try {
-        await deleteCategoryMutation.mutateAsync(state.editingItem.id);
-        showSuccess('Category deleted successfully');
-        updateModalState({ showDeleteConfirmModal: false });
-        setEditingItem(null);
-      } catch (error) {
-        showError('Failed to delete category');
-      }
-    }
-  }, [state.editingItem, deleteCategoryMutation, showSuccess, showError, updateModalState, setEditingItem]);
-
-  const handleTransactionDelete = useCallback(async (transaction: Transaction) => {
+  // Delete handlers
+  const handleDeleteTransaction = useCallback(async (transaction: Transaction) => {
     try {
       await deleteTransactionMutation.mutateAsync(transaction.id);
-      showSuccess('Transaction deleted successfully');
-      setState(prev => ({
-        ...prev,
-        deleteConfirmation: {
-          isOpen: false,
-          type: null,
-          item: null,
-          onConfirm: null,
-        }
+      toast.success('Transaction deleted successfully!');
+      setState(prev => ({ 
+        ...prev, 
+        deleteConfirmation: { isOpen: false, type: null, item: null, onConfirm: null }
       }));
     } catch (error) {
-      showError('Failed to delete transaction');
+      toast.error('Failed to delete transaction');
     }
-  }, [deleteTransactionMutation, showSuccess, showError]);
+  }, [deleteTransactionMutation, toast]);
 
-  // Budget Form Submit Handler
-  const handleBudgetSubmit = useCallback(async (data: CreateBudgetForm) => {
+  const handleDeleteCategory = useCallback(async (category: BudgetCategory) => {
     try {
-      await updateBudgetMutation.mutateAsync({
-        id: budgetId!,
-        data
-      });
-      showSuccess('Budget updated successfully');
-      updateModalState({ showEditBudgetModal: false });
+      await deleteCategoryMutation.mutateAsync(category.id);
+      toast.success('Category deleted successfully!');
+      setState(prev => ({ 
+        ...prev, 
+        deleteConfirmation: { isOpen: false, type: null, item: null, onConfirm: null }
+      }));
     } catch (error) {
-      showError('Failed to update budget');
+      toast.error('Failed to delete category');
     }
-  }, [updateBudgetMutation, budgetId, showSuccess, showError, updateModalState]);
+  }, [deleteCategoryMutation, toast]);
 
-  // Duplicate Budget Handler
-  const handleDuplicateBudget = useCallback(async (options: DuplicateBudgetOptions) => {
-    try {
-      await duplicateBudgetMutation.mutateAsync({
-        budgetId: budgetId!,
-        options,
-      });
-      showSuccess('Budget duplicated successfully');
-      updateModalState({ showDuplicateModal: false });
-    } catch (error) {
-      showError('Failed to duplicate budget');
-    }
-  }, [duplicateBudgetMutation, budgetId, showSuccess, showError, updateModalState]);
-
-  // Archive Budget Handler
+  // Archive/Delete budget handlers
   const handleArchiveBudget = useCallback(async () => {
     if (!budget) return;
     
     try {
-      const action = budget.isArchived ? 'unarchive' : 'archive';
       await updateBudgetMutation.mutateAsync({
-        id: budgetId!,
-        data: { isArchived: !budget.isArchived },
+        id: budget.id,
+        data: { isArchived: !budget.isArchived }
       });
-      showSuccess(`Budget ${action}d successfully`);
+      
+      const action = budget.isArchived ? 'unarchived' : 'archived';
+      toast.success(`Budget ${action} successfully!`);
       updateModalState({ showArchiveModal: false });
     } catch (error) {
-      const action = budget?.isArchived ? 'unarchive' : 'archive';
-      showError(`Failed to ${action} budget`);
+      toast.error('Failed to update budget');
     }
-  }, [budget, updateBudgetMutation, budgetId, showSuccess, showError, updateModalState]);
+  }, [budget, updateBudgetMutation, toast, updateModalState]);
 
-  // Delete Budget Handler
   const handleDeleteBudget = useCallback(async () => {
+    if (!budget) return;
+    
     try {
-      await deleteBudgetMutation.mutateAsync(budgetId!);
-      showSuccess('Budget deleted successfully');
+      await deleteBudgetMutation.mutateAsync(budget.id);
+      toast.success('Budget deleted successfully!');
       navigate('/budgets');
     } catch (error) {
-      showError('Failed to delete budget');
-      updateModalState({ showDeleteModal: false });
+      toast.error('Failed to delete budget');
     }
-  }, [deleteBudgetMutation, budgetId, showSuccess, showError, navigate, updateModalState]);
+  }, [budget, deleteBudgetMutation, toast, navigate]);
 
-  // Leave Budget Success Handler
-  const handleLeaveBudgetSuccess = useCallback(() => {
-    navigate('/budgets');
-    showSuccess('You have left the budget successfully');
-  }, [navigate, showSuccess]);
+  const handleDuplicateBudget = useCallback(async (options: DuplicateBudgetOptions) => {
+    if (!budget) return;
+    
+    try {
+      await duplicateBudgetMutation.mutateAsync({
+        budgetId: budget.id,
+        ...options
+      });
+      toast.success('Budget duplicated successfully!');
+      updateModalState({ showDuplicateModal: false });
+    } catch (error) {
+      toast.error('Failed to duplicate budget');
+    }
+  }, [budget, duplicateBudgetMutation, toast, updateModalState]);
 
-  // Close Modal Handler
   const handleCloseModal = useCallback(() => {
-    updateModalState({ 
+    updateModalState({
+      showCreateCategoryModal: false,
+      showEditCategoryModal: false,
+      showCreateTransactionModal: false,
+      showEditTransactionModal: false,
+      showDeleteConfirmModal: false,
       showEditBudgetModal: false,
       showDuplicateModal: false,
       showArchiveModal: false,
       showDeleteModal: false,
-      showCreateCategoryModal: false,
-      showEditCategoryModal: false,
-      showDeleteConfirmModal: false,
-      showCreateTransactionModal: false,
-      showEditTransactionModal: false,
-      showShareBudgetModal: false,
-      showLeaveBudgetModal: false,
     });
-    setEditingItem(null);
+    setState(prev => ({ ...prev, editingItem: null }));
     setPreselectedType(undefined);
-    setState(prev => ({
-      ...prev,
-      deleteConfirmation: {
-        isOpen: false,
-        type: null,
-        item: null,
-        onConfirm: null,
-      }
-    }));
-  }, [updateModalState, setEditingItem, setPreselectedType]);
+  }, [updateModalState]);
 
-  // Error handling
-  if (budgetError) {
+  const handleCloseDeleteConfirmation = useCallback(() => {
+    setState(prev => ({ 
+      ...prev, 
+      deleteConfirmation: { isOpen: false, type: null, item: null, onConfirm: null }
+    }));
+  }, []);
+
+  // Loading state
+  if (budgetLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Alert type="error" title="Error Loading Budget">
-          {budgetError.message || 'Failed to load budget details'}
-        </Alert>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <LoadingSpinner size="lg" />
+          <p className="text-gray-600">Loading budget details...</p>
+        </div>
       </div>
     );
   }
 
-  // Loading state
-  if (budgetLoading || !budget) {
+  // Error state
+  if (budgetError || !budget) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
+      <div className="min-h-screen bg-gray-50 p-4">
+        <Alert className="max-w-md mx-auto mt-8">
+          <AlertCircle className="h-4 w-4" />
+          <div>
+            <h3 className="font-medium">Budget not found</h3>
+            <p className="text-sm mt-1">The budget you're looking for doesn't exist or you don't have access to it.</p>
+          </div>
+        </Alert>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Enhanced Header */}
       <BudgetDetailsHeader
         budget={budget}
-        onEdit={() => updateModalState({ showEditBudgetModal: true })}
-        onQuickAction={handleQuickAction}
         formatCurrency={formatCurrency}
       >
-        <BudgetActionsMenu
-          budget={budget}
-          onAction={handleMenuAction}
-          isOpen={state.modalState.showActionsMenu}
-          onToggle={() => updateModalState({ 
-            showActionsMenu: !state.modalState.showActionsMenu 
-          })}
-          currentUserRole={budget.currentUserRole}
-          isSharedBudget={budget.isShared}
-        />
+        {/* Header Actions */}
+        <div className="relative">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => updateModalState({ showActionsMenu: !state.modalState.showActionsMenu })}
+            className="opacity-80 hover:opacity-100 bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:bg-white hover:border-gray-300 transition-all duration-200"
+          >
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+
+          {state.modalState.showActionsMenu && (
+            <div 
+              className="absolute top-full right-0 mt-2 z-50"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
+              <div className="w-56 bg-white border border-gray-200 rounded-lg shadow-lg">
+                <div className="py-1">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleMenuAction('edit');
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <Edit className="h-4 w-4 mr-3" />
+                    Edit Budget
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleMenuAction('duplicate');
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <Copy className="h-4 w-4 mr-3" />
+                    Duplicate Budget
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleMenuAction('share');
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <Share2 className="h-4 w-4 mr-3" />
+                    Share Budget
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleMenuAction('export');
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <Download className="h-4 w-4 mr-3" />
+                    Export Budget
+                  </button>
+                  <div className="border-t border-gray-100 my-1"></div>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleMenuAction('archive');
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <Archive className="h-4 w-4 mr-3" />
+                    {budget.isArchived ? 'Unarchive Budget' : 'Archive Budget'}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleMenuAction('delete');
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4 mr-3" />
+                    Delete Budget
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </BudgetDetailsHeader>
 
       {/* Main Content */}
-      <div className="pb-16">
-        <div className="max-w-7xl mx-auto">
-          <div className="space-y-6">
-            {/* Tabs */}
+      {/* <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"> */}
+        <div className="space-y-6">
+          {/* Enhanced Tabs - Make THIS div sticky */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-sm sticky top-[140px] sm:top-[120px] lg:top-[230px] z-20">
             <BudgetTabs
               activeTab={state.activeTab}
               onTabChange={(tab) => updateState({ activeTab: tab })}
@@ -589,8 +616,10 @@ const BudgetDetailsPage: React.FC = () => {
               categoriesCount={(categoriesData?.income?.length || 0) + (categoriesData?.expense?.length || 0)}
               transactionsCount={transactionsResponse?.pagination?.total || 0}
             />
+          </div>
 
-            {/* Tab Content */}
+          {/* Tab Content */}
+          <div className="space-y-6">
             {state.activeTab === TABS.OVERVIEW && (
               <BudgetOverviewTab
                 categoriesData={categoriesData}
@@ -623,6 +652,16 @@ const BudgetDetailsPage: React.FC = () => {
             )}
           </div>
         </div>
+      {/* </div> */}
+
+      {/* Floating Action Button - Mobile */}
+      <div className="fixed bottom-6 right-6 sm:hidden">
+        <Button
+          onClick={() => handleQuickAction('addTransaction')}
+          className="w-14 h-14 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+        >
+          <Plus className="w-6 h-6 text-white" />
+        </Button>
       </div>
 
       {/* ALL MODALS */}
@@ -656,17 +695,6 @@ const BudgetDetailsPage: React.FC = () => {
         isLoading={updateCategoryMutation.isPending}
       />
 
-      {/* Category Delete Confirmation Modal */}
-      <DeleteConfirmModal
-        isOpen={state.modalState.showDeleteConfirmModal}
-        onClose={handleCloseModal}
-        onConfirm={handleCategoryDelete}
-        itemName={(state.editingItem as BudgetCategory)?.name || ''}
-        itemType="category"
-        isLoading={deleteCategoryMutation.isPending}
-        warningText="All transactions in this category will be moved to 'Uncategorized'."
-      />
-
       {/* Transaction Create Modal */}
       <TransactionFormModal
         isOpen={state.modalState.showCreateTransactionModal}
@@ -674,7 +702,6 @@ const BudgetDetailsPage: React.FC = () => {
         onSubmit={handleTransactionSubmit}
         budgetId={budgetId!}
         categories={allCategories}
-        preselectedType={preselectedType}
         isLoading={createTransactionMutation.isPending}
       />
 
@@ -689,60 +716,54 @@ const BudgetDetailsPage: React.FC = () => {
         isLoading={updateTransactionMutation.isPending}
       />
 
-      {/* Transaction Delete Confirmation Modal */}
-      <DeleteConfirmModal
-        isOpen={state.deleteConfirmation.isOpen && state.deleteConfirmation.type === 'transaction'}
-        onClose={handleCloseModal}
-        onConfirm={state.deleteConfirmation.onConfirm || (() => {})}
-        itemName={(state.deleteConfirmation.item as Transaction)?.description || ''}
-        itemType="transaction"
-        isLoading={deleteTransactionMutation.isPending}
-      />
-
       {/* Duplicate Budget Modal */}
       <DuplicateBudgetModal
         isOpen={state.modalState.showDuplicateModal}
         onClose={handleCloseModal}
-        budget={budget}
         onDuplicate={handleDuplicateBudget}
+        budget={budget}
         isLoading={duplicateBudgetMutation.isPending}
       />
 
-      {/* Archive Budget Modal */}
+      {/* Archive Confirmation Modal */}
       <ArchiveConfirmModal
         isOpen={state.modalState.showArchiveModal}
         onClose={handleCloseModal}
         onConfirm={handleArchiveBudget}
-        itemName={budget?.name || ''}
+        itemName={budget.name}
         itemType="budget"
-        isArchived={budget?.isArchived || false}
+        isArchived={budget.isArchived}
         isLoading={updateBudgetMutation.isPending}
       />
 
-      {/* Delete Budget Modal */}
+      {/* Delete Confirmation Modal */}
       <DeleteConfirmModal
         isOpen={state.modalState.showDeleteModal}
         onClose={handleCloseModal}
         onConfirm={handleDeleteBudget}
-        itemName={budget?.name || ''}
+        itemName={budget.name}
         itemType="budget"
         isLoading={deleteBudgetMutation.isPending}
-        warningText="All categories and transactions in this budget will also be deleted."
       />
 
-      {/* Share Budget Modal */}
-      <ShareBudgetModal
-        isOpen={state.modalState.showShareBudgetModal}
-        onClose={handleCloseModal}
-        budget={budget}
-      />
-
-      {/* Leave Budget Modal */}
-      <LeaveBudgetModal
-        isOpen={state.modalState.showLeaveBudgetModal}
-        onClose={handleCloseModal}
-        budget={budget}
-        onSuccess={handleLeaveBudgetSuccess}
+      {/* Transaction/Category Delete Confirmation */}
+      <DeleteConfirmModal
+        isOpen={state.deleteConfirmation.isOpen}
+        onClose={handleCloseDeleteConfirmation}
+        onConfirm={state.deleteConfirmation.onConfirm || (() => {})}
+        itemName={
+          state.deleteConfirmation.item 
+            ? 'name' in state.deleteConfirmation.item 
+              ? state.deleteConfirmation.item.name 
+              : state.deleteConfirmation.item.description
+            : ''
+        }
+        itemType={state.deleteConfirmation.type || 'item'}
+        isLoading={
+          state.deleteConfirmation.type === 'transaction' 
+            ? deleteTransactionMutation.isPending 
+            : deleteCategoryMutation.isPending
+        }
       />
     </div>
   );

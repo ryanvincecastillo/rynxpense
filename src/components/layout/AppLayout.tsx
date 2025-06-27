@@ -10,6 +10,13 @@ import {
   User,
   Bell,
   Search,
+  Loader,
+  Warehouse,
+  CreditCard,
+  BugPlayIcon,
+  Proportions,
+  Car,
+  House,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { RLogo } from '../ui/Logo';
@@ -48,6 +55,20 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       icon: PieChart,
       path: '/budgets',
       description: 'Manage budgets, transactions & categories',
+    },
+    {
+      id: 'loans',
+      label: 'Loans',
+      icon: CreditCard,
+      path: '/loans',
+      description: 'Loans & Credit Card Monitoring (Available soon)',
+    },
+    {
+      id: 'savings',
+      label: 'Savings & Investments',
+      icon: House,
+      path: '/loans',
+      description: 'Manage portfolios, assets, savings & investments (Available soon)',
     },
     {
       id: 'settings',
