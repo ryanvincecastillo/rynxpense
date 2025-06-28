@@ -608,7 +608,7 @@ const BudgetDetailsPage: React.FC = () => {
       {/* <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"> */}
         <div className="space-y-6">
           {/* Enhanced Tabs - Make THIS div sticky */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-sm sticky top-[140px] sm:top-[120px] lg:top-[230px] z-20">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-sm sticky top-[140px] sm:top-[120px] lg:top-[250px] z-20">
             <BudgetTabs
               activeTab={state.activeTab}
               onTabChange={(tab) => updateState({ activeTab: tab })}
