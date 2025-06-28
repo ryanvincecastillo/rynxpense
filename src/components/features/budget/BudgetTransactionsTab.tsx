@@ -16,6 +16,7 @@ import {
   Columns,
   List,
   ChevronDown,
+  Minus,
 } from 'lucide-react';
 import { 
   Transaction, 
@@ -890,11 +891,14 @@ export const BudgetTransactionsTab: React.FC<BudgetTransactionsTabProps> = ({
         <div className="space-y-3 min-w-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+              {/* <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" /> */}
+              <div className="w-5 h-5 bg-green-100 rounded-md flex items-center justify-center">
+                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+              </div>
               <div>
-                <h4 className="text-xs sm:text-sm font-semibold text-gray-900">Income Transactions</h4>
+                <h4 className="text-xs sm:text-sm font-semibold text-gray-900">Income</h4>
                 <p className="text-xs text-gray-500">
-                  {incomeTransactions.length} transactions • {formatCurrency(totals.income)}
+                  {incomeTransactions.length} transactions
                 </p>
               </div>
             </div>
@@ -922,11 +926,14 @@ export const BudgetTransactionsTab: React.FC<BudgetTransactionsTabProps> = ({
         <div className="space-y-3 min-w-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
+              {/* <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" /> */}
+              <div className="w-5 h-5 bg-red-100 rounded-md flex items-center justify-center">
+                  <Minus className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
+                </div>
               <div>
                 <h4 className="text-xs sm:text-sm font-semibold text-gray-900">Expenses</h4>
                 <p className="text-xs text-gray-500">
-                  {expenseTransactions.length} transactions • {formatCurrency(totals.expense)}
+                  {expenseTransactions.length} transactions
                 </p>
               </div>
             </div>
