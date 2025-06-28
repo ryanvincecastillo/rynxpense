@@ -365,7 +365,7 @@ const BudgetsPage: React.FC = () => {
   // Show initial loading only on first load
   if (budgetsLoading && isInitialLoad) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="bg-gray-50 flex items-center justify-center">
         <div className="text-center space-y-4">
           <LoadingSpinner size="lg" />
           <p className="text-gray-600">Loading your budgets...</p>
@@ -377,7 +377,7 @@ const BudgetsPage: React.FC = () => {
   // Error State
   if (budgetsError) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
+      <div className="bg-gray-50 p-4">
         <Alert className="max-w-md mx-auto mt-8">
           <AlertCircle className="h-4 w-4" />
           <div>
@@ -390,7 +390,7 @@ const BudgetsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50">
       {/* Enhanced Header with subtle loading indicator */}
       <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 border-b border-gray-200/60 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

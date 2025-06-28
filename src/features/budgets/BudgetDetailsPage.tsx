@@ -478,7 +478,7 @@ const BudgetDetailsPage: React.FC = () => {
   // Loading state
   if (budgetLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="bg-gray-50 flex items-center justify-center">
         <div className="text-center space-y-4">
           <LoadingSpinner size="lg" />
           <p className="text-gray-600">Loading budget details...</p>
@@ -490,7 +490,7 @@ const BudgetDetailsPage: React.FC = () => {
   // Error state
   if (budgetError || !budget) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
+      <div className="bg-gray-50 p-4">
         <Alert className="max-w-md mx-auto mt-8">
           <AlertCircle className="h-4 w-4" />
           <div>
@@ -503,7 +503,7 @@ const BudgetDetailsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50">
       {/* Enhanced Header */}
       <BudgetDetailsHeader
         budget={budget}
