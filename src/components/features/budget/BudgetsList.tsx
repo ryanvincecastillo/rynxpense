@@ -121,24 +121,6 @@ const ProgressBar: React.FC<{
 
 // Budget Status Badge Component
 const BudgetStatusBadge: React.FC<{ budget: Budget }> = ({ budget }) => {
-  if (budget.isArchived) {
-    return (
-      <Badge variant="warning" className="bg-gray-100 text-gray-600 border-gray-200">
-        <Archive className="w-3 h-3 mr-1" />
-        Archived
-      </Badge>
-    );
-  }
-
-  // if (budget.isShared) {
-  //   return (
-  //     <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-  //       <Users className="w-3 h-3 mr-1" />
-  //       Shared
-  //     </Badge>
-  //   );
-  // }
-
   const summary = budget.summary;
   if (!summary) return null;
 
@@ -474,6 +456,13 @@ const getBudgetIcon = useCallback((budgetName: string, budgetColor: string) => {
         {/* Status Badge */}
         <div className="mb-4">
           <BudgetStatusBadge budget={budget} />
+
+          {budget.isArchived &&
+            <Badge variant="warning" className="bg-gray-100 text-gray-600 border-gray-200">
+              <Archive className="w-3 h-3 mr-1" />
+              Archived
+            </Badge>
+          }
         </div>
 
         {/* Performance Section */}

@@ -91,7 +91,7 @@ export const BudgetDetailsHeader: React.FC<BudgetDetailsHeaderProps> = ({
 
     const incomeProgress = totalPlannedIncome > 0 ? (totalActualIncome / totalPlannedIncome) * 100 : 0;
     const expenseProgress = totalPlannedExpenses > 0 ? (totalActualExpenses / totalPlannedExpenses) * 100 : 0;
-    const variance = netActual - netPlanned;
+    const variance = totalPlannedIncome - totalPlannedExpenses;
 
     return {
       totalPlannedIncome,
@@ -263,7 +263,7 @@ export const BudgetDetailsHeader: React.FC<BudgetDetailsHeaderProps> = ({
                         financialMetrics.netActual >= 0 ? (
                           <TrendingUp className="w-6 h-6 text-green-600" />
                         ) : (
-                          <TrendingDown className="w-6 h-6 text-red-600 transform" />
+                          <TrendingDown className="w-6 h-6 text-red-600" />
                         )
                       }
                     </div>
