@@ -23,7 +23,9 @@ import {
   Briefcase,
   GraduationCap,
   Plane,
-  TrendingDown
+  TrendingDown,
+  CheckCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { Badge } from '../../ui';
 import { Budget, BudgetSummary } from '../../../types';
@@ -66,6 +68,70 @@ const getBudgetIcon = (budgetName: string, budgetColor: string) => {
   
   // Default icon
   return Wallet;
+};
+
+// Budget Status Component - Add this before your main component
+const BudgetStatus: React.FC<{ 
+  netActual: number; 
+  netPlanned: number; 
+  formatCurrency: (amount: number) => string;
+}> = ({ netActual, netPlanned, formatCurrency }) => {
+  const variance = netActual - netPlanned;
+  
+  // Determine status based on variance
+  const getStatus = () => {
+    // If variance is within ±100, consider it "On Track"
+    if (Math.abs(variance) <= 100) {
+      return {
+        label: 'On Track',
+        icon: CheckCircle,
+        color: 'text-green-600',
+        bgColor: 'bg-green-50',
+        borderColor: 'border-green-200'
+      };
+    }
+    
+    if (variance < 0) {
+      return {
+        label: 'Over Budget',
+        icon: AlertTriangle,
+        color: 'text-red-600',
+        bgColor: 'bg-red-50',
+        borderColor: 'border-red-200'
+      };
+    }
+    
+    return {
+      label: 'Surplus',
+      icon: TrendingUp,
+      color: 'text-emerald-600',
+      bgColor: 'bg-emerald-50',
+      borderColor: 'border-emerald-200'
+    };
+  };
+
+  const status = getStatus();
+  const StatusIcon = status.icon;
+
+  return (
+    <div className="mt-2">
+      {/* Status Badge */}
+      <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${status.color} ${status.bgColor} border ${status.borderColor}`}>
+        <StatusIcon className="w-3 h-3 mr-1" />
+        {status.label}
+      </div>
+      
+      {/* Variance Details - Only show if meaningful variance */}
+      {Math.abs(variance) > 100 && (
+        <div className="text-xs text-gray-600 mt-1">
+          <span className={variance >= 0 ? 'text-green-600' : 'text-red-600'}>
+            {variance > 0 ? '+' : ''}{formatCurrency(variance)}
+          </span>
+          <span className="text-gray-500"> vs planned</span>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export const BudgetDetailsHeader: React.FC<BudgetDetailsHeaderProps> = ({
@@ -248,13 +314,11 @@ export const BudgetDetailsHeader: React.FC<BudgetDetailsHeaderProps> = ({
                       }`}>
                         {formatCurrency(financialMetrics.netActual)}
                       </p>
-                      {financialMetrics.variance !== 0 && (
-                        <p className={`text-xs mt-1 ${
-                          financialMetrics.variance > 0 ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {financialMetrics.variance > 0 ? '+' : ''}{formatCurrency(financialMetrics.variance)} vs planned
-                        </p>
-                      )}
+                      <BudgetStatus 
+                        netActual={financialMetrics.netActual}
+                        netPlanned={financialMetrics.netPlanned}
+                        formatCurrency={formatCurrency}
+                      />
                     </div>
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                       financialMetrics.netActual >= 0 ? 'bg-green-100' : 'bg-red-100'
