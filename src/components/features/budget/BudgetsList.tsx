@@ -123,7 +123,7 @@ const ProgressBar: React.FC<{
 const BudgetStatusBadge: React.FC<{ budget: Budget }> = ({ budget }) => {
   if (budget.isArchived) {
     return (
-      <Badge variant="secondary" className="bg-gray-100 text-gray-600 border-gray-200">
+      <Badge variant="warning" className="bg-gray-100 text-gray-600 border-gray-200">
         <Archive className="w-3 h-3 mr-1" />
         Archived
       </Badge>
@@ -345,26 +345,11 @@ const getBudgetIcon = useCallback((budgetName: string, budgetColor: string) => {
     <Link to={`/budgets/${budget.id}`} className="block">
       <Card className={cn(
         "p-5 h-full hover:shadow-lg transition-all duration-200 hover:border-blue-200 group relative",
-        budget.isArchived && "opacity-75 bg-gray-50"
+        budget.isArchived && "bg-gray-100 border-gray-300"  // Different background instead of opacity
       )}>
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            
-            {/* OPTION 1: Color Only (Current) */}
-            {/* <div 
-              className="w-5 h-5 rounded-full flex-shrink-0 ring-2 ring-white shadow-sm"
-              style={{ backgroundColor: budget.color }}
-            /> */}
-            
-            {/* OPTION 2: Icon Only */}
-            {/* <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              {React.createElement(getBudgetIcon(budget.name, budget.color), {
-                className: "w-4 h-4 text-gray-600"
-              })}
-            </div> */}
-            
-            {/* OPTION 3: Both Color + Icon */}
             <div 
               className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm"
               style={{ backgroundColor: budget.color }}

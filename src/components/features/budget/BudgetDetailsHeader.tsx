@@ -278,6 +278,9 @@ export const BudgetDetailsHeader: React.FC<BudgetDetailsHeaderProps> = ({
                       <p className="text-lg font-bold text-green-600">
                         {formatCurrency(financialMetrics.totalActualIncome)}
                       </p>
+                      <p className={`text-xs mt-1`}>
+                        Planned: {formatCurrency(financialMetrics.totalPlannedIncome)}
+                      </p>
                     </div>
                     <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
                       <Plus className="w-5 h-5 text-green-600" />
@@ -304,6 +307,9 @@ export const BudgetDetailsHeader: React.FC<BudgetDetailsHeaderProps> = ({
                       <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Expenses</p>
                       <p className="text-lg font-bold text-red-600">
                         {formatCurrency(financialMetrics.totalActualExpenses)}
+                      </p>
+                      <p className={`text-xs mt-1`}>
+                        Planned: {formatCurrency(financialMetrics.totalPlannedExpenses)}
                       </p>
                     </div>
                     <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">

@@ -277,6 +277,21 @@ const BudgetsPage: React.FC = () => {
     }
   }, [createAIBudgetMutation, toast, closeModal]);
 
+  const handleUpdateBudget = useCallback(async (data: CreateBudgetForm) => {
+    if (!selectedBudget) return;
+  
+  try {
+      await updateBudgetMutation.mutateAsync({
+        id: selectedBudget.id,
+        data
+      });
+      toast.success('Budget updated successfully!');
+      closeModal();
+    } catch (error) {
+      toast.error('Failed to update budget');
+    }
+  }, [selectedBudget, updateBudgetMutation, toast, closeModal]);
+
   // Budget Actions with optimistic updates
   const handleEditBudget = useCallback((budget: Budget) => {
     setSelectedBudget(budget);
@@ -493,7 +508,7 @@ const BudgetsPage: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     onClick={() => handleFilterChange('includeArchived', !filters.includeArchived)}
-                    className={`${filters.includeArchived ? 'bg-gray-100 text-gray-900' : 'text-gray-600'} transition-colors`}
+                    className={`${filters.includeArchived ? 'bg-yellow-100 text-yellow-900' : 'text-gray-600'} transition-colors`}
                   >
                     <Archive className="h-4 w-4 mr-1" />
                     <span className="hidden sm:inline">Archived</span>
@@ -628,13 +643,7 @@ const BudgetsPage: React.FC = () => {
         <BudgetFormModal
           isOpen={true}
           onClose={closeModal}
-          onSubmit={async (data) => {
-            await updateBudgetMutation.mutateAsync({
-              id: selectedBudget.id,
-              data
-            });
-            closeModal();
-          }}
+          onSubmit={handleUpdateBudget}
           editingBudget={selectedBudget}
           isLoading={updateBudgetMutation.isPending}
         />

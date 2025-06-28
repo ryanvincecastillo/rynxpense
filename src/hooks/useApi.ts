@@ -34,13 +34,16 @@ export const queryKeys = {
 // Budget hooks
 export const useBudgets = (params?: BudgetQueryParams) => {
   return useQuery({
-    queryKey: [...queryKeys.budgets, params],
+    queryKey: ['budgets', params], // Simplified key structure
     queryFn: () => budgetAPI.getAll(params),
     select: (response) => response.data,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    // 🚀 ANTI-FLICKER: Keep previous data while fetching new data
-    placeholderData: (previousData) => previousData,
+    staleTime: 0, // ✅ Always fetch fresh data
+    gcTime: 1 * 60 * 1000, // Keep in cache for 1 minute when unused
     refetchOnWindowFocus: false,
+    refetchOnMount: true, // ✅ Always refetch when component mounts
+    refetchOnReconnect: true,
+    retry: 2, // Retry failed requests
+    retryDelay: 1000, // Wait 1 second between retries
   });
 };
 
@@ -71,26 +74,22 @@ export const useCreateBudget = () => {
 
   return useMutation({
     mutationFn: (data: CreateBudgetForm) => budgetAPI.create(data),
-    onSuccess: (response) => {
-      // 🚀 OPTIMISTIC UPDATE: Add new budget to cache
-      queryClient.setQueriesData(
-        { queryKey: queryKeys.budgets },
-        (oldData: any) => {
-          if (!oldData?.data) return oldData;
-          
-          return {
-            ...oldData,
-            data: [response.data.data, ...oldData.data],
-            pagination: oldData.pagination ? {
-              ...oldData.pagination,
-              total: oldData.pagination.total + 1,
-            } : undefined,
-          };
-        }
-      );
+    onSuccess: () => {
+      // ✅ SIMPLE AND RELIABLE: Just invalidate and let React Query handle the rest
+      queryClient.invalidateQueries({ 
+        queryKey: ['budgets'],
+        exact: false, // Match all variations of budget queries
+        refetchType: 'active' // Only refetch currently active queries
+      });
       
-      // Invalidate to ensure server state sync
-      queryClient.invalidateQueries({ queryKey: queryKeys.budgets });
+      // Also invalidate any cached budget list data
+      queryClient.resetQueries({
+        queryKey: ['budgets'],
+        exact: false
+      });
+    },
+    onError: (error) => {
+      console.error('Budget creation error:', error);
     },
   });
 };
@@ -102,32 +101,23 @@ export const useUpdateBudget = () => {
     mutationFn: ({ id, data }: { id: string; data: Partial<Budget> }) =>
       budgetAPI.update(id, data),
     onSuccess: (response, { id }) => {
-      // 🚀 OPTIMISTIC UPDATE: Update budget in all caches
+      // Update specific budget cache immediately
       const updatedBudget = response.data.data;
-      
-      // Update budgets list cache
-      queryClient.setQueriesData(
-        { queryKey: queryKeys.budgets },
-        (oldData: any) => {
-          if (!oldData?.data) return oldData;
-          
-          return {
-            ...oldData,
-            data: oldData.data.map((budget: Budget) => 
-              budget.id === id ? updatedBudget : budget
-            ),
-          };
-        }
-      );
-      
-      // Update specific budget cache
-      queryClient.setQueryData(queryKeys.budget(id), (oldData: any) => {
-        if (!oldData) return oldData;
-        return {
-          ...oldData,
-          data: { data: updatedBudget },
-        };
+      queryClient.setQueryData(['budgets', id], {
+        success: true,
+        message: 'Success',
+        data: { data: updatedBudget }
       });
+      
+      // Invalidate all budget-related queries
+      queryClient.invalidateQueries({ 
+        queryKey: ['budgets'],
+        exact: false,
+        refetchType: 'active'
+      });
+    },
+    onError: (error) => {
+      console.error('Budget update error:', error);
     },
   });
 };
@@ -138,28 +128,22 @@ export const useDeleteBudget = () => {
   return useMutation({
     mutationFn: (id: string) => budgetAPI.delete(id),
     onSuccess: (_, deletedId) => {
-      // 🚀 OPTIMISTIC UPDATE: Remove from cache
-      queryClient.setQueriesData(
-        { queryKey: queryKeys.budgets },
-        (oldData: any) => {
-          if (!oldData?.data) return oldData;
-          
-          return {
-            ...oldData,
-            data: oldData.data.filter((budget: Budget) => budget.id !== deletedId),
-            pagination: oldData.pagination ? {
-              ...oldData.pagination,
-              total: oldData.pagination.total - 1,
-            } : undefined,
-          };
-        }
-      );
+      // Remove specific budget from cache
+      queryClient.removeQueries({ queryKey: ['budgets', deletedId] });
       
-      // Remove specific budget cache
-      queryClient.removeQueries({ queryKey: queryKeys.budget(deletedId) });
+      // Invalidate all budget lists to refetch without deleted item
+      queryClient.invalidateQueries({ 
+        queryKey: ['budgets'],
+        exact: false,
+        refetchType: 'active'
+      });
+    },
+    onError: (error) => {
+      console.error('Budget delete error:', error);
     },
   });
 };
+
 
 export const useDuplicateBudget = () => {
   const queryClient = useQueryClient();
@@ -175,28 +159,16 @@ export const useDuplicateBudget = () => {
       const response = await budgetAPI.duplicate(budgetId, options);
       return response.data;
     },
-    onSuccess: (response) => {
-      // 🚀 OPTIMISTIC UPDATE: Add duplicated budget to cache
-      const newBudget = response.data;
-      
-      queryClient.setQueriesData(
-        { queryKey: queryKeys.budgets },
-        (oldData: any) => {
-          if (!oldData?.data) return oldData;
-          
-          return {
-            ...oldData,
-            data: [newBudget, ...oldData.data],
-            pagination: oldData.pagination ? {
-              ...oldData.pagination,
-              total: oldData.pagination.total + 1,
-            } : undefined,
-          };
-        }
-      );
-      
-      // Invalidate to ensure server state sync
-      queryClient.invalidateQueries({ queryKey: queryKeys.budgets });
+    onSuccess: () => {
+      // Invalidate all budget queries to show the new duplicated budget
+      queryClient.invalidateQueries({ 
+        queryKey: ['budgets'],
+        exact: false,
+        refetchType: 'active'
+      });
+    },
+    onError: (error) => {
+      console.error('Budget duplicate error:', error);
     },
   });
 };
