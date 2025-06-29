@@ -280,8 +280,6 @@ const BudgetCard: React.FC<BudgetCardProps> = memo(({
   const [showActionsMenu, setShowActionsMenu] = useState(false);
 
   const handleMenuAction = useCallback((action: string) => {
-    setShowActionsMenu(false);
-    
     switch (action) {
       case 'edit':
         onEdit(budget);
@@ -295,14 +293,25 @@ const BudgetCard: React.FC<BudgetCardProps> = memo(({
       case 'delete':
         onDelete(budget);
         break;
+      case 'share':
+        // Handle share action - you can implement this
+        console.log('Share budget:', budget.id);
+        break;
+      case 'export':
+        // Handle export action - you can implement this
+        console.log('Export budget:', budget.id);
+        break;
     }
   }, [budget, onEdit, onDuplicate, onArchive, onDelete]);
 
-  const handleToggleMenu = useCallback((e: React.MouseEvent) => {
+
+  const handleToggleMenu = useCallback((e?: React.MouseEvent) => {
+  if (e) {
     e.preventDefault();
     e.stopPropagation();
-    setShowActionsMenu(!showActionsMenu);
-  }, [showActionsMenu]);
+  }
+  setShowActionsMenu(!showActionsMenu);
+}, [showActionsMenu]);
 
 // Get budget icon based on name/type
 const getBudgetIcon = useCallback((budgetName: string, budgetColor: string) => {
@@ -360,97 +369,16 @@ const getBudgetIcon = useCallback((budgetName: string, budgetColor: string) => {
               e.stopPropagation();
             }}
           >
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleToggleMenu}
-              className="opacity-0 group-hover:opacity-100 transition-opacity -mt-1 -mr-1"
-            >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-
-            {showActionsMenu && (
-              <div 
-                className="absolute top-full right-0 mt-1 z-50"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-              >
-                <div className="w-56 bg-white border border-gray-200 rounded-lg shadow-lg">
-                  <div className="py-1">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleMenuAction('edit');
-                      }}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      <Edit className="h-4 w-4 mr-3" />
-                      Edit Budget
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleMenuAction('duplicate');
-                      }}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      <Copy className="h-4 w-4 mr-3" />
-                      Duplicate Budget
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleMenuAction('share');
-                      }}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      <Share2 className="h-4 w-4 mr-3" />
-                      Share Budget
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleMenuAction('export');
-                      }}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      <Download className="h-4 w-4 mr-3" />
-                      Export Budget
-                    </button>
-                    <div className="border-t border-gray-100 my-1"></div>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleMenuAction('archive');
-                      }}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      <Archive className="h-4 w-4 mr-3" />
-                      {budget.isArchived ? 'Unarchive Budget' : 'Archive Budget'}
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleMenuAction('delete');
-                      }}
-                      className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4 mr-3" />
-                      Delete Budget
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            <BudgetActionsMenu
+              budget={budget}
+              isOpen={showActionsMenu}
+              onToggle={handleToggleMenu}
+              onAction={handleMenuAction}
+              currentUserRole="OWNER"
+              isSharedBudget={false}
+            />
           </div>
+          
         </div>
 
         {/* Status Badge */}
