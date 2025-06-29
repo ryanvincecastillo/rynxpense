@@ -1,87 +1,54 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { 
-  Calendar, 
-  Repeat, 
-  Receipt, 
-  DollarSign, 
-  Save, 
-  AlertCircle,
-  CheckCircle,
-  Clock,
+// TransactionFormModal.tsx - Clean Mobile-First Version
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  X,
+  Plus,
+  Minus,
+  Calendar,
   FileText,
-  TrendingUp,
-  TrendingDown,
+  Clock,
+  Receipt,
+  Repeat,
+  ChevronDown,
+  ChevronUp,
+  Save,
   Loader2,
-  Info,
-  Calculator,
-  Link as LinkIcon,
-  Eye,
-  EyeOff,
-  Tag,
-  CalendarDays
+  AlertCircle,
+  DollarSign,
 } from 'lucide-react';
-
-// UI Components
-import { 
-  Button, 
-  Input, 
-  Select, 
-  Textarea,
-  Alert
-} from '../ui';
-import Modal from '../ui/Modal/Modal';
-
-// Types
-import { CreateTransactionForm, Transaction, BudgetCategory } from '../../types';
-
-// ============================================================================
-// CONSTANTS & CONFIGURATION
-// ============================================================================
-
-const MAX_DESCRIPTION_LENGTH = 500;
-const MAX_AMOUNT = 999999999;
-const MIN_DESCRIPTION_LENGTH = 3;
-
-const FREQUENCY_OPTIONS = [
-  { value: 'WEEKLY', label: 'Weekly' },
-  { value: 'MONTHLY', label: 'Monthly' },
-  { value: 'YEARLY', label: 'Yearly' },
-] as const;
-
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
-
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-PH', {
-    style: 'currency',
-    currency: 'PHP',
-    minimumFractionDigits: 2,
-  }).format(amount);
-};
-
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  return new Intl.DateTimeFormat('en-PH', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(date);
-};
-
-const getFrequencyText = (frequency: string): string => {
-  const option = FREQUENCY_OPTIONS.find(opt => opt.value === frequency);
-  return option ? option.label : frequency;
-};
+import { Modal } from '../ui/Modal';
+import { Button } from '../ui';
+import { Alert } from '../ui/Alert';
 
 // ============================================================================
 // TYPES & INTERFACES
 // ============================================================================
 
+interface BudgetCategory {
+  id: string;
+  name: string;
+  type: 'INCOME' | 'EXPENSE';
+  isActive: boolean;
+  color?: string; // Add color property
+}
+
+interface Transaction {
+  id: string;
+  categoryId: string;
+  description: string;
+  amount: number;
+  date: string;
+  isPosted: boolean;
+  isRecurring: boolean;
+  frequency?: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+  dayOfMonth?: number;
+  receiptUrl?: string;
+}
+
 interface TransactionFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: CreateTransactionForm) => void;
+  onSubmit: (data: any) => Promise<void>;
   editingTransaction?: Transaction | null;
   isLoading?: boolean;
   budgetId: string;
@@ -99,7 +66,7 @@ interface FormData {
   receiptUrl: string;
   isRecurring: boolean;
   dayOfMonth: number;
-  frequency: 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+  frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 }
 
 interface FormErrors {
@@ -107,328 +74,420 @@ interface FormErrors {
   amount?: string;
   description?: string;
   date?: string;
-  receiptUrl?: string;
   dayOfMonth?: string;
+  receiptUrl?: string;
   general?: string;
 }
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+const MIN_DESCRIPTION_LENGTH = 3;
+const MAX_DESCRIPTION_LENGTH = 255;
+const QUICK_AMOUNTS = [100, 500, 1000, 2500, 5000];
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
 
 // ============================================================================
 // SUB-COMPONENTS
 // ============================================================================
 
-const Label: React.FC<{ 
-  htmlFor?: string; 
-  className?: string; 
-  children: React.ReactNode;
-  required?: boolean;
-}> = ({ htmlFor, className = '', children, required = false }) => (
-  <label 
-    htmlFor={htmlFor} 
-    className={`block text-sm font-semibold text-gray-800 mb-2 ${className}`}
-  >
-    {children}
-    {required && <span className="text-red-500 ml-1">*</span>}
-  </label>
-);
-
-const TransactionTypeSelector: React.FC<{
+interface ImprovedTypeSelectorProps {
   selectedType: 'INCOME' | 'EXPENSE';
   onTypeChange: (type: 'INCOME' | 'EXPENSE') => void;
   disabled?: boolean;
-}> = ({ selectedType, onTypeChange, disabled = false }) => {
+}
+
+const ImprovedTypeSelector: React.FC<ImprovedTypeSelectorProps> = ({
+  selectedType,
+  onTypeChange,
+  disabled = false,
+}) => {
   return (
     <div className="space-y-2">
-      <Label required>Transaction Type</Label>
-      <div className="relative">
-        <div className="flex bg-gray-100 rounded-lg p-1">
-          <button
-            type="button"
-            onClick={() => onTypeChange('INCOME')}
-            disabled={disabled}
-            className={`
-              flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-md text-sm font-medium
-              transition-all duration-200 relative overflow-hidden
-              ${selectedType === 'INCOME'
-                ? 'bg-green-500 text-white shadow-md ring-1 ring-green-400'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-              }
-              ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-            `}
-          >
-            <TrendingUp className="w-4 h-4" />
-            Income
-          </button>
-          <button
-            type="button"
-            onClick={() => onTypeChange('EXPENSE')}
-            disabled={disabled}
-            className={`
-              flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-md text-sm font-medium
-              transition-all duration-200 relative overflow-hidden
-              ${selectedType === 'EXPENSE'
-                ? 'bg-red-500 text-white shadow-md ring-1 ring-red-400'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-              }
-              ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-            `}
-          >
-            <TrendingDown className="w-4 h-4" />
-            Expense
-          </button>
-        </div>
+      <label className="block text-sm font-medium text-gray-700">
+        Category Type <span className="text-red-500">*</span>
+      </label>
+      
+      {/* Segmented Control */}
+      <div className="flex bg-gray-100 rounded-lg p-1">
+        <button
+          type="button"
+          onClick={() => onTypeChange('INCOME')}
+          disabled={disabled}
+          className={`
+            flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md text-sm font-medium
+            transition-all duration-200 ease-in-out
+            ${selectedType === 'INCOME'
+              ? 'bg-green-500 text-white shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+            }
+            disabled:opacity-50 disabled:cursor-not-allowed
+          `}
+        >
+          <Plus className="h-4 w-4" />
+          Income
+        </button>
+        
+        <button
+          type="button"
+          onClick={() => onTypeChange('EXPENSE')}
+          disabled={disabled}
+          className={`
+            flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md text-sm font-medium
+            transition-all duration-200 ease-in-out
+            ${selectedType === 'EXPENSE'
+              ? 'bg-red-500 text-white shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+            }
+            disabled:opacity-50 disabled:cursor-not-allowed
+          `}
+        >
+          <Minus className="h-4 w-4" />
+          Expense
+        </button>
       </div>
     </div>
   );
 };
 
-const CategorySelector: React.FC<{
+interface SmartCategorySelectorProps {
   categories: BudgetCategory[];
   selectedType: 'INCOME' | 'EXPENSE';
   selectedCategoryId: string;
   onCategoryChange: (categoryId: string) => void;
   error?: string;
   disabled?: boolean;
-}> = ({ categories, selectedType, selectedCategoryId, onCategoryChange, error, disabled = false }) => {
-  const categoryOptions = useMemo(() => {
-    const activeCategories = categories.filter(cat => 
-      cat.isActive && cat.type === selectedType
-    );
-    
-    return activeCategories.map(cat => ({
-      value: cat.id,
-      label: cat.name,
-    }));
+}
+
+const SmartCategorySelector: React.FC<SmartCategorySelectorProps> = ({
+  categories,
+  selectedType,
+  selectedCategoryId,
+  onCategoryChange,
+  error,
+  disabled = false,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const filteredCategories = useMemo(() => {
+    return categories.filter(cat => cat.isActive && cat.type === selectedType);
   }, [categories, selectedType]);
 
   const selectedCategory = useMemo(() => {
-    return categories.find(cat => cat.id === selectedCategoryId);
-  }, [categories, selectedCategoryId]);
+    return filteredCategories.find(cat => cat.id === selectedCategoryId);
+  }, [filteredCategories, selectedCategoryId]);
+
+  const handleSelect = (categoryId: string) => {
+    onCategoryChange(categoryId);
+    setIsOpen(false);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('[data-category-selector]')) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [isOpen]);
 
   return (
-    <div className="space-y-2">
-      <Label htmlFor="category-select" required>
-        {selectedType === 'INCOME' ? 'Income' : 'Expense'} Category
-      </Label>
+    <div className="space-y-2" data-category-selector>
+      <label className="block text-sm font-medium text-gray-700">
+        Category <span className="text-red-500">*</span>
+      </label>
       
       <div className="relative">
-        <Select
-          id="category-select"
-          value={selectedCategoryId}
-          onChange={(e) => onCategoryChange(e.target.value)}
-          options={[
-            { 
-              value: '', 
-              label: categoryOptions.length > 0 
-                ? 'Select a category' 
-                : `No ${selectedType.toLowerCase()} categories available` 
-            },
-            ...categoryOptions
-          ]}
-          disabled={disabled || categoryOptions.length === 0}
+        {/* Custom Select Button */}
+        <button
+          type="button"
+          onClick={() => !disabled && setIsOpen(!isOpen)}
+          disabled={disabled}
           className={`
-            ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
-            text-base sm:text-sm
+            relative w-full bg-white border-2 rounded-lg shadow-sm pl-3 pr-10 py-3 text-left 
+            cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+            disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed
+            transition-colors
+            ${error 
+              ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+              : 'border-gray-300 hover:border-gray-400'
+            }
+            ${isOpen ? 'ring-2 ring-blue-500 border-blue-500' : ''}
           `}
-        />
-        {selectedCategory && (
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-            <div
-              className="w-4 h-4 rounded-full border border-white"
-              style={{ backgroundColor: selectedCategory.color }}
+        >
+          <span className="flex items-center">
+            {selectedCategory ? (
+              <>
+                <div 
+                  className="w-3 h-3 rounded-full mr-3 flex-shrink-0"
+                  style={{ backgroundColor: selectedCategory.color || '#6B7280' }}
+                />
+                <span className="block truncate text-gray-900 font-medium">
+                  {selectedCategory.name}
+                </span>
+              </>
+            ) : (
+              <span className="block truncate text-gray-500">
+                Select a category
+              </span>
+            )}
+          </span>
+          <span className="ml-3 absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            <ChevronDown 
+              className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${
+                isOpen ? 'transform rotate-180' : ''
+              }`} 
             />
+          </span>
+        </button>
+
+        {/* Dropdown */}
+        {isOpen && (
+          <div className="absolute z-50 mt-1 w-full bg-white shadow-lg max-h-60 rounded-lg border border-gray-200 py-1 text-base overflow-auto">
+            {filteredCategories.length === 0 ? (
+              <div className="px-3 py-3 text-gray-500 text-center text-sm">
+                No {selectedType.toLowerCase()} categories available
+              </div>
+            ) : (
+              <>
+                {/* Clear selection option */}
+                {selectedCategoryId && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelect('')}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 border-b border-gray-100"
+                  >
+                    Clear selection
+                  </button>
+                )}
+                
+                {/* Category options */}
+                {filteredCategories.map((category) => (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => handleSelect(category.id)}
+                    className={`
+                      w-full text-left px-3 py-3 hover:bg-gray-50 focus:bg-gray-50 
+                      focus:outline-none transition-colors
+                      ${selectedCategoryId === category.id ? 'bg-blue-50 text-blue-700' : 'text-gray-900'}
+                    `}
+                  >
+                    <div className="flex items-center">
+                      <div 
+                        className="w-3 h-3 rounded-full mr-3 flex-shrink-0"
+                        style={{ backgroundColor: category.color || '#6B7280' }}
+                      />
+                      <span className="block truncate font-medium">
+                        {category.name}
+                      </span>
+                      {selectedCategoryId === category.id && (
+                        <span className="ml-auto">
+                          <svg className="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </>
+            )}
           </div>
         )}
       </div>
 
-      {error ? (
+      {error && (
         <p className="text-sm text-red-600 flex items-center gap-1">
-          <AlertCircle className="w-3 h-3 flex-shrink-0" />
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
           {error}
         </p>
-      ) : categoryOptions.length === 0 ? (
-        <p className="text-sm text-gray-500 flex items-center gap-1">
-          <Tag className="w-3 h-3" />
-          No {selectedType.toLowerCase()} categories found. Please create one first.
-        </p>
-      ) : (
-        <div className="flex items-center gap-1 text-xs text-gray-500">
-          <Info className="w-3 h-3" />
-          Choose the category for this transaction
-        </div>
       )}
     </div>
   );
 };
 
-const RecurringOptions: React.FC<{
-  isRecurring: boolean;
-  frequency: 'WEEKLY' | 'MONTHLY' | 'YEARLY';
-  dayOfMonth: number;
-  onRecurringChange: (isRecurring: boolean) => void;
-  onFrequencyChange: (frequency: 'WEEKLY' | 'MONTHLY' | 'YEARLY') => void;
-  onDayOfMonthChange: (day: number) => void;
-  error?: string;
+interface CompactAmountInputProps {
+  value: number;
+  onChange: (value: number) => void;
   disabled?: boolean;
-}> = ({ 
-  isRecurring, 
-  frequency, 
-  dayOfMonth, 
-  onRecurringChange, 
-  onFrequencyChange, 
-  onDayOfMonthChange, 
-  error, 
-  disabled = false 
+  error?: string;
+}
+
+const CompactAmountInput: React.FC<CompactAmountInputProps> = ({
+  value,
+  onChange,
+  disabled = false,
+  error,
 }) => {
+  const [inputValue, setInputValue] = useState(value > 0 ? value.toString() : '');
+
+  useEffect(() => {
+    setInputValue(value > 0 ? value.toString() : '');
+  }, [value]);
+
+  const handleInputChange = (newValue: string) => {
+    const cleanValue = newValue.replace(/[^\d.]/g, '');
+    setInputValue(cleanValue);
+    
+    const numValue = parseFloat(cleanValue) || 0;
+    onChange(numValue);
+  };
+
+  const handleQuickAmount = (amount: number) => {
+    onChange(amount);
+  };
+
   return (
-    <div className="space-y-4">
-      {/* Recurring Toggle */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Repeat className="w-4 h-4 text-gray-500" />
-          <Label className="mb-0">Recurring Transaction</Label>
+    <div className="space-y-3">
+      <label className="block text-sm font-medium text-gray-700">
+        Amount <span className="text-red-500">*</span>
+      </label>
+      
+      {/* Amount Input */}
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <span className="text-gray-500 font-medium">₱</span>
         </div>
-        <button
-          type="button"
-          onClick={() => onRecurringChange(!isRecurring)}
+        
+        <input
+          type="number"
+          inputMode="decimal"
+          value={inputValue}
+          onChange={(e) => handleInputChange(e.target.value)}
           disabled={disabled}
           className={`
-            relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent 
-            transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-            ${isRecurring ? 'bg-blue-600' : 'bg-gray-200'}
-            ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+            block w-full pl-8 pr-4 py-3 text-lg font-semibold
+            border-2 rounded-lg shadow-sm
+            placeholder-gray-400 
+            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+            disabled:bg-gray-50 disabled:text-gray-500
+            transition-colors
+            ${error 
+              ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+              : 'border-gray-300'
+            }
           `}
-        >
-          <span
-            className={`
-              pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 
-              transition duration-200 ease-in-out
-              ${isRecurring ? 'translate-x-5' : 'translate-x-0'}
-            `}
-          />
-        </button>
+          placeholder="0"
+        />
       </div>
 
-      {/* Recurring Settings */}
-      {isRecurring && (
-        <div className="pl-6 space-y-4 border-l-2 border-blue-200">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="frequency-select">Frequency</Label>
-              <Select
-                id="frequency-select"
-                value={frequency}
-                onChange={(e) => onFrequencyChange(e.target.value as 'WEEKLY' | 'MONTHLY' | 'YEARLY')}
-                options={FREQUENCY_OPTIONS.map(opt => ({ value: opt.value, label: opt.label }))}
-                disabled={disabled}
-                className="text-base sm:text-sm"
-              />
-            </div>
-            
-            {frequency === 'MONTHLY' && (
-              <div>
-                <Label htmlFor="day-of-month">Day of Month</Label>
-                <Input
-                  id="day-of-month"
-                  type="number"
-                  value={dayOfMonth}
-                  onChange={(e) => onDayOfMonthChange(parseInt(e.target.value) || 1)}
-                  min="1"
-                  max="31"
-                  disabled={disabled}
-                  className={`
-                    text-base sm:text-sm
-                    ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
-                  `}
-                />
-              </div>
-            )}
-          </div>
+      {/* Quick amounts - smaller and inline */}
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {QUICK_AMOUNTS.map((amount) => (
+          <button
+            key={amount}
+            type="button"
+            onClick={() => handleQuickAmount(amount)}
+            disabled={disabled}
+            className="
+              flex-shrink-0 px-3 py-1 text-sm font-medium text-gray-600 
+              bg-gray-100 hover:bg-gray-200 
+              border border-gray-300 rounded-full
+              focus:outline-none focus:ring-2 focus:ring-blue-500
+              disabled:opacity-50 disabled:cursor-not-allowed
+              transition-colors
+            "
+          >
+            {formatCurrency(amount)}
+          </button>
+        ))}
+      </div>
 
-          {error && (
-            <p className="text-sm text-red-600 flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" />
-              {error}
-            </p>
-          )}
-        </div>
+      {error && (
+        <p className="text-sm text-red-600 flex items-center gap-1">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {error}
+        </p>
       )}
     </div>
   );
 };
 
-const TransactionPreview: React.FC<{
-  formData: FormData;
-  selectedCategory?: BudgetCategory;
-}> = ({ formData, selectedCategory }) => {
-  return (
-    <div className="p-4 border rounded-lg bg-gradient-to-r from-gray-50 to-gray-100">
-      <div className="flex items-start gap-3">
-        {/* Transaction Icon */}
-        <div
-          className={`
-            w-12 h-12 rounded-full border-2 border-white shadow-sm flex items-center justify-center flex-shrink-0
-            ${formData.selectedType === 'INCOME' ? 'bg-green-500' : 'bg-red-500'}
-          `}
-          style={{ backgroundColor: selectedCategory?.color }}
-        >
-          {formData.selectedType === 'INCOME' ? (
-            <TrendingUp className="w-6 h-6 text-white drop-shadow-sm" />
-          ) : (
-            <TrendingDown className="w-6 h-6 text-white drop-shadow-sm" />
-          )}
-        </div>
+interface CompactFieldProps {
+  label: string;
+  required?: boolean;
+  error?: string;
+  children: React.ReactNode;
+}
 
-        {/* Transaction Details */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between">
-            <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-semibold text-gray-900 truncate">
-                {formData.description || 'Transaction Description'}
-              </h4>
-              <div className="flex flex-wrap items-center gap-2 mt-1">
-                <span className={`
-                  px-2 py-1 rounded-full text-xs font-medium
-                  ${selectedCategory 
-                    ? 'text-white' 
-                    : formData.selectedType === 'INCOME' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }
-                `}
-                style={selectedCategory ? { backgroundColor: selectedCategory.color } : undefined}
-                >
-                  {selectedCategory?.name || `No ${formData.selectedType.toLowerCase()} category`}
-                </span>
-                <span className="text-xs text-gray-500">
-                  {formData.date ? formatDate(formData.date) : 'No date'}
-                </span>
-                <span className={`
-                  px-2 py-1 rounded-full text-xs font-medium
-                  ${formData.isPosted 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-yellow-100 text-yellow-800'
-                  }
-                `}>
-                  {formData.isPosted ? 'Posted' : 'Pending'}
-                </span>
-                {formData.isRecurring && (
-                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    Recurring {getFrequencyText(formData.frequency).toLowerCase()}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="text-right ml-3">
-              <p className={`
-                font-bold text-lg
-                ${formData.selectedType === 'INCOME' ? 'text-green-600' : 'text-red-600'}
-              `}>
-                {formData.selectedType === 'INCOME' ? '+' : '-'}{formatCurrency(formData.amount || 0)}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+const CompactField: React.FC<CompactFieldProps> = ({
+  label,
+  required = false,
+  error,
+  children,
+}) => {
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      {children}
+      {error && (
+        <p className="text-sm text-red-600 flex items-center gap-1">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
+
+interface ToggleProps {
+  enabled: boolean;
+  onChange: (enabled: boolean) => void;
+  disabled?: boolean;
+  label: string;
+}
+
+const Toggle: React.FC<ToggleProps> = ({
+  enabled,
+  onChange,
+  disabled = false,
+  label,
+}) => {
+  return (
+    <div className="flex items-center justify-between py-2">
+      <span className="text-sm font-medium text-gray-700">{label}</span>
+      <button
+        type="button"
+        onClick={() => onChange(!enabled)}
+        disabled={disabled}
+        className={`
+          relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full 
+          border-2 border-transparent transition-colors duration-200 ease-in-out 
+          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+          ${enabled ? 'bg-blue-600' : 'bg-gray-200'}
+          ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+        `}
+      >
+        <span
+          className={`
+            pointer-events-none inline-block h-4 w-4 transform rounded-full 
+            bg-white shadow ring-0 transition duration-200 ease-in-out
+            ${enabled ? 'translate-x-4' : 'translate-x-0'}
+          `}
+        />
+      </button>
     </div>
   );
 };
@@ -451,7 +510,7 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
   // STATE MANAGEMENT
   // ========================================
 
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<FormData>(() => ({
     selectedType: preselectedType || 'EXPENSE',
     categoryId: '',
     amount: 0,
@@ -462,7 +521,7 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
     isRecurring: false,
     dayOfMonth: new Date().getDate(),
     frequency: 'MONTHLY',
-  });
+  }));
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -474,21 +533,6 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
 
   const isFormLoading = isLoading || isSubmitting;
   const isEditMode = Boolean(editingTransaction);
-
-  const selectedCategory = useMemo(() => {
-    return categories.find(cat => cat.id === formData.categoryId);
-  }, [categories, formData.categoryId]);
-
-  const categoryOptions = useMemo(() => {
-    const activeCategories = categories.filter(cat => 
-      cat.isActive && cat.type === formData.selectedType
-    );
-    
-    return activeCategories.map(cat => ({
-      value: cat.id,
-      label: cat.name,
-    }));
-  }, [categories, formData.selectedType]);
 
   const isFormValid = useMemo(() => {
     return formData.categoryId && 
@@ -504,165 +548,86 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
   // ========================================
 
   useEffect(() => {
-    if (isOpen) {
-      if (editingTransaction) {
-        const existingCategory = categories.find(cat => cat.id === editingTransaction.categoryId);
-        const transactionType = existingCategory?.type || 'EXPENSE';
-        
-        setFormData({
-          selectedType: transactionType,
-          categoryId: editingTransaction.categoryId,
-          amount: Math.abs(editingTransaction.amount),
-          description: editingTransaction.description,
-          date: editingTransaction.date.split('T')[0],
-          isPosted: editingTransaction.isPosted,
-          receiptUrl: editingTransaction.receiptUrl || '',
-          isRecurring: editingTransaction.isRecurring || false,
-          dayOfMonth: editingTransaction.dayOfMonth || new Date().getDate(),
-          frequency: editingTransaction.frequency || 'MONTHLY',
-        });
-        setShowAdvanced(Boolean(editingTransaction.receiptUrl || editingTransaction.isRecurring));
-      } else {
-        const defaultType = preselectedType || 'EXPENSE';
-        const matchingCategories = categories.filter(cat => 
-          cat.type === defaultType && cat.isActive
-        );
-        const defaultCategoryId = matchingCategories.length > 0 ? matchingCategories[0].id : '';
-        
-        setFormData({
-          selectedType: defaultType,
-          categoryId: defaultCategoryId,
-          amount: 0,
-          description: '',
-          date: new Date().toISOString().split('T')[0],
-          isPosted: true,
-          receiptUrl: '',
-          isRecurring: false,
-          dayOfMonth: new Date().getDate(),
-          frequency: 'MONTHLY',
-        });
-        setShowAdvanced(false);
-      }
-      setErrors({});
-      setIsSubmitting(false);
+    if (editingTransaction) {
+      // Convert date to proper format for date input (YYYY-MM-DD)
+      const formatDateForInput = (dateString: string) => {
+        try {
+          const date = new Date(dateString);
+          return date.toISOString().split('T')[0];
+        } catch (error) {
+          console.error('Date formatting error:', error);
+          return new Date().toISOString().split('T')[0];
+        }
+      };
+
+      setFormData({
+        selectedType: editingTransaction.categoryId ? 
+          categories.find(c => c.id === editingTransaction.categoryId)?.type || 'EXPENSE' : 'EXPENSE',
+        categoryId: editingTransaction.categoryId,
+        amount: editingTransaction.amount,
+        description: editingTransaction.description,
+        date: formatDateForInput(editingTransaction.date),
+        isPosted: editingTransaction.isPosted,
+        receiptUrl: editingTransaction.receiptUrl || '',
+        isRecurring: editingTransaction.isRecurring,
+        dayOfMonth: editingTransaction.dayOfMonth || new Date().getDate(),
+        frequency: editingTransaction.frequency || 'MONTHLY',
+      });
+    } else {
+      setFormData({
+        selectedType: preselectedType || 'EXPENSE',
+        categoryId: '',
+        amount: 0,
+        description: '',
+        date: new Date().toISOString().split('T')[0],
+        isPosted: true,
+        receiptUrl: '',
+        isRecurring: false,
+        dayOfMonth: new Date().getDate(),
+        frequency: 'MONTHLY',
+      });
     }
-  }, [isOpen, editingTransaction, preselectedType, categories]);
-
-  // ========================================
-  // VALIDATION
-  // ========================================
-
-  const validateForm = useCallback((): FormErrors => {
-    const newErrors: FormErrors = {};
-
-    // Category validation
-    if (!formData.categoryId) {
-      newErrors.categoryId = 'Please select a category';
-    }
-
-    // Amount validation
-    if (!formData.amount || formData.amount <= 0) {
-      newErrors.amount = 'Amount must be greater than 0';
-    } else if (formData.amount > MAX_AMOUNT) {
-      newErrors.amount = 'Amount is too large';
-    }
-
-    // Description validation
-    const trimmedDescription = formData.description.trim();
-    if (!trimmedDescription) {
-      newErrors.description = 'Description is required';
-    } else if (trimmedDescription.length < MIN_DESCRIPTION_LENGTH) {
-      newErrors.description = `Description must be at least ${MIN_DESCRIPTION_LENGTH} characters`;
-    } else if (formData.description.length > MAX_DESCRIPTION_LENGTH) {
-      newErrors.description = `Description must be ${MAX_DESCRIPTION_LENGTH} characters or less`;
-    }
-
-    // Date validation
-    if (!formData.date) {
-      newErrors.date = 'Date is required';
-    }
-
-    // Receipt URL validation
-    if (formData.receiptUrl && !/^https?:\/\/.+/.test(formData.receiptUrl)) {
-      newErrors.receiptUrl = 'Receipt URL must be a valid URL (http:// or https://)';
-    }
-
-    // Recurring validation
-    if (formData.isRecurring) {
-      if (!formData.dayOfMonth || formData.dayOfMonth < 1 || formData.dayOfMonth > 31) {
-        newErrors.dayOfMonth = 'Day of month must be between 1 and 31';
-      }
-    }
-
-    return newErrors;
-  }, [formData]);
+    setErrors({});
+    setShowAdvanced(false);
+  }, [editingTransaction, preselectedType, categories, isOpen]);
 
   // ========================================
   // EVENT HANDLERS
   // ========================================
 
-  const handleTypeChange = useCallback((type: 'INCOME' | 'EXPENSE') => {
-    const availableCategories = categories.filter(cat => 
-      cat.isActive && cat.type === type
-    );
-    const firstCategoryId = availableCategories.length > 0 ? availableCategories[0].id : '';
-    
-    setFormData(prev => ({
-      ...prev,
-      selectedType: type,
-      categoryId: firstCategoryId,
-    }));
-  }, [categories]);
+  const validateForm = useCallback((): boolean => {
+    const newErrors: FormErrors = {};
 
-  const handleInputChange = useCallback((field: keyof FormData) => (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const value = e.target.value;
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Clear related errors
-    if (errors[field as keyof FormErrors]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
+    if (!formData.categoryId) {
+      newErrors.categoryId = 'Please select a category';
     }
-  }, [errors]);
 
-  const handleAmountChange = useCallback((value: number) => {
-    setFormData(prev => ({ ...prev, amount: value }));
-    if (errors.amount) {
-      setErrors(prev => ({ ...prev, amount: undefined }));
+    if (!formData.amount || formData.amount <= 0) {
+      newErrors.amount = 'Amount must be greater than 0';
     }
-  }, [errors.amount]);
 
-  const handleCategoryChange = useCallback((categoryId: string) => {
-    setFormData(prev => ({ ...prev, categoryId }));
-    if (errors.categoryId) {
-      setErrors(prev => ({ ...prev, categoryId: undefined }));
+    if (!formData.description.trim()) {
+      newErrors.description = 'Description is required';
+    } else if (formData.description.trim().length < MIN_DESCRIPTION_LENGTH) {
+      newErrors.description = `Description must be at least ${MIN_DESCRIPTION_LENGTH} characters`;
     }
-  }, [errors.categoryId]);
 
-  const handleRecurringChange = useCallback((isRecurring: boolean) => {
-    setFormData(prev => ({ ...prev, isRecurring }));
-  }, []);
-
-  const handleFrequencyChange = useCallback((frequency: 'WEEKLY' | 'MONTHLY' | 'YEARLY') => {
-    setFormData(prev => ({ ...prev, frequency }));
-  }, []);
-
-  const handleDayOfMonthChange = useCallback((dayOfMonth: number) => {
-    setFormData(prev => ({ ...prev, dayOfMonth }));
-    if (errors.dayOfMonth) {
-      setErrors(prev => ({ ...prev, dayOfMonth: undefined }));
+    if (!formData.date) {
+      newErrors.date = 'Date is required';
     }
-  }, [errors.dayOfMonth]);
+
+    if (formData.isRecurring && (formData.dayOfMonth < 1 || formData.dayOfMonth > 31)) {
+      newErrors.dayOfMonth = 'Day of month must be between 1 and 31';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [formData]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (isSubmitting) return;
-
-    const formErrors = validateForm();
-    if (Object.keys(formErrors).length > 0) {
-      setErrors(formErrors);
+    if (isSubmitting || !validateForm()) {
       return;
     }
 
@@ -670,11 +635,11 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
     setErrors({});
 
     try {
-      const submitData: CreateTransactionForm = {
+      const submitData = {
         budgetId,
         categoryId: formData.categoryId,
-        amount: formData.amount,
         description: formData.description.trim(),
+        amount: formData.amount,
         date: formData.date,
         isPosted: formData.isPosted,
         receiptUrl: formData.receiptUrl.trim() || undefined,
@@ -684,7 +649,6 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
       };
 
       await onSubmit(submitData);
-      // Modal will be closed by parent component on success
     } catch (error: any) {
       console.error('Transaction form submission error:', error);
       setErrors({
@@ -710,284 +674,219 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
       isOpen={isOpen}
       onClose={handleClose}
       title={isEditMode ? 'Edit Transaction' : 'Add Transaction'}
-      size="lg"
-      className="sm:max-w-md md:max-w-lg"
+      size="md"
+      className="sm:max-w-md mx-4 sm:mx-auto"
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Error Alert */}
         {errors.general && (
-          <Alert type="error" className="mb-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-red-800 mb-1">Something went wrong</p>
-                <p className="text-red-700 text-sm">{errors.general}</p>
-              </div>
-            </div>
+          <Alert variant="error">
+            <p className="text-sm">{errors.general}</p>
           </Alert>
         )}
 
-        {/* Transaction Type Selector */}
-        <TransactionTypeSelector
+        {/* Transaction Type */}
+        <ImprovedTypeSelector
           selectedType={formData.selectedType}
-          onTypeChange={handleTypeChange}
+          onTypeChange={(type) => {
+            setFormData(prev => ({ ...prev, selectedType: type, categoryId: '' }));
+            setErrors(prev => ({ ...prev, categoryId: undefined }));
+          }}
           disabled={isFormLoading}
         />
 
-        {/* Category Selector */}
-        <CategorySelector
+        {/* Category */}
+        <SmartCategorySelector
           categories={categories}
           selectedType={formData.selectedType}
           selectedCategoryId={formData.categoryId}
-          onCategoryChange={handleCategoryChange}
+          onCategoryChange={(categoryId) => {
+            setFormData(prev => ({ ...prev, categoryId }));
+            setErrors(prev => ({ ...prev, categoryId: undefined }));
+          }}
           error={errors.categoryId}
           disabled={isFormLoading}
         />
 
-        {/* Amount and Description Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Amount Field */}
-          <div className="space-y-1">
-            <Label htmlFor="amount-input" required>
-              Amount
-            </Label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span className="text-gray-500 sm:text-sm">₱</span>
-              </div>
-              <Input
-                id="amount-input"
-                type="number"
-                value={formData.amount || ''}
-                onChange={(e) => handleAmountChange(Math.max(0, parseFloat(e.target.value) || 0))}
-                placeholder="0.00"
-                disabled={isFormLoading}
-                className={`
-                  pl-8 text-base sm:text-sm
-                  ${errors.amount ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
-                `}
-                min="0"
-                max={MAX_AMOUNT}
-                step="0.01"
-              />
-            </div>
-            {errors.amount ? (
-              <p className="text-sm text-red-600 flex items-center gap-1">
-                <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                {errors.amount}
-              </p>
-            ) : (
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <Calculator className="w-3 h-3" />
-                Enter the transaction amount
-              </div>
-            )}
-          </div>
+        {/* Amount */}
+        <CompactAmountInput
+          value={formData.amount}
+          onChange={(amount) => {
+            setFormData(prev => ({ ...prev, amount }));
+            setErrors(prev => ({ ...prev, amount: undefined }));
+          }}
+          disabled={isFormLoading}
+          error={errors.amount}
+        />
 
-          {/* Date Field */}
-          <div className="space-y-1">
-            <Label htmlFor="date-input" required>
-              Date
-            </Label>
-            <Input
-              id="date-input"
-              type="date"
-              value={formData.date}
-              onChange={handleInputChange('date')}
-              disabled={isFormLoading}
-              className={`
-                text-base sm:text-sm
-                ${errors.date ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
-              `}
-            />
-            {errors.date ? (
-              <p className="text-sm text-red-600 flex items-center gap-1">
-                <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                {errors.date}
-              </p>
-            ) : (
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <CalendarDays className="w-3 h-3" />
-                When did this transaction occur?
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Description Field */}
-        <div className="space-y-1">
-          <Label htmlFor="description-input" required>
-            Description
-          </Label>
-          <Textarea
-            id="description-input"
+        {/* Description */}
+        <CompactField label="Description" required error={errors.description}>
+          <textarea
             value={formData.description}
-            onChange={handleInputChange('description')}
-            placeholder="Enter transaction description..."
-            disabled={isFormLoading}
-            className={`
-              text-base sm:text-sm min-h-[80px] resize-none
-              ${errors.description ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
-            `}
+            onChange={(e) => {
+              setFormData(prev => ({ ...prev, description: e.target.value }));
+              setErrors(prev => ({ ...prev, description: undefined }));
+            }}
             maxLength={MAX_DESCRIPTION_LENGTH}
-            rows={3}
-          />
-          <div className="flex justify-between items-start">
-            {errors.description ? (
-              <p className="text-sm text-red-600 flex items-center gap-1">
-                <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                {errors.description}
-              </p>
-            ) : (
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <FileText className="w-3 h-3" />
-                Describe what this transaction is for
-              </div>
-            )}
-            <span className="text-xs text-gray-400 ml-2">
-              {formData.description.length}/{MAX_DESCRIPTION_LENGTH}
-            </span>
-          </div>
-        </div>
-
-        {/* Transaction Status */}
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-gray-500" />
-            <Label className="mb-0">Mark as Posted</Label>
-            <div className="text-xs text-gray-500">
-              (Transaction has been completed)
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setFormData(prev => ({ ...prev, isPosted: !prev.isPosted }))}
+            rows={2}
             disabled={isFormLoading}
+            placeholder="What is this for?"
             className={`
-              relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent 
-              transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-              ${formData.isPosted ? 'bg-green-600' : 'bg-gray-200'}
-              ${isFormLoading ? 'opacity-50 cursor-not-allowed' : ''}
+              block w-full px-3 py-2 text-base
+              border-2 rounded-lg shadow-sm
+              placeholder-gray-400 resize-none
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+              disabled:bg-gray-50 disabled:text-gray-500
+              ${errors.description 
+                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                : 'border-gray-300'
+              }
             `}
-          >
-            <span
-              className={`
-                pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 
-                transition duration-200 ease-in-out
-                ${formData.isPosted ? 'translate-x-5' : 'translate-x-0'}
-              `}
-            />
-          </button>
-        </div>
+          />
+          <div className="text-right text-xs text-gray-400 mt-1">
+            {formData.description.length}/{MAX_DESCRIPTION_LENGTH}
+          </div>
+        </CompactField>
 
-        {/* Advanced Options Toggle */}
+        {/* Date */}
+        <CompactField label="Date" required error={errors.date}>
+          <input
+            type="date"
+            value={formData.date}
+            onChange={(e) => {
+              setFormData(prev => ({ ...prev, date: e.target.value }));
+              setErrors(prev => ({ ...prev, date: undefined }));
+            }}
+            disabled={isFormLoading}
+            className="
+              block w-full px-3 py-3 text-base
+              border-2 border-gray-300 rounded-lg shadow-sm
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+              disabled:bg-gray-50 disabled:text-gray-500
+            "
+          />
+        </CompactField>
+
+        {/* Posted Toggle */}
+        <Toggle
+          enabled={formData.isPosted}
+          onChange={(isPosted) => setFormData(prev => ({ ...prev, isPosted }))}
+          disabled={isFormLoading}
+          label="Mark as posted"
+        />
+
+        {/* Advanced Options */}
         <div className="border-t border-gray-200 pt-4">
           <button
             type="button"
             onClick={() => setShowAdvanced(!showAdvanced)}
             disabled={isFormLoading}
-            className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50"
+            className="flex items-center justify-between w-full text-sm text-gray-600 hover:text-gray-800"
           >
+            <span>Advanced options</span>
             {showAdvanced ? (
-              <>
-                <EyeOff className="w-4 h-4" />
-                Hide Advanced Options
-              </>
+              <ChevronUp className="h-4 w-4" />
             ) : (
-              <>
-                <Eye className="w-4 h-4" />
-                Show Advanced Options
-              </>
+              <ChevronDown className="h-4 w-4" />
             )}
           </button>
-        </div>
 
-        {/* Advanced Options */}
-        {showAdvanced && (
-          <div className="space-y-6 pl-6 border-l-2 border-blue-200">
-            {/* Receipt URL */}
-            <div className="space-y-1">
-              <Label htmlFor="receipt-url">
-                Receipt URL
-              </Label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <LinkIcon className="w-4 h-4 text-gray-400" />
-                </div>
-                <Input
-                  id="receipt-url"
+          {showAdvanced && (
+            <div className="mt-4 space-y-4">
+              {/* Receipt URL */}
+              <CompactField label="Receipt URL" error={errors.receiptUrl}>
+                <input
                   type="url"
                   value={formData.receiptUrl}
-                  onChange={handleInputChange('receiptUrl')}
-                  placeholder="https://example.com/receipt.pdf"
+                  onChange={(e) => setFormData(prev => ({ ...prev, receiptUrl: e.target.value }))}
+                  placeholder="https://..."
                   disabled={isFormLoading}
-                  className={`
-                    pl-10 text-base sm:text-sm
-                    ${errors.receiptUrl ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
-                  `}
+                  className="
+                    block w-full px-3 py-2 text-base
+                    border-2 border-gray-300 rounded-lg shadow-sm
+                    placeholder-gray-400
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                    disabled:bg-gray-50 disabled:text-gray-500
+                  "
                 />
-              </div>
-              {errors.receiptUrl ? (
-                <p className="text-sm text-red-600 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                  {errors.receiptUrl}
-                </p>
-              ) : (
-                <div className="flex items-center gap-1 text-xs text-gray-500">
-                  <Receipt className="w-3 h-3" />
-                  Optional: Link to receipt or proof of transaction
+              </CompactField>
+
+              {/* Recurring */}
+              <Toggle
+                enabled={formData.isRecurring}
+                onChange={(isRecurring) => setFormData(prev => ({ ...prev, isRecurring }))}
+                disabled={isFormLoading}
+                label="Recurring transaction"
+              />
+
+              {formData.isRecurring && (
+                <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-lg">
+                  <CompactField label="Frequency">
+                    <select
+                      value={formData.frequency}
+                      onChange={(e) => setFormData(prev => ({ ...prev, frequency: e.target.value as any }))}
+                      disabled={isFormLoading}
+                      className="
+                        block w-full px-2 py-2 text-sm
+                        border border-gray-300 rounded-lg
+                        bg-white
+                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                      "
+                    >
+                      <option value="DAILY">Daily</option>
+                      <option value="WEEKLY">Weekly</option>
+                      <option value="MONTHLY">Monthly</option>
+                      <option value="YEARLY">Yearly</option>
+                    </select>
+                  </CompactField>
+
+                  <CompactField label="Day" error={errors.dayOfMonth}>
+                    <input
+                      type="number"
+                      min="1"
+                      max="31"
+                      value={formData.dayOfMonth}
+                      onChange={(e) => setFormData(prev => ({ ...prev, dayOfMonth: parseInt(e.target.value) || 1 }))}
+                      disabled={isFormLoading}
+                      className={`
+                        block w-full px-2 py-2 text-sm
+                        border rounded-lg
+                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                        ${errors.dayOfMonth ? 'border-red-300' : 'border-gray-300'}
+                      `}
+                    />
+                  </CompactField>
                 </div>
               )}
             </div>
-
-            {/* Recurring Options */}
-            <RecurringOptions
-              isRecurring={formData.isRecurring}
-              frequency={formData.frequency}
-              dayOfMonth={formData.dayOfMonth}
-              onRecurringChange={handleRecurringChange}
-              onFrequencyChange={handleFrequencyChange}
-              onDayOfMonthChange={handleDayOfMonthChange}
-              error={errors.dayOfMonth}
-              disabled={isFormLoading}
-            />
-          </div>
-        )}
-
-        {/* Transaction Preview */}
-        <div className="space-y-2">
-          <Label>Preview</Label>
-          <TransactionPreview
-            formData={formData}
-            selectedCategory={selectedCategory}
-          />
+          )}
         </div>
 
-        {/* Form Actions */}
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-6 border-t border-gray-200">
+        {/* Actions */}
+        <div className="flex gap-3 pt-4">
           <Button
             type="button"
             variant="secondary"
             onClick={handleClose}
             disabled={isFormLoading}
-            className="w-full sm:w-auto order-2 sm:order-1"
+            className="flex-1"
           >
             Cancel
           </Button>
           <Button
             type="submit"
             disabled={!isFormValid || isFormLoading}
-            className="w-full sm:w-auto sm:flex-1 order-1 sm:order-2"
+            className="flex-1"
           >
             {isFormLoading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {isEditMode ? 'Updating...' : 'Creating...'}
+                {isEditMode ? 'Updating...' : 'Saving...'}
               </>
             ) : (
               <>
                 <Save className="w-4 h-4 mr-2" />
-                {isEditMode ? 'Update Transaction' : 'Create Transaction'}
+                {isEditMode ? 'Update' : 'Save'}
               </>
             )}
           </Button>

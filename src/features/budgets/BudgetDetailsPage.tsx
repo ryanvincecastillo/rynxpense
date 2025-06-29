@@ -272,6 +272,12 @@ const BudgetDetailsPage: React.FC = () => {
     switch (action) {
       case 'create':
         setState(prev => ({ ...prev, editingItem: null }));
+        // ✅ Set preselectedType based on data.type if provided
+        if (data?.type) {
+          setPreselectedType(data.type); // This should set 'INCOME' or 'EXPENSE'
+        } else {
+          setPreselectedType(undefined); // Reset to default
+        }
         updateModalState({ showCreateTransactionModal: true });
         break;
       case 'edit':
@@ -620,6 +626,7 @@ const BudgetDetailsPage: React.FC = () => {
         onSubmit={handleTransactionSubmit}
         budgetId={budgetId!}
         categories={allCategories}
+        preselectedType={preselectedType}
         isLoading={createTransactionMutation.isPending}
       />
 
@@ -628,7 +635,7 @@ const BudgetDetailsPage: React.FC = () => {
         isOpen={state.modalState.showEditTransactionModal}
         onClose={handleCloseModal}
         onSubmit={handleTransactionSubmit}
-        editingTransaction={state.editingItem as Transaction}
+        editingTransaction={state.editingItem as any}
         budgetId={budgetId!}
         categories={allCategories}
         isLoading={updateTransactionMutation.isPending}
