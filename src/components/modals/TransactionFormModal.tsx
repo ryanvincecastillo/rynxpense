@@ -548,11 +548,23 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
   // ========================================
 
   useEffect(() => {
-    if (editingTransaction) {
+    if (editingTransaction && isOpen) {
       // Convert date to proper format for date input (YYYY-MM-DD)
-      const formatDateForInput = (dateString: string) => {
+      const formatDateForInput = (dateString: string | undefined) => {
         try {
+          // Handle various date formats
+          if (!dateString) {
+            return new Date().toISOString().split('T')[0];
+          }
+          
           const date = new Date(dateString);
+          
+          // Check if date is valid
+          if (isNaN(date.getTime())) {
+            console.warn('Invalid date provided:', dateString);
+            return new Date().toISOString().split('T')[0];
+          }
+          
           return date.toISOString().split('T')[0];
         } catch (error) {
           console.error('Date formatting error:', error);
@@ -560,20 +572,22 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
         }
       };
 
+      const categoryType = editingTransaction.categoryId ? 
+        categories.find(c => c.id === editingTransaction.categoryId)?.type : undefined;
+
       setFormData({
-        selectedType: editingTransaction.categoryId ? 
-          categories.find(c => c.id === editingTransaction.categoryId)?.type || 'EXPENSE' : 'EXPENSE',
-        categoryId: editingTransaction.categoryId,
-        amount: editingTransaction.amount,
-        description: editingTransaction.description,
+        selectedType: categoryType || 'EXPENSE',
+        categoryId: editingTransaction.categoryId || '',
+        amount: Number(editingTransaction.amount) || 0,
+        description: editingTransaction.description || '',
         date: formatDateForInput(editingTransaction.date),
-        isPosted: editingTransaction.isPosted,
+        isPosted: Boolean(editingTransaction.isPosted ?? true),
         receiptUrl: editingTransaction.receiptUrl || '',
-        isRecurring: editingTransaction.isRecurring,
-        dayOfMonth: editingTransaction.dayOfMonth || new Date().getDate(),
+        isRecurring: Boolean(editingTransaction.isRecurring ?? false),
+        dayOfMonth: Number(editingTransaction.dayOfMonth) || new Date().getDate(),
         frequency: editingTransaction.frequency || 'MONTHLY',
       });
-    } else {
+    } else if (isOpen) {
       setFormData({
         selectedType: preselectedType || 'EXPENSE',
         categoryId: '',
@@ -587,8 +601,11 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
         frequency: 'MONTHLY',
       });
     }
-    setErrors({});
-    setShowAdvanced(false);
+    
+    if (isOpen) {
+      setErrors({});
+      setShowAdvanced(false);
+    }
   }, [editingTransaction, preselectedType, categories, isOpen]);
 
   // ========================================

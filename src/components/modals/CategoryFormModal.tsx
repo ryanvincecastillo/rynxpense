@@ -1,38 +1,72 @@
+// CategoryFormModal.tsx - Mobile-First Version
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { 
-  X, 
-  Palette, 
-  Check, 
-  AlertCircle, 
+import {
+  X,
+  Plus,
+  Minus,
   Save,
   Loader2,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  Eye,
-  EyeOff,
-  Info,
+  AlertCircle,
+  Palette,
   Shuffle,
-  Calculator
+  DollarSign,
 } from 'lucide-react';
-
-// UI Components
-import { 
-  Button, 
-  Input,
-  Alert
-} from '../ui';
-import Modal from '../ui/Modal/Modal';
-
-// Types
-import { CreateCategoryForm, BudgetCategory } from '../../types';
-
-// Utils
-import { isValidHexColor } from '../../utils';
+import { Modal } from '../ui/Modal';
+import { Button } from '../ui';
+import { Alert } from '../ui/Alert';
 
 // ============================================================================
-// CONSTANTS & CONFIGURATION
+// TYPES & INTERFACES
 // ============================================================================
+
+interface BudgetCategory {
+  id: string;
+  name: string;
+  type: 'INCOME' | 'EXPENSE';
+  isActive: boolean;
+  plannedAmount: number;
+  color: string;
+}
+
+interface CreateCategoryForm {
+  budgetId: string;
+  name: string;
+  type: 'INCOME' | 'EXPENSE';
+  plannedAmount: number;
+  color: string;
+}
+
+interface CategoryFormModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: CreateCategoryForm) => Promise<void>;
+  editingCategory?: BudgetCategory | null;
+  isLoading?: boolean;
+  budgetId: string;
+  preselectedType?: 'INCOME' | 'EXPENSE';
+}
+
+interface FormData {
+  name: string;
+  type: 'INCOME' | 'EXPENSE';
+  plannedAmount: number;
+  color: string;
+}
+
+interface FormErrors {
+  name?: string;
+  type?: string;
+  plannedAmount?: string;
+  color?: string;
+  general?: string;
+}
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+const MAX_NAME_LENGTH = 50;
+const MIN_NAME_LENGTH = 2;
 
 const PRESET_COLORS = {
   INCOME: [
@@ -70,12 +104,20 @@ const DEFAULT_COLORS = {
   EXPENSE: '#EF4444',
 };
 
-const MAX_NAME_LENGTH = 50;
-const MAX_PLANNED_AMOUNT = 999999999;
+const QUICK_AMOUNTS = [1000, 5000, 10000, 25000, 50000];
 
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
+
+const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
 
 const generateRandomColor = (): string => {
   const letters = '0123456789ABCDEF';
@@ -87,149 +129,213 @@ const generateRandomColor = (): string => {
 };
 
 const getColorName = (colorValue: string, type: 'INCOME' | 'EXPENSE'): string => {
-  const preset = PRESET_COLORS[type].find((color: { value: string; name: string }) => color.value === colorValue);
+  const preset = PRESET_COLORS[type].find(color => color.value === colorValue);
   return preset ? preset.name : 'Custom';
 };
 
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-PH', {
-    style: 'currency',
-    currency: 'PHP',
-    minimumFractionDigits: 2,
-  }).format(amount);
+const isValidHexColor = (color: string): boolean => {
+  return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
 };
-
-// ============================================================================
-// TYPES & INTERFACES
-// ============================================================================
-
-interface CategoryFormModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: CreateCategoryForm) => Promise<void>;
-  editingCategory?: BudgetCategory | null;
-  isLoading?: boolean;
-  budgetId: string;
-  preselectedType?: 'INCOME' | 'EXPENSE';
-}
-
-interface FormData {
-  name: string;
-  type: 'INCOME' | 'EXPENSE';
-  plannedAmount: number;
-  color: string;
-}
-
-interface FormErrors {
-  name?: string;
-  type?: string;
-  plannedAmount?: string;
-  color?: string;
-  general?: string;
-}
 
 // ============================================================================
 // SUB-COMPONENTS
 // ============================================================================
 
-const Label: React.FC<{ 
-  htmlFor?: string; 
-  className?: string; 
-  children: React.ReactNode;
-  required?: boolean;
-}> = ({ htmlFor, className = '', children, required = false }) => (
-  <label 
-    htmlFor={htmlFor} 
-    className={`block text-sm font-semibold text-gray-800 mb-2 ${className}`}
-  >
-    {children}
-    {required && <span className="text-red-500 ml-1">*</span>}
-  </label>
-);
-
-const CategoryTypeSelector: React.FC<{
+interface MobileCategoryTypeProps {
   selectedType: 'INCOME' | 'EXPENSE';
   onTypeChange: (type: 'INCOME' | 'EXPENSE') => void;
   disabled?: boolean;
-}> = ({ selectedType, onTypeChange, disabled = false }) => {
+}
+
+const MobileCategoryType: React.FC<MobileCategoryTypeProps> = ({
+  selectedType,
+  onTypeChange,
+  disabled = false,
+}) => {
   return (
     <div className="space-y-2">
-      <Label required>Category Type</Label>
-      <div className="relative">
-        <div className="flex bg-gray-100 rounded-lg p-1">
-          <button
-            type="button"
-            onClick={() => onTypeChange('INCOME')}
-            disabled={disabled}
-            className={`
-              flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-md text-sm font-medium
-              transition-all duration-200 relative overflow-hidden
-              ${selectedType === 'INCOME'
-                ? 'bg-green-500 text-white shadow-md ring-1 ring-green-400'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-              }
-              ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-            `}
-          >
-            <TrendingUp className="w-4 h-4" />
-            Income
-          </button>
-          <button
-            type="button"
-            onClick={() => onTypeChange('EXPENSE')}
-            disabled={disabled}
-            className={`
-              flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-md text-sm font-medium
-              transition-all duration-200 relative overflow-hidden
-              ${selectedType === 'EXPENSE'
-                ? 'bg-red-500 text-white shadow-md ring-1 ring-red-400'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-              }
-              ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-            `}
-          >
-            <TrendingDown className="w-4 h-4" />
-            Expense
-          </button>
-        </div>
+      <label className="block text-sm font-medium text-gray-700">
+        Category Type <span className="text-red-500">*</span>
+      </label>
+      
+      {/* Segmented Control */}
+      <div className="flex bg-gray-100 rounded-lg p-1">
+        <button
+          type="button"
+          onClick={() => onTypeChange('INCOME')}
+          disabled={disabled}
+          className={`
+            flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md text-sm font-medium
+            transition-all duration-200 ease-in-out
+            ${selectedType === 'INCOME'
+              ? 'bg-green-500 text-white shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+            }
+            disabled:opacity-50 disabled:cursor-not-allowed
+          `}
+        >
+          <Plus className="h-4 w-4" />
+          Income
+        </button>
+        
+        <button
+          type="button"
+          onClick={() => onTypeChange('EXPENSE')}
+          disabled={disabled}
+          className={`
+            flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md text-sm font-medium
+            transition-all duration-200 ease-in-out
+            ${selectedType === 'EXPENSE'
+              ? 'bg-red-500 text-white shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+            }
+            disabled:opacity-50 disabled:cursor-not-allowed
+          `}
+        >
+          <Minus className="h-4 w-4" />
+          Expense
+        </button>
       </div>
     </div>
   );
 };
 
-const ColorPicker: React.FC<{
-  selectedColor: string;
-  categoryType: 'INCOME' | 'EXPENSE';
-  onColorChange: (color: string) => void;
-  showCustomInput: boolean;
-  onToggleCustomInput: () => void;
+interface MobileAmountInputProps {
+  value: number;
+  onChange: (value: number) => void;
   disabled?: boolean;
-}> = ({ 
-  selectedColor, 
-  categoryType, 
-  onColorChange, 
-  showCustomInput, 
-  onToggleCustomInput, 
-  disabled = false 
+  error?: string;
+  label: string;
+}
+
+const MobileAmountInput: React.FC<MobileAmountInputProps> = ({
+  value,
+  onChange,
+  disabled = false,
+  error,
+  label,
 }) => {
+  const [inputValue, setInputValue] = useState(value > 0 ? value.toString() : '');
+
+  useEffect(() => {
+    setInputValue(value > 0 ? value.toString() : '');
+  }, [value]);
+
+  const handleInputChange = (newValue: string) => {
+    const cleanValue = newValue.replace(/[^\d.]/g, '');
+    setInputValue(cleanValue);
+    
+    const numValue = parseFloat(cleanValue) || 0;
+    onChange(numValue);
+  };
+
+  const handleQuickAmount = (amount: number) => {
+    onChange(amount);
+  };
+
+  return (
+    <div className="space-y-3">
+      <label className="block text-sm font-medium text-gray-700">
+        {label} <span className="text-red-500">*</span>
+      </label>
+      
+      {/* Amount Input */}
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <span className="text-gray-500 font-medium">₱</span>
+        </div>
+        
+        <input
+          type="number"
+          inputMode="decimal"
+          value={inputValue}
+          onChange={(e) => handleInputChange(e.target.value)}
+          disabled={disabled}
+          className={`
+            block w-full pl-8 pr-4 py-3 text-lg font-semibold
+            border-2 rounded-lg shadow-sm
+            placeholder-gray-400 
+            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+            disabled:bg-gray-50 disabled:text-gray-500
+            transition-colors
+            ${error 
+              ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+              : 'border-gray-300'
+            }
+          `}
+          placeholder="0"
+        />
+      </div>
+
+      {/* Quick amounts */}
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {QUICK_AMOUNTS.map((amount) => (
+          <button
+            key={amount}
+            type="button"
+            onClick={() => handleQuickAmount(amount)}
+            disabled={disabled}
+            className="
+              flex-shrink-0 px-3 py-1 text-sm font-medium text-gray-600 
+              bg-gray-100 hover:bg-gray-200 
+              border border-gray-300 rounded-full
+              focus:outline-none focus:ring-2 focus:ring-blue-500
+              disabled:opacity-50 disabled:cursor-not-allowed
+              transition-colors
+            "
+          >
+            {formatCurrency(amount)}
+          </button>
+        ))}
+      </div>
+
+      {error && (
+        <p className="text-sm text-red-600 flex items-center gap-1">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
+
+interface ColorPickerProps {
+  selectedColor: string;
+  selectedType: 'INCOME' | 'EXPENSE';
+  onChange: (color: string) => void;
+  disabled?: boolean;
+}
+
+const ColorPicker: React.FC<ColorPickerProps> = ({
+  selectedColor,
+  selectedType,
+  onChange,
+  disabled = false,
+}) => {
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const [customColorInput, setCustomColorInput] = useState(selectedColor);
-  const currentPresetColors = PRESET_COLORS[categoryType];
+
+  const availableColors = PRESET_COLORS[selectedType];
 
   const handleCustomColorChange = useCallback((value: string) => {
     setCustomColorInput(value);
     if (isValidHexColor(value)) {
-      onColorChange(value);
+      onChange(value);
     }
-  }, [onColorChange]);
+  }, [onChange]);
 
   const handleRandomColor = useCallback(() => {
     const randomColor = generateRandomColor();
-    onColorChange(randomColor);
+    onChange(randomColor);
     setCustomColorInput(randomColor);
-  }, [onColorChange]);
+  }, [onChange]);
 
   return (
     <div className="space-y-4">
+      <label className="block text-sm font-medium text-gray-700">
+        Color <span className="text-red-500">*</span>
+      </label>
+
       {/* Color Preview */}
       <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
         <div 
@@ -238,7 +344,7 @@ const ColorPicker: React.FC<{
         />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-gray-700 truncate">
-            {getColorName(selectedColor, categoryType)}
+            {getColorName(selectedColor, selectedType)}
           </p>
           <p className="text-xs text-gray-500 font-mono">
             {selectedColor.toUpperCase()}
@@ -260,37 +366,25 @@ const ColorPicker: React.FC<{
       {/* Preset Colors */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-medium text-gray-700">
-            {categoryType === 'INCOME' ? 'Income Colors' : 'Expense Colors'}
-          </span>
+          <span className="text-sm font-medium text-gray-700">Preset Colors</span>
           <Button
             type="button"
             variant="secondary"
             size="sm"
-            onClick={onToggleCustomInput}
+            onClick={() => setShowCustomInput(!showCustomInput)}
             disabled={disabled}
-            className="text-xs"
+            className="text-xs px-2 py-1"
           >
-            {showCustomInput ? (
-              <>
-                <EyeOff className="w-3 h-3 mr-1" />
-                Hide Custom
-              </>
-            ) : (
-              <>
-                <Eye className="w-3 h-3 mr-1" />
-                Custom Color
-              </>
-            )}
+            {showCustomInput ? 'Hide Custom' : 'Custom Color'}
           </Button>
         </div>
         
-        <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-2">
-          {currentPresetColors.map((color) => (
+        <div className="grid grid-cols-6 gap-2">
+          {availableColors.map((color) => (
             <button
               key={color.value}
               type="button"
-              onClick={() => onColorChange(color.value)}
+              onClick={() => onChange(color.value)}
               disabled={disabled}
               className={`
                 relative w-8 h-8 rounded-lg border-2 transition-all duration-200
@@ -306,7 +400,11 @@ const ColorPicker: React.FC<{
               title={color.name}
             >
               {selectedColor === color.value && (
-                <Check className="w-4 h-4 text-white absolute inset-0 m-auto drop-shadow-sm" />
+                <div className="w-4 h-4 text-white absolute inset-0 m-auto">
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 drop-shadow-sm">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
               )}
             </button>
           ))}
@@ -316,22 +414,21 @@ const ColorPicker: React.FC<{
       {/* Custom Color Input */}
       {showCustomInput && (
         <div className="space-y-2">
-          <Label htmlFor="custom-color">Custom Color (Hex)</Label>
+          <label className="block text-xs font-medium text-gray-700">Custom Color (Hex)</label>
           <div className="flex gap-2">
-            <Input
-              id="custom-color"
+            <input
               type="text"
               value={customColorInput}
               onChange={(e) => handleCustomColorChange(e.target.value)}
-              placeholder="#22C55E"
+              placeholder="#3B82F6"
               disabled={disabled}
-              className="font-mono text-sm"
+              className="flex-1 px-3 py-2 text-sm font-mono border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               maxLength={7}
             />
             <input
               type="color"
               value={selectedColor}
-              onChange={(e) => onColorChange(e.target.value)}
+              onChange={(e) => onChange(e.target.value)}
               disabled={disabled}
               className="w-12 h-10 rounded border border-gray-300 cursor-pointer disabled:cursor-not-allowed"
               title="Color picker"
@@ -340,7 +437,7 @@ const ColorPicker: React.FC<{
           {customColorInput && !isValidHexColor(customColorInput) && (
             <p className="text-xs text-red-600 flex items-center gap-1">
               <AlertCircle className="w-3 h-3" />
-              Please enter a valid hex color (e.g., #22C55E)
+              Please enter a valid hex color (e.g., #3B82F6)
             </p>
           )}
         </div>
@@ -349,43 +446,31 @@ const ColorPicker: React.FC<{
   );
 };
 
-const CategoryPreview: React.FC<{
-  name: string;
-  type: 'INCOME' | 'EXPENSE';
-  plannedAmount: number;
-  color: string;
-}> = ({ name, type, plannedAmount, color }) => {
+interface CompactFieldProps {
+  label: string;
+  required?: boolean;
+  error?: string;
+  children: React.ReactNode;
+}
+
+const CompactField: React.FC<CompactFieldProps> = ({
+  label,
+  required = false,
+  error,
+  children,
+}) => {
   return (
-    <div className="p-4 border rounded-lg bg-gradient-to-r from-gray-50 to-gray-100">
-      <div className="flex items-center gap-3">
-        <div
-          className="w-10 h-10 rounded-full border-2 border-white shadow-sm flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: color }}
-        >
-          {type === 'INCOME' ? (
-            <TrendingUp className="w-5 h-5 text-white drop-shadow-sm" />
-          ) : (
-            <TrendingDown className="w-5 h-5 text-white drop-shadow-sm" />
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-semibold text-gray-900 truncate">
-            {name || 'Category Name'}
-          </h4>
-          <div className="flex items-center gap-2 text-xs text-gray-600">
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              type === 'INCOME' 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-red-100 text-red-800'
-            }`}>
-              {type === 'INCOME' ? '💰 Income' : '💸 Expense'}
-            </span>
-            <span className="font-mono">
-              {formatCurrency(plannedAmount)}
-            </span>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      {children}
+      {error && (
+        <p className="text-sm text-red-600 flex items-center gap-1">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {error}
+        </p>
+      )}
     </div>
   );
 };
@@ -407,16 +492,15 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
   // STATE MANAGEMENT
   // ========================================
 
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<FormData>(() => ({
     name: '',
     type: preselectedType || 'EXPENSE',
     plannedAmount: 0,
-    color: DEFAULT_COLORS[preselectedType || 'EXPENSE'],
-  });
+            color: DEFAULT_COLORS[preselectedType || 'EXPENSE'],
+  }));
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showCustomColor, setShowCustomColor] = useState(false);
 
   // ========================================
   // COMPUTED VALUES
@@ -426,11 +510,11 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
   const isEditMode = Boolean(editingCategory);
 
   const isFormValid = useMemo(() => {
-    return formData.name.trim().length >= 2 && 
-           formData.name.trim().length <= MAX_NAME_LENGTH &&
+    const trimmedName = (formData.name || '').trim();
+    return trimmedName.length >= MIN_NAME_LENGTH && 
+           trimmedName.length <= MAX_NAME_LENGTH &&
            formData.plannedAmount >= 0 &&
-           formData.plannedAmount <= MAX_PLANNED_AMOUNT &&
-           isValidHexColor(formData.color);
+           formData.color && formData.color.length > 0;
   }, [formData]);
 
   // ========================================
@@ -438,111 +522,54 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
   // ========================================
 
   useEffect(() => {
+    if (editingCategory && isOpen) {
+      setFormData({
+        name: editingCategory.name || '',
+        type: editingCategory.type || 'EXPENSE',
+        plannedAmount: Number(editingCategory.plannedAmount) || 0,
+        color: editingCategory.color || DEFAULT_COLORS[editingCategory.type || 'EXPENSE'],
+      });
+    } else if (isOpen) {
+      setFormData({
+        name: '',
+        type: preselectedType || 'EXPENSE',
+        plannedAmount: 0,
+        color: DEFAULT_COLORS[preselectedType || 'EXPENSE'],
+      });
+    }
+    
     if (isOpen) {
-      if (editingCategory) {
-        const newFormData = {
-          name: editingCategory.name,
-          type: editingCategory.type,
-          plannedAmount: editingCategory.plannedAmount,
-          color: editingCategory.color,
-        };
-        setFormData(newFormData);
-        
-        // Check if the editing category uses a custom color
-        const allPresetColors: string[] = [
-          ...PRESET_COLORS.INCOME.map((c: { value: string; name: string }) => c.value),
-          ...PRESET_COLORS.EXPENSE.map((c: { value: string; name: string }) => c.value)
-        ];
-        setShowCustomColor(!allPresetColors.includes(newFormData.color));
-      } else {
-        const defaultType = preselectedType || 'EXPENSE';
-        setFormData({
-          name: '',
-          type: defaultType,
-          plannedAmount: 0,
-          color: DEFAULT_COLORS[defaultType],
-        });
-        setShowCustomColor(false);
-      }
       setErrors({});
-      setIsSubmitting(false);
     }
-  }, [isOpen, editingCategory, preselectedType]);
-
-  // Update color when type changes (only for new categories)
-  useEffect(() => {
-    if (!editingCategory && !showCustomColor) {
-      setFormData(prev => ({
-        ...prev,
-        color: DEFAULT_COLORS[prev.type],
-      }));
-    }
-  }, [formData.type, editingCategory, showCustomColor]);
-
-  // ========================================
-  // VALIDATION
-  // ========================================
-
-  const validateForm = useCallback((): FormErrors => {
-    const newErrors: FormErrors = {};
-
-    // Name validation
-    const trimmedName = formData.name.trim();
-    if (!trimmedName) {
-      newErrors.name = 'Category name is required';
-    } else if (trimmedName.length < 2) {
-      newErrors.name = 'Category name must be at least 2 characters';
-    } else if (trimmedName.length > MAX_NAME_LENGTH) {
-      newErrors.name = `Category name must be ${MAX_NAME_LENGTH} characters or less`;
-    }
-
-    // Planned amount validation
-    if (formData.plannedAmount < 0) {
-      newErrors.plannedAmount = 'Planned amount cannot be negative';
-    } else if (formData.plannedAmount > MAX_PLANNED_AMOUNT) {
-      newErrors.plannedAmount = 'Planned amount is too large';
-    }
-
-    // Color validation
-    if (!isValidHexColor(formData.color)) {
-      newErrors.color = 'Please select or enter a valid color';
-    }
-
-    return newErrors;
-  }, [formData]);
+  }, [editingCategory, preselectedType, isOpen]);
 
   // ========================================
   // EVENT HANDLERS
   // ========================================
 
-  const handleInputChange = useCallback((field: keyof FormData) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const value = field === 'plannedAmount' 
-      ? Math.max(0, parseFloat(e.target.value) || 0)
-      : e.target.value;
-    
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Clear related errors
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
-    }
-  }, [errors]);
+  const validateForm = useCallback((): FormErrors => {
+    const newErrors: FormErrors = {};
 
-  const handleTypeChange = useCallback((type: 'INCOME' | 'EXPENSE') => {
-    setFormData(prev => ({ ...prev, type }));
-    if (errors.type) {
-      setErrors(prev => ({ ...prev, type: undefined }));
-    }
-  }, [errors.type]);
+    const trimmedName = (formData.name || '').trim();
 
-  const handleColorChange = useCallback((color: string) => {
-    setFormData(prev => ({ ...prev, color }));
-    if (errors.color) {
-      setErrors(prev => ({ ...prev, color: undefined }));
+    if (!trimmedName) {
+      newErrors.name = 'Category name is required';
+    } else if (trimmedName.length < MIN_NAME_LENGTH) {
+      newErrors.name = `Name must be at least ${MIN_NAME_LENGTH} characters`;
+    } else if (trimmedName.length > MAX_NAME_LENGTH) {
+      newErrors.name = `Name must be less than ${MAX_NAME_LENGTH} characters`;
     }
-  }, [errors.color]);
+
+    if (formData.plannedAmount < 0) {
+      newErrors.plannedAmount = 'Planned amount cannot be negative';
+    }
+
+    if (!formData.color || formData.color.length === 0) {
+      newErrors.color = 'Please select a color';
+    }
+
+    return newErrors;
+  }, [formData]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -561,14 +588,13 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
     try {
       const submitData: CreateCategoryForm = {
         budgetId,
-        name: formData.name.trim(),
+        name: (formData.name || '').trim(),
         type: formData.type,
         plannedAmount: formData.plannedAmount,
         color: formData.color,
       };
 
       await onSubmit(submitData);
-      // Modal will be closed by parent component on success
     } catch (error: any) {
       console.error('Category form submission error:', error);
       setErrors({
@@ -594,158 +620,98 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
       isOpen={isOpen}
       onClose={handleClose}
       title={isEditMode ? 'Edit Category' : 'Create Category'}
-      size="lg"
-      className="sm:max-w-md md:max-w-lg"
+      size="md"
+      className="sm:max-w-md mx-4 sm:mx-auto"
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Error Alert */}
         {errors.general && (
-          <Alert type="error" className="mb-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-red-800 mb-1">Something went wrong</p>
-                <p className="text-red-700 text-sm">{errors.general}</p>
-              </div>
-            </div>
+          <Alert variant="error">
+            <p className="text-sm">{errors.general}</p>
           </Alert>
         )}
 
-        {/* Category Name Field */}
-        <div className="space-y-1">
-          <Label htmlFor="category-name" required>
-            Category Name
-          </Label>
-          <Input
-            id="category-name"
-            type="text"
-            value={formData.name}
-            onChange={handleInputChange('name')}
-            placeholder="e.g., Groceries, Salary, Entertainment"
-            disabled={isFormLoading}
-            className={`
-              ${errors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
-              text-base sm:text-sm
-            `}
-            maxLength={MAX_NAME_LENGTH}
-            autoFocus
-            autoComplete="off"
-          />
-          <div className="flex justify-between items-start">
-            {errors.name ? (
-              <p className="text-sm text-red-600 flex items-center gap-1">
-                <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                {errors.name}
-              </p>
-            ) : (
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <Info className="w-3 h-3" />
-                Choose a descriptive name for this category
-              </div>
-            )}
-            <span className="text-xs text-gray-400 ml-2">
-              {formData.name.length}/{MAX_NAME_LENGTH}
-            </span>
-          </div>
-        </div>
-
-        {/* Category Type Selector */}
-        <CategoryTypeSelector
+        {/* Category Type */}
+        <MobileCategoryType
           selectedType={formData.type}
-          onTypeChange={handleTypeChange}
+          onTypeChange={(type) => {
+            setFormData(prev => ({ 
+              ...prev, 
+              type,
+              color: DEFAULT_COLORS[type] // Reset color when type changes
+            }));
+            setErrors(prev => ({ ...prev, type: undefined }));
+          }}
           disabled={isFormLoading}
         />
 
-        {/* Planned Amount Field */}
-        <div className="space-y-1">
-          <Label htmlFor="planned-amount" required>
-            Planned Amount
-          </Label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <span className="text-gray-500 sm:text-sm">₱</span>
-            </div>
-            <Input
-              id="planned-amount"
-              type="number"
-              value={formData.plannedAmount}
-              onChange={handleInputChange('plannedAmount')}
-              placeholder="0.00"
-              disabled={isFormLoading}
-              className={`
-                pl-8 text-base sm:text-sm
-                ${errors.plannedAmount ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
-              `}
-              min="0"
-              max={MAX_PLANNED_AMOUNT}
-              step="0.01"
-            />
-          </div>
-          <div className="flex justify-between items-start">
-            {errors.plannedAmount ? (
-              <p className="text-sm text-red-600 flex items-center gap-1">
-                <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                {errors.plannedAmount}
-              </p>
-            ) : (
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <Calculator className="w-3 h-3" />
-                Set your budget limit for this category
-              </div>
-            )}
-            {formData.plannedAmount > 0 && (
-              <span className="text-xs text-gray-500 ml-2 font-mono">
-                {formatCurrency(formData.plannedAmount)}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Color Selection */}
-        <div className="space-y-1">
-          <Label>Category Color</Label>
-          <ColorPicker
-            selectedColor={formData.color}
-            categoryType={formData.type}
-            onColorChange={handleColorChange}
-            showCustomInput={showCustomColor}
-            onToggleCustomInput={() => setShowCustomColor(prev => !prev)}
+        {/* Category Name */}
+        <CompactField label="Category Name" required error={errors.name}>
+          <input
+            type="text"
+            value={formData.name}
+            onChange={(e) => {
+              setFormData(prev => ({ ...prev, name: e.target.value }));
+              setErrors(prev => ({ ...prev, name: undefined }));
+            }}
+            maxLength={MAX_NAME_LENGTH}
             disabled={isFormLoading}
+            placeholder="e.g., Groceries, Salary, Entertainment"
+            className={`
+              block w-full px-3 py-3 text-base
+              border-2 rounded-lg shadow-sm
+              placeholder-gray-400
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+              disabled:bg-gray-50 disabled:text-gray-500
+              ${errors.name 
+                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                : 'border-gray-300'
+              }
+            `}
           />
-          {errors.color && (
-            <p className="text-sm text-red-600 flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" />
-              {errors.color}
-            </p>
-          )}
-        </div>
+          <div className="text-right text-xs text-gray-400 mt-1">
+            {(formData.name || '').length}/{MAX_NAME_LENGTH}
+          </div>
+        </CompactField>
 
-        {/* Category Preview */}
-        <div className="space-y-2">
-          <Label>Preview</Label>
-          <CategoryPreview
-            name={formData.name}
-            type={formData.type}
-            plannedAmount={formData.plannedAmount}
-            color={formData.color}
-          />
-        </div>
+        {/* Planned Amount */}
+        <MobileAmountInput
+          value={formData.plannedAmount}
+          onChange={(amount) => {
+            setFormData(prev => ({ ...prev, plannedAmount: amount }));
+            setErrors(prev => ({ ...prev, plannedAmount: undefined }));
+          }}
+          disabled={isFormLoading}
+          error={errors.plannedAmount}
+          label="Planned Amount"
+        />
 
-        {/* Form Actions */}
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-6 border-t border-gray-200">
+        {/* Color Picker */}
+        <ColorPicker
+          selectedColor={formData.color}
+          selectedType={formData.type}
+          onChange={(color) => {
+            setFormData(prev => ({ ...prev, color }));
+            setErrors(prev => ({ ...prev, color: undefined }));
+          }}
+          disabled={isFormLoading}
+        />
+
+        {/* Actions */}
+        <div className="flex gap-3 pt-4">
           <Button
             type="button"
             variant="secondary"
             onClick={handleClose}
             disabled={isFormLoading}
-            className="w-full sm:w-auto order-2 sm:order-1"
+            className="flex-1"
           >
             Cancel
           </Button>
           <Button
             type="submit"
             disabled={!isFormValid || isFormLoading}
-            className="w-full sm:w-auto sm:flex-1 order-1 sm:order-2"
+            className="flex-1"
           >
             {isFormLoading ? (
               <>
@@ -755,7 +721,7 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
             ) : (
               <>
                 <Save className="w-4 h-4 mr-2" />
-                {isEditMode ? 'Update Category' : 'Create Category'}
+                {isEditMode ? 'Update' : 'Create'}
               </>
             )}
           </Button>
