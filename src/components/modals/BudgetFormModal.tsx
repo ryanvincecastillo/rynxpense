@@ -1,76 +1,34 @@
+// BudgetFormModal.tsx - Mobile-First Version
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { 
-  X, 
-  Palette, 
-  Check, 
-  AlertCircle, 
-  Shuffle, 
+import {
+  X,
   Save,
   Loader2,
-  Eye,
-  EyeOff,
-  Info
+  AlertCircle,
+  Palette,
+  Shuffle,
+  Info,
 } from 'lucide-react';
-
-// UI Components
-import { 
-  Button, 
-  Input, 
-  Textarea,
-  Alert
-} from '../ui';
-import Modal from '../ui/Modal/Modal';
-
-// Types
-import { CreateBudgetForm, Budget } from '../../types';
-
-// Utils
-import { isValidHexColor } from '../../utils';
-
-// ============================================================================
-// CONSTANTS & CONFIGURATION
-// ============================================================================
-
-const PRESET_COLORS = [
-  { value: '#3B82F6', name: 'Blue' },
-  { value: '#10B981', name: 'Emerald' },
-  { value: '#F59E0B', name: 'Amber' },
-  { value: '#EF4444', name: 'Red' },
-  { value: '#8B5CF6', name: 'Violet' },
-  { value: '#06B6D4', name: 'Cyan' },
-  { value: '#84CC16', name: 'Lime' },
-  { value: '#F97316', name: 'Orange' },
-  { value: '#EC4899', name: 'Pink' },
-  { value: '#6366F1', name: 'Indigo' },
-  { value: '#14B8A6', name: 'Teal' },
-  { value: '#EAB308', name: 'Yellow' },
-] as const;
-
-const DEFAULT_COLOR = '#3B82F6';
-const MAX_NAME_LENGTH = 100;
-const MAX_DESCRIPTION_LENGTH = 500;
-
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
-
-const generateRandomColor = (): string => {
-  const letters = '0123456789ABCDEF';
-  let color = '#';
-  for (let i = 0; i < 6; i++) {
-    color += letters[Math.floor(Math.random() * 16)];
-  }
-  return color;
-};
-
-const getColorName = (colorValue: string): string => {
-  const preset = PRESET_COLORS.find(color => color.value === colorValue);
-  return preset ? preset.name : 'Custom';
-};
+import { Modal } from '../ui/Modal';
+import { Button } from '../ui';
+import { Alert } from '../ui/Alert';
 
 // ============================================================================
 // TYPES & INTERFACES
 // ============================================================================
+
+interface Budget {
+  id: string;
+  name: string;
+  description?: string;
+  color: string;
+}
+
+interface CreateBudgetForm {
+  name: string;
+  description?: string;
+  color: string;
+}
 
 interface BudgetFormModalProps {
   isOpen: boolean;
@@ -94,54 +52,125 @@ interface FormErrors {
 }
 
 // ============================================================================
+// CONSTANTS
+// ============================================================================
+
+const MAX_NAME_LENGTH = 100;
+const MAX_DESCRIPTION_LENGTH = 500;
+const MIN_NAME_LENGTH = 1;
+
+const PRESET_COLORS = [
+  { value: '#3B82F6', name: 'Blue' },
+  { value: '#10B981', name: 'Emerald' },
+  { value: '#F59E0B', name: 'Amber' },
+  { value: '#EF4444', name: 'Red' },
+  { value: '#8B5CF6', name: 'Violet' },
+  { value: '#06B6D4', name: 'Cyan' },
+  { value: '#84CC16', name: 'Lime' },
+  { value: '#F97316', name: 'Orange' },
+  { value: '#EC4899', name: 'Pink' },
+  { value: '#6366F1', name: 'Indigo' },
+  { value: '#14B8A6', name: 'Teal' },
+  { value: '#EAB308', name: 'Yellow' },
+];
+
+const DEFAULT_COLOR = '#3B82F6';
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+const generateRandomColor = (): string => {
+  const letters = '0123456789ABCDEF';
+  let color = '#';
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
+};
+
+const getColorName = (colorValue: string): string => {
+  const preset = PRESET_COLORS.find(color => color.value === colorValue);
+  return preset ? preset.name : 'Custom';
+};
+
+const isValidHexColor = (color: string): boolean => {
+  return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
+};
+
+// ============================================================================
 // SUB-COMPONENTS
 // ============================================================================
 
-const Label: React.FC<{ 
-  htmlFor?: string; 
-  className?: string; 
-  children: React.ReactNode;
+interface CompactFieldProps {
+  label: string;
   required?: boolean;
-}> = ({ htmlFor, className = '', children, required = false }) => (
-  <label 
-    htmlFor={htmlFor} 
-    className={`block text-sm font-semibold text-gray-800 mb-2 ${className}`}
-  >
-    {children}
-    {required && <span className="text-red-500 ml-1">*</span>}
-  </label>
-);
+  error?: string;
+  children: React.ReactNode;
+  helpText?: string;
+}
 
-const ColorPicker: React.FC<{
-  selectedColor: string;
-  onColorChange: (color: string) => void;
-  showCustomInput: boolean;
-  onToggleCustomInput: () => void;
-  disabled?: boolean;
-}> = ({ 
-  selectedColor, 
-  onColorChange, 
-  showCustomInput, 
-  onToggleCustomInput, 
-  disabled = false 
+const CompactField: React.FC<CompactFieldProps> = ({
+  label,
+  required = false,
+  error,
+  children,
+  helpText,
 }) => {
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      {children}
+      {error ? (
+        <p className="text-sm text-red-600 flex items-center gap-1">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {error}
+        </p>
+      ) : helpText ? (
+        <p className="text-xs text-gray-500 flex items-center gap-1">
+          <Info className="w-3 h-3" />
+          {helpText}
+        </p>
+      ) : null}
+    </div>
+  );
+};
+
+interface ColorPickerProps {
+  selectedColor: string;
+  onChange: (color: string) => void;
+  disabled?: boolean;
+}
+
+const ColorPicker: React.FC<ColorPickerProps> = ({
+  selectedColor,
+  onChange,
+  disabled = false,
+}) => {
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const [customColorInput, setCustomColorInput] = useState(selectedColor);
 
   const handleCustomColorChange = useCallback((value: string) => {
     setCustomColorInput(value);
     if (isValidHexColor(value)) {
-      onColorChange(value);
+      onChange(value);
     }
-  }, [onColorChange]);
+  }, [onChange]);
 
   const handleRandomColor = useCallback(() => {
     const randomColor = generateRandomColor();
-    onColorChange(randomColor);
+    onChange(randomColor);
     setCustomColorInput(randomColor);
-  }, [onColorChange]);
+  }, [onChange]);
 
   return (
     <div className="space-y-4">
+      <label className="block text-sm font-medium text-gray-700">
+        Budget Color <span className="text-red-500">*</span>
+      </label>
+
       {/* Color Preview */}
       <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
         <div 
@@ -175,32 +204,22 @@ const ColorPicker: React.FC<{
           <span className="text-sm font-medium text-gray-700">Preset Colors</span>
           <Button
             type="button"
-            variant="ghost"
+            variant="secondary"
             size="sm"
-            onClick={onToggleCustomInput}
+            onClick={() => setShowCustomInput(!showCustomInput)}
             disabled={disabled}
-            className="text-xs"
+            className="text-xs px-2 py-1"
           >
-            {showCustomInput ? (
-              <>
-                <EyeOff className="w-3 h-3 mr-1" />
-                Hide Custom
-              </>
-            ) : (
-              <>
-                <Eye className="w-3 h-3 mr-1" />
-                Custom Color
-              </>
-            )}
+            {showCustomInput ? 'Hide Custom' : 'Custom Color'}
           </Button>
         </div>
         
-        <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-2">
+        <div className="grid grid-cols-6 gap-2">
           {PRESET_COLORS.map((color) => (
             <button
               key={color.value}
               type="button"
-              onClick={() => onColorChange(color.value)}
+              onClick={() => onChange(color.value)}
               disabled={disabled}
               className={`
                 relative w-8 h-8 rounded-lg border-2 transition-all duration-200
@@ -216,7 +235,11 @@ const ColorPicker: React.FC<{
               title={color.name}
             >
               {selectedColor === color.value && (
-                <Check className="w-4 h-4 text-white absolute inset-0 m-auto drop-shadow-sm" />
+                <div className="w-4 h-4 text-white absolute inset-0 m-auto">
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 drop-shadow-sm">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
               )}
             </button>
           ))}
@@ -226,22 +249,21 @@ const ColorPicker: React.FC<{
       {/* Custom Color Input */}
       {showCustomInput && (
         <div className="space-y-2">
-          <Label htmlFor="custom-color">Custom Color (Hex)</Label>
+          <label className="block text-xs font-medium text-gray-700">Custom Color (Hex)</label>
           <div className="flex gap-2">
-            <Input
-              id="custom-color"
+            <input
               type="text"
               value={customColorInput}
               onChange={(e) => handleCustomColorChange(e.target.value)}
               placeholder="#3B82F6"
               disabled={disabled}
-              className="font-mono text-sm"
+              className="flex-1 px-3 py-2 text-sm font-mono border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               maxLength={7}
             />
             <input
               type="color"
               value={selectedColor}
-              onChange={(e) => onColorChange(e.target.value)}
+              onChange={(e) => onChange(e.target.value)}
               disabled={disabled}
               className="w-12 h-10 rounded border border-gray-300 cursor-pointer disabled:cursor-not-allowed"
               title="Color picker"
@@ -274,15 +296,14 @@ export const BudgetFormModal: React.FC<BudgetFormModalProps> = ({
   // STATE MANAGEMENT
   // ========================================
 
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<FormData>(() => ({
     name: '',
     description: '',
     color: DEFAULT_COLOR,
-  });
+  }));
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showCustomColor, setShowCustomColor] = useState(false);
 
   // ========================================
   // COMPUTED VALUES
@@ -292,8 +313,9 @@ export const BudgetFormModal: React.FC<BudgetFormModalProps> = ({
   const isEditMode = Boolean(editingBudget);
 
   const isFormValid = useMemo(() => {
-    return formData.name.trim().length > 0 && 
-           formData.name.trim().length <= MAX_NAME_LENGTH &&
+    const trimmedName = (formData.name || '').trim();
+    return trimmedName.length >= MIN_NAME_LENGTH && 
+           trimmedName.length <= MAX_NAME_LENGTH &&
            formData.description.length <= MAX_DESCRIPTION_LENGTH &&
            isValidHexColor(formData.color);
   }, [formData]);
@@ -303,78 +325,52 @@ export const BudgetFormModal: React.FC<BudgetFormModalProps> = ({
   // ========================================
 
   useEffect(() => {
+    if (editingBudget && isOpen) {
+      setFormData({
+        name: editingBudget.name || '',
+        description: editingBudget.description || '',
+        color: editingBudget.color || DEFAULT_COLOR,
+      });
+    } else if (isOpen) {
+      setFormData({
+        name: '',
+        description: '',
+        color: DEFAULT_COLOR,
+      });
+    }
+    
     if (isOpen) {
-      if (editingBudget) {
-        const newFormData = {
-          name: editingBudget.name,
-          description: editingBudget.description || '',
-          color: editingBudget.color || DEFAULT_COLOR,
-        };
-        setFormData(newFormData);
-        setShowCustomColor(!PRESET_COLORS.some(c => c.value === newFormData.color));
-      } else {
-        setFormData({
-          name: '',
-          description: '',
-          color: DEFAULT_COLOR,
-        });
-        setShowCustomColor(false);
-      }
       setErrors({});
-      setIsSubmitting(false);
     }
-  }, [isOpen, editingBudget]);
-
-  // ========================================
-  // VALIDATION
-  // ========================================
-
-  const validateForm = useCallback((): FormErrors => {
-    const newErrors: FormErrors = {};
-
-    // Name validation
-    const trimmedName = formData.name.trim();
-    if (!trimmedName) {
-      newErrors.name = 'Budget name is required';
-    } else if (trimmedName.length > MAX_NAME_LENGTH) {
-      newErrors.name = `Budget name must be ${MAX_NAME_LENGTH} characters or less`;
-    }
-
-    // Description validation
-    if (formData.description.length > MAX_DESCRIPTION_LENGTH) {
-      newErrors.description = `Description must be ${MAX_DESCRIPTION_LENGTH} characters or less`;
-    }
-
-    // Color validation
-    if (!isValidHexColor(formData.color)) {
-      newErrors.color = 'Please select or enter a valid color';
-    }
-
-    return newErrors;
-  }, [formData]);
+  }, [editingBudget, isOpen]);
 
   // ========================================
   // EVENT HANDLERS
   // ========================================
 
-  const handleInputChange = useCallback((field: keyof FormData) => (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const value = e.target.value;
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Clear related errors
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
-    }
-  }, [errors]);
+  const validateForm = useCallback((): FormErrors => {
+    const newErrors: FormErrors = {};
 
-  const handleColorChange = useCallback((color: string) => {
-    setFormData(prev => ({ ...prev, color }));
-    if (errors.color) {
-      setErrors(prev => ({ ...prev, color: undefined }));
+    const trimmedName = (formData.name || '').trim();
+
+    if (!trimmedName) {
+      newErrors.name = 'Budget name is required';
+    } else if (trimmedName.length < MIN_NAME_LENGTH) {
+      newErrors.name = `Name must be at least ${MIN_NAME_LENGTH} character`;
+    } else if (trimmedName.length > MAX_NAME_LENGTH) {
+      newErrors.name = `Name must be less than ${MAX_NAME_LENGTH} characters`;
     }
-  }, [errors.color]);
+
+    if (formData.description.length > MAX_DESCRIPTION_LENGTH) {
+      newErrors.description = `Description must be less than ${MAX_DESCRIPTION_LENGTH} characters`;
+    }
+
+    if (!isValidHexColor(formData.color)) {
+      newErrors.color = 'Please select a valid color';
+    }
+
+    return newErrors;
+  }, [formData]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -392,13 +388,12 @@ export const BudgetFormModal: React.FC<BudgetFormModalProps> = ({
 
     try {
       const submitData: CreateBudgetForm = {
-        name: formData.name.trim(),
+        name: (formData.name || '').trim(),
         description: formData.description.trim() || undefined,
         color: formData.color,
       };
 
       await onSubmit(submitData);
-      // Modal will be closed by parent component on success
     } catch (error: any) {
       console.error('Budget form submission error:', error);
       setErrors({
@@ -424,129 +419,109 @@ export const BudgetFormModal: React.FC<BudgetFormModalProps> = ({
       isOpen={isOpen}
       onClose={handleClose}
       title={isEditMode ? 'Edit Budget' : 'Create Budget'}
-      size="lg"
-      className="sm:max-w-md md:max-w-lg"
+      size="md"
+      className="sm:max-w-md mx-4 sm:mx-auto"
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Error Alert */}
         {errors.general && (
-          <Alert type="error" className="mb-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-red-800 mb-1">Something went wrong</p>
-                <p className="text-red-700 text-sm">{errors.general}</p>
-              </div>
-            </div>
+          <Alert variant="error">
+            <p className="text-sm">{errors.general}</p>
           </Alert>
         )}
 
-        {/* Budget Name Field */}
-        <div className="space-y-1">
-          <Label htmlFor="budget-name" required>
-            Budget Name
-          </Label>
-          <Input
-            id="budget-name"
+        {/* Budget Name */}
+        <CompactField 
+          label="Budget Name" 
+          required 
+          error={errors.name}
+          helpText="Choose a descriptive name for your budget"
+        >
+          <input
             type="text"
             value={formData.name}
-            onChange={handleInputChange('name')}
-            placeholder="e.g., Monthly Expenses, Vacation Fund"
-            disabled={isFormLoading}
-            className={`
-              ${errors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
-              text-base sm:text-sm
-            `}
+            onChange={(e) => {
+              setFormData(prev => ({ ...prev, name: e.target.value }));
+              setErrors(prev => ({ ...prev, name: undefined }));
+            }}
             maxLength={MAX_NAME_LENGTH}
-            autoFocus
-            autoComplete="off"
-          />
-          <div className="flex justify-between items-start">
-            {errors.name ? (
-              <p className="text-sm text-red-600 flex items-center gap-1">
-                <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                {errors.name}
-              </p>
-            ) : (
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <Info className="w-3 h-3" />
-                Choose a descriptive name for your budget
-              </div>
-            )}
-            <span className="text-xs text-gray-400 ml-2">
-              {formData.name.length}/{MAX_NAME_LENGTH}
-            </span>
-          </div>
-        </div>
-
-        {/* Budget Description Field */}
-        <div className="space-y-1">
-          <Label htmlFor="budget-description">
-            Description
-          </Label>
-          <Textarea
-            id="budget-description"
-            value={formData.description}
-            onChange={handleInputChange('description')}
-            placeholder="Optional description for your budget..."
             disabled={isFormLoading}
+            placeholder="e.g., Monthly Expenses, Vacation Fund"
             className={`
-              ${errors.description ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
-              text-base sm:text-sm min-h-[80px] resize-none
+              block w-full px-3 py-3 text-base
+              border-2 rounded-lg shadow-sm
+              placeholder-gray-400
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+              disabled:bg-gray-50 disabled:text-gray-500
+              ${errors.name 
+                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                : 'border-gray-300'
+              }
             `}
+          />
+          <div className="text-right text-xs text-gray-400 mt-1">
+            {(formData.name || '').length}/{MAX_NAME_LENGTH}
+          </div>
+        </CompactField>
+
+        {/* Budget Description */}
+        <CompactField 
+          label="Description" 
+          error={errors.description}
+          helpText="Optional notes about your budget goals or purpose"
+        >
+          <textarea
+            value={formData.description}
+            onChange={(e) => {
+              setFormData(prev => ({ ...prev, description: e.target.value }));
+              setErrors(prev => ({ ...prev, description: undefined }));
+            }}
             maxLength={MAX_DESCRIPTION_LENGTH}
             rows={3}
-          />
-          <div className="flex justify-between items-start">
-            {errors.description ? (
-              <p className="text-sm text-red-600 flex items-center gap-1">
-                <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                {errors.description}
-              </p>
-            ) : (
-              <span className="text-xs text-gray-500">
-                Add notes about your budget goals or purpose
-              </span>
-            )}
-            <span className="text-xs text-gray-400 ml-2">
-              {formData.description.length}/{MAX_DESCRIPTION_LENGTH}
-            </span>
-          </div>
-        </div>
-
-        {/* Color Selection */}
-        <div className="space-y-1">
-          <Label>Budget Color</Label>
-          <ColorPicker
-            selectedColor={formData.color}
-            onColorChange={handleColorChange}
-            showCustomInput={showCustomColor}
-            onToggleCustomInput={() => setShowCustomColor(prev => !prev)}
             disabled={isFormLoading}
+            placeholder="Optional description for your budget..."
+            className={`
+              block w-full px-3 py-2 text-base
+              border-2 rounded-lg shadow-sm
+              placeholder-gray-400 resize-none
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+              disabled:bg-gray-50 disabled:text-gray-500
+              ${errors.description 
+                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                : 'border-gray-300'
+              }
+            `}
           />
-          {errors.color && (
-            <p className="text-sm text-red-600 flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" />
-              {errors.color}
-            </p>
-          )}
-        </div>
+          <div className="text-right text-xs text-gray-400 mt-1">
+            {formData.description.length}/{MAX_DESCRIPTION_LENGTH}
+          </div>
+        </CompactField>
 
-        {/* Form Actions */}
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-6 border-t border-gray-200">
+        {/* Color Picker */}
+        <ColorPicker
+          selectedColor={formData.color}
+          onChange={(color) => {
+            setFormData(prev => ({ ...prev, color }));
+            setErrors(prev => ({ ...prev, color: undefined }));
+          }}
+          disabled={isFormLoading}
+        />
+
+        {/* Actions */}
+        <div className="flex justify-end space-x-3 pt-4 border-t">
           <Button
             type="button"
             variant="secondary"
             onClick={handleClose}
             disabled={isFormLoading}
-            className="w-full sm:w-auto order-2 sm:order-1"
           >
             Cancel
           </Button>
+          
           <Button
             type="submit"
             disabled={!isFormValid || isFormLoading}
-            className="w-full sm:w-auto order-1 sm:order-2 min-w-[120px]"
+            className="flex-1"
           >
             {isFormLoading ? (
               <>
@@ -560,6 +535,7 @@ export const BudgetFormModal: React.FC<BudgetFormModalProps> = ({
               </>
             )}
           </Button>
+            
         </div>
       </form>
     </Modal>

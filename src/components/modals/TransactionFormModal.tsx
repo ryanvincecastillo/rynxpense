@@ -880,13 +880,12 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 pt-4">
+        <div className="flex justify-end space-x-3 pt-4 border-t">
           <Button
             type="button"
             variant="secondary"
             onClick={handleClose}
             disabled={isFormLoading}
-            className="flex-1"
           >
             Cancel
           </Button>

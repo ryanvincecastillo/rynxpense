@@ -1,7 +1,25 @@
-import React, { useState } from 'react';
-import { Copy, Calendar, Clock, Info } from 'lucide-react';
-import { Modal, Button, Card, Badge } from '../../components/ui';
-import { Budget, DuplicateBudgetOptions } from '../../types';
+// DuplicateBudgetModal.tsx - Mobile-First Version
+import React, { useState, useEffect } from 'react';
+import { Copy, Calendar, Clock, Info, Check } from 'lucide-react';
+import { Modal } from '../ui/Modal';
+import { Button, Badge } from '../ui';
+
+// ============================================================================
+// TYPES & INTERFACES
+// ============================================================================
+
+interface Budget {
+  id: string;
+  name: string;
+  description?: string;
+  color: string;
+}
+
+interface DuplicateBudgetOptions {
+  includeRecurringTransactions: boolean;
+  includeRecentTransactions: boolean;
+  recentDays?: number;
+}
 
 interface DuplicateBudgetModalProps {
   isOpen: boolean;
@@ -11,6 +29,144 @@ interface DuplicateBudgetModalProps {
   isLoading: boolean;
 }
 
+// ============================================================================
+// SUB-COMPONENTS
+// ============================================================================
+
+interface OptionCardProps {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  badges: string[];
+  isSelected: boolean;
+  onSelect: () => void;
+  disabled?: boolean;
+}
+
+const OptionCard: React.FC<OptionCardProps> = ({
+  id,
+  title,
+  description,
+  icon,
+  badges,
+  isSelected,
+  onSelect,
+  disabled = false,
+}) => {
+  return (
+    <div
+      onClick={!disabled ? onSelect : undefined}
+      className={`
+        relative p-4 rounded-lg border-2 transition-all cursor-pointer
+        ${isSelected
+          ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500 ring-opacity-20'
+          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+        }
+        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+      `}
+    >
+      {/* Selection indicator */}
+      {isSelected && (
+        <div className="absolute top-3 right-3 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+          <Check className="w-3 h-3 text-white" />
+        </div>
+      )}
+
+      <div className="flex items-start space-x-3">
+        <input
+          type="radio"
+          id={id}
+          name="duplicate-option"
+          checked={isSelected}
+          onChange={onSelect}
+          disabled={disabled}
+          className="mt-1 sr-only"
+        />
+        
+        <div className={`
+          p-2 rounded-lg flex-shrink-0
+          ${isSelected ? 'bg-blue-100' : 'bg-gray-100'}
+        `}>
+          <div className={`
+            w-5 h-5
+            ${isSelected ? 'text-blue-600' : 'text-gray-600'}
+          `}>
+            {icon}
+          </div>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <label htmlFor={id} className="font-medium text-gray-900 cursor-pointer block">
+            {title}
+          </label>
+          <p className="text-sm text-gray-600 mt-1 leading-relaxed">
+            {description}
+          </p>
+          <div className="flex flex-wrap gap-1 mt-3">
+            {badges.map((badge, index) => (
+              <Badge 
+                key={index} 
+                variant="secondary" 
+                size="sm"
+                className="text-xs"
+              >
+                {badge}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+interface RecentDaysPickerProps {
+  value: number;
+  onChange: (days: number) => void;
+  disabled?: boolean;
+}
+
+const RecentDaysPicker: React.FC<RecentDaysPickerProps> = ({
+  value,
+  onChange,
+  disabled = false,
+}) => {
+  const options = [7, 14, 30, 60, 90];
+
+  return (
+    <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+      <label className="block text-sm font-medium text-amber-800 mb-2">
+        Include transactions from the last:
+      </label>
+      <div className="grid grid-cols-3 gap-2">
+        {options.map((days) => (
+          <button
+            key={days}
+            type="button"
+            onClick={() => onChange(days)}
+            disabled={disabled}
+            className={`
+              px-3 py-2 text-sm font-medium rounded-lg border transition-all
+              ${value === days
+                ? 'bg-amber-200 border-amber-300 text-amber-900'
+                : 'bg-white border-amber-200 text-amber-700 hover:bg-amber-100'
+              }
+              disabled:opacity-50 disabled:cursor-not-allowed
+            `}
+          >
+            {days} days
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
 export const DuplicateBudgetModal: React.FC<DuplicateBudgetModalProps> = ({
   isOpen,
   onClose,
@@ -18,31 +174,58 @@ export const DuplicateBudgetModal: React.FC<DuplicateBudgetModalProps> = ({
   onDuplicate,
   isLoading
 }) => {
-  const [includeRecurring, setIncludeRecurring] = useState(false);
-  const [includeRecent, setIncludeRecent] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<'structure' | 'recurring' | 'recent'>('structure');
   const [recentDays, setRecentDays] = useState(30);
 
-  const handleDuplicate = () => {
-    onDuplicate({
-      includeRecurringTransactions: includeRecurring,
-      includeRecentTransactions: includeRecent,
-      recentDays: includeRecent ? recentDays : undefined,
-    });
-  };
-
   const resetOptions = () => {
-    setIncludeRecurring(false);
-    setIncludeRecent(false);
+    setSelectedOption('structure');
     setRecentDays(30);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isOpen) {
       resetOptions();
     }
   }, [isOpen]);
 
+  const handleDuplicate = () => {
+    const options: DuplicateBudgetOptions = {
+      includeRecurringTransactions: selectedOption === 'recurring',
+      includeRecentTransactions: selectedOption === 'recent',
+      recentDays: selectedOption === 'recent' ? recentDays : undefined,
+    };
+    
+    onDuplicate(options);
+  };
+
   if (!budget) return null;
+
+  const duplicateOptions = [
+    {
+      id: 'structure',
+      title: 'Budget Structure Only',
+      description: 'Copy categories with planned amounts. Start fresh with no transactions.',
+      icon: <Copy className="w-5 h-5" />,
+      badges: ['Categories', 'Planned Amounts', 'Colors'],
+      value: 'structure' as const,
+    },
+    {
+      id: 'recurring',
+      title: 'Include Recurring Transactions',
+      description: 'Perfect for monthly budgets! Copies recurring transactions like salary, rent, loan payments.',
+      icon: <Calendar className="w-5 h-5" />,
+      badges: ['Structure', 'Recurring Payments', 'Scheduled Income'],
+      value: 'recurring' as const,
+    },
+    {
+      id: 'recent',
+      title: 'Include Recent Transactions',
+      description: 'Copy recent transaction history to get a realistic starting point for your new budget.',
+      icon: <Clock className="w-5 h-5" />,
+      badges: ['Structure', 'Recent History', 'Quick Start'],
+      value: 'recent' as const,
+    },
+  ];
 
   return (
     <Modal
@@ -50,207 +233,120 @@ export const DuplicateBudgetModal: React.FC<DuplicateBudgetModalProps> = ({
       onClose={onClose}
       title="Duplicate Budget"
       size="md"
+      className="sm:max-w-md mx-4 sm:mx-auto"
     >
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Budget Info */}
-        <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
           <div
-            className="w-4 h-4 rounded-full"
+            className="w-6 h-6 rounded-full flex-shrink-0 border-2 border-white shadow-sm"
             style={{ backgroundColor: budget.color }}
           />
-          <div>
-            <h3 className="font-semibold text-gray-900">{budget.name}</h3>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-gray-900 truncate">{budget.name}</h3>
             <p className="text-sm text-gray-600">
-              Will be duplicated as "{budget.name} (Copy)"
+              Will be duplicated as "<span className="font-medium">{budget.name} (Copy)</span>"
             </p>
           </div>
         </div>
 
-        {/* Duplication Options */}
-        <div className="space-y-4">
-          <h4 className="font-medium text-gray-900 flex items-center">
-            <Copy className="h-4 w-4 mr-2" />
-            What to include in the duplicate?
-          </h4>
+        {/* Options Section */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Copy className="h-4 w-4 text-gray-600" />
+            <h4 className="font-medium text-gray-900">
+              What to include in the duplicate?
+            </h4>
+          </div>
 
-          {/* Option 1: Structure Only */}
-          <Card className={`p-4 border-2 cursor-pointer transition-all ${
-            !includeRecurring && !includeRecent 
-              ? 'border-blue-500 bg-blue-50' 
-              : 'border-gray-200 hover:border-gray-300'
-          }`}>
-            <div className="flex items-start space-x-3">
-              <input
-                type="radio"
-                id="structure-only"
-                name="duplicate-option"
-                checked={!includeRecurring && !includeRecent}
-                onChange={() => {
-                  setIncludeRecurring(false);
-                  setIncludeRecent(false);
-                }}
-                className="mt-1"
+          {/* Duplication Options */}
+          <div className="space-y-3">
+            {duplicateOptions.map((option) => (
+              <OptionCard
+                key={option.id}
+                id={option.id}
+                title={option.title}
+                description={option.description}
+                icon={option.icon}
+                badges={option.badges}
+                isSelected={selectedOption === option.value}
+                onSelect={() => setSelectedOption(option.value)}
+                disabled={isLoading}
               />
-              <div className="flex-1">
-                <label htmlFor="structure-only" className="font-medium text-gray-900 cursor-pointer">
-                  Budget Structure Only
-                </label>
-                <p className="text-sm text-gray-600 mt-1">
-                  Copy categories with planned amounts. Start fresh with no transactions.
-                </p>
-                <div className="flex items-center space-x-2 mt-2">
-                  <Badge variant="secondary" size="sm">Categories</Badge>
-                  <Badge variant="secondary" size="sm">Planned Amounts</Badge>
-                  <Badge variant="secondary" size="sm">Colors</Badge>
-                </div>
-              </div>
-            </div>
-          </Card>
+            ))}
+          </div>
 
-          {/* Option 2: With Recurring Transactions */}
-          <Card className={`p-4 border-2 cursor-pointer transition-all ${
-            includeRecurring 
-              ? 'border-green-500 bg-green-50' 
-              : 'border-gray-200 hover:border-gray-300'
-          }`}>
-            <div className="flex items-start space-x-3">
-              <input
-                type="checkbox"
-                id="include-recurring"
-                checked={includeRecurring}
-                onChange={(e) => {
-                  setIncludeRecurring(e.target.checked);
-                  if (e.target.checked) setIncludeRecent(false);
-                }}
-                className="mt-1"
-              />
-              <div className="flex-1">
-                <label htmlFor="include-recurring" className="font-medium text-gray-900 cursor-pointer flex items-center">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Include Recurring Transactions
-                </label>
-                <p className="text-sm text-gray-600 mt-1">
-                  Perfect for monthly budgets! Copies recurring transactions like salary, rent, loan payments.
-                </p>
-                <div className="flex items-center space-x-2 mt-2">
-                  <Badge variant="success" size="sm">Monthly Bills</Badge>
-                  <Badge variant="success" size="sm">Salary</Badge>
-                  <Badge variant="success" size="sm">Loan Payments</Badge>
-                </div>
-                
-                {includeRecurring && (
-                  <div className="mt-3 p-3 bg-green-100 rounded-lg">
-                    <div className="flex items-center space-x-2 text-sm text-green-700">
-                      <Info className="h-4 w-4" />
-                      <span>Recurring transactions will be scheduled for next occurrence and marked as pending for review.</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </Card>
-
-          {/* Option 3: With Recent Transactions */}
-          <Card className={`p-4 border-2 cursor-pointer transition-all ${
-            includeRecent 
-              ? 'border-amber-500 bg-amber-50' 
-              : 'border-gray-200 hover:border-gray-300'
-          }`}>
-            <div className="flex items-start space-x-3">
-              <input
-                type="checkbox"
-                id="include-recent"
-                checked={includeRecent}
-                onChange={(e) => {
-                  setIncludeRecent(e.target.checked);
-                  if (e.target.checked) setIncludeRecurring(false);
-                }}
-                className="mt-1"
-              />
-              <div className="flex-1">
-                <label htmlFor="include-recent" className="font-medium text-gray-900 cursor-pointer flex items-center">
-                  <Clock className="h-4 w-4 mr-2" />
-                  Include Recent Transactions
-                </label>
-                <p className="text-sm text-gray-600 mt-1">
-                  Copy recent transactions as templates. Useful for similar spending patterns.
-                </p>
-                
-                {includeRecent && (
-                  <div className="mt-3 space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Copy transactions from last:
-                      </label>
-                      <select
-                        value={recentDays}
-                        onChange={(e) => setRecentDays(Number(e.target.value))}
-                        className="block w-32 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
-                      >
-                        <option value={7}>7 days</option>
-                        <option value={14}>14 days</option>
-                        <option value={30}>30 days</option>
-                        <option value={60}>60 days</option>
-                        <option value={90}>90 days</option>
-                      </select>
-                    </div>
-                    
-                    <div className="p-3 bg-amber-100 rounded-lg">
-                      <div className="flex items-center space-x-2 text-sm text-amber-700">
-                        <Info className="h-4 w-4" />
-                        <span>Recent transactions will be copied as pending and marked with "(Copied)" for easy identification.</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                <div className="flex items-center space-x-2 mt-2">
-                  <Badge variant="warning" size="sm">Recent Expenses</Badge>
-                  <Badge variant="warning" size="sm">Spending Patterns</Badge>
-                </div>
-              </div>
-            </div>
-          </Card>
+          {/* Recent Days Picker */}
+          {selectedOption === 'recent' && (
+            <RecentDaysPicker
+              value={recentDays}
+              onChange={setRecentDays}
+              disabled={isLoading}
+            />
+          )}
         </div>
 
         {/* Summary */}
-        <div className="border-t pt-4">
-          <h5 className="font-medium text-gray-900 mb-2">What will be copied:</h5>
-          <div className="space-y-1 text-sm text-gray-600">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span>Budget structure and categories</span>
+        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-start gap-2">
+            <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-blue-800">
+              <p className="font-medium mb-1">Your duplicate will include:</p>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-blue-600 rounded-full" />
+                  <span>Budget structure and categories</span>
+                </div>
+                {selectedOption === 'recurring' && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                    <span>Recurring transactions (scheduled for next occurrence)</span>
+                  </div>
+                )}
+                {selectedOption === 'recent' && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
+                    <span>Recent transactions (last {recentDays} days)</span>
+                  </div>
+                )}
+              </div>
             </div>
-            {includeRecurring && (
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>Recurring transactions (scheduled for next occurrence)</span>
-              </div>
-            )}
-            {includeRecent && (
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-                <span>Recent transactions (last {recentDays} days)</span>
-              </div>
-            )}
           </div>
         </div>
 
         {/* Actions */}
         <div className="flex justify-end space-x-3 pt-4 border-t">
-          <Button variant="secondary" onClick={onClose}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            disabled={isLoading}
+          >
             Cancel
           </Button>
+          
           <Button
+            type="button"
             onClick={handleDuplicate}
-            isLoading={isLoading}
-            className="w-full sm:w-auto sm:flex-1 order-1 sm:order-2"
+            disabled={isLoading}
+            className="flex-1"
           >
-            <Copy className="h-4 w-4 mr-2" />
-            Duplicate Budget
+            {isLoading ? (
+              <>
+                <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Duplicating...
+              </>
+            ) : (
+              <>
+                <Copy className="h-4 w-4 mr-2" />
+                Duplicate Budget
+              </>
+            )}
           </Button>
         </div>
       </div>
     </Modal>
   );
 };
+
+export default DuplicateBudgetModal;
