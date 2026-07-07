@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  trips     Trip[]
+}
+
+model Trip {
+  id            String         @id @default(cuid())
+  userId        String?
+  user          User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  destination   String
+  startDate     DateTime
+  endDate       DateTime
+  budgetAmount  Float
+  currency      String         @default("PHP")
+  travelers     Int            @default(2)
+  status        TripStatus     @default(PLANNING)
+  preferences   String?
+  totalEstimated Float?
+  budgetBreakdown Json?
+  tips          Json?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  itineraryDays ItineraryDay[]
+  expenses      Expense[]
+  shareLink     ShareLink?
+
+  @@index([userId])
+  @@index([status])
+}
+
+model ItineraryDay {
+  id            String   @id @default(cuid())
+  tripId        String
+  trip          Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  dayNumber     Int
+  title         String
+  activities    Json
+  estimatedCost Float
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([tripId, dayNumber])
+  @@index([tripId])
+}
+
+model Expense {
+  id        String   @id @default(cuid())
+  tripId    String
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  amount    Float
+  category  String
+  note      String?
+  date      DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tripId])
+}
+
+model ShareLink {
+  id        String   @id @default(cuid())
+  tripId    String   @unique
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  slug      String   @unique
+  isPublic  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([slug])
+}
+
+model WaitlistEntry {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+enum TripStatus {
+  PLANNING
+  ACTIVE
+  COMPLETED
+}

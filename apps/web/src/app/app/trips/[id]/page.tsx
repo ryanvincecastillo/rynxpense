@@ -1,0 +1,177 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import {
+  Calendar,
+  Users,
+  Wallet,
+  Share2,
+  Receipt,
+  Lightbulb,
+} from "lucide-react";
+import { formatCurrency } from "@rynxpense/shared";
+import { prisma } from "@/lib/prisma";
+import type { Activity } from "@rynxpense/shared";
+
+export const dynamic = "force-dynamic";
+
+async function getTrip(id: string) {
+  return prisma.trip.findUnique({
+    where: { id },
+    include: {
+      itineraryDays: { orderBy: { dayNumber: "asc" } },
+      expenses: { orderBy: { date: "desc" } },
+      shareLink: true,
+    },
+  });
+}
+
+export default async function TripDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const trip = await getTrip(id);
+  if (!trip) notFound();
+
+  const spent = trip.expenses.reduce((sum, e) => sum + e.amount, 0);
+  const budget = trip.totalEstimated ?? trip.budgetAmount;
+  const pct = budget > 0 ? Math.round((spent / budget) * 100) : 0;
+  const breakdown = trip.budgetBreakdown as Record<string, number> | null;
+  const tips = (trip.tips as string[]) ?? [];
+
+  return (
+    <div className="space-y-6">
+      <div className="overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-black/5">
+        <div className="bg-gradient-to-r from-primary to-primary-dark p-6 text-white">
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">{trip.destination}</h1>
+              <div className="mt-2 flex flex-wrap gap-4 text-sm text-white/80">
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-4 w-4" />
+                  {new Date(trip.startDate).toLocaleDateString()} –{" "}
+                  {new Date(trip.endDate).toLocaleDateString()}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Users className="h-4 w-4" />
+                  {trip.travelers} travelers
+                </span>
+              </div>
+            </div>
+            <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">
+              {trip.status}
+            </span>
+          </div>
+
+          <div className="mt-4">
+            <div className="flex justify-between text-sm">
+              <span className="flex items-center gap-1">
+                <Wallet className="h-4 w-4" />
+                {formatCurrency(spent)} spent of {formatCurrency(budget)}
+              </span>
+              <span>{pct}%</span>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/30">
+              <div
+                className="h-full rounded-full bg-white"
+                style={{ width: `${Math.min(pct, 100)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-2 border-b border-border p-4">
+          <Link
+            href={`/app/trips/${trip.id}/expenses`}
+            className="flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-2 text-sm font-semibold text-primary"
+          >
+            <Receipt className="h-4 w-4" />
+            Track expenses
+          </Link>
+          {trip.shareLink && (
+            <Link
+              href={`/trip/${trip.shareLink.slug}`}
+              className="flex items-center gap-2 rounded-lg bg-accent/10 px-4 py-2 text-sm font-semibold text-accent"
+            >
+              <Share2 className="h-4 w-4" />
+              Share trip
+            </Link>
+          )}
+        </div>
+      </div>
+
+      {breakdown && (
+        <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-border">
+          <h2 className="mb-4 font-bold">Budget breakdown</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {Object.entries(breakdown).map(([key, value]) => (
+              <div key={key} className="rounded-lg bg-background p-3">
+                <p className="text-xs capitalize text-muted">{key}</p>
+                <p className="font-bold text-primary">{formatCurrency(value)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <h2 className="mb-4 text-lg font-bold">Itinerary</h2>
+        <div className="space-y-4">
+          {trip.itineraryDays.map((day) => {
+            const activities = day.activities as Activity[];
+            return (
+              <div
+                key={day.id}
+                className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-border"
+              >
+                <div className="flex items-center justify-between border-b border-border bg-primary/5 px-5 py-3">
+                  <div>
+                    <span className="text-xs font-bold text-primary">Day {day.dayNumber}</span>
+                    <h3 className="font-bold">{day.title}</h3>
+                  </div>
+                  <span className="font-bold text-primary">
+                    {formatCurrency(day.estimatedCost)}
+                  </span>
+                </div>
+                <div className="divide-y divide-border">
+                  {activities.map((activity, i) => (
+                    <div key={i} className="flex gap-4 px-5 py-3">
+                      <span className="w-12 shrink-0 text-xs font-medium text-muted">
+                        {activity.time}
+                      </span>
+                      <div className="flex-1">
+                        <p className="font-medium">{activity.title}</p>
+                        <p className="text-sm text-muted">{activity.description}</p>
+                      </div>
+                      <span className="shrink-0 text-sm font-semibold">
+                        {formatCurrency(activity.estimatedCost)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {tips.length > 0 && (
+        <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-border">
+          <h2 className="mb-3 flex items-center gap-2 font-bold">
+            <Lightbulb className="h-5 w-5 text-warning" />
+            Travel tips
+          </h2>
+          <ul className="space-y-2">
+            {tips.map((tip, i) => (
+              <li key={i} className="flex gap-2 text-sm text-muted">
+                <span className="text-accent">•</span>
+                {tip}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}

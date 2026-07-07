@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "Rynxpense",
+    "slug": "rynxpense",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0283DF"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rynxpense.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0283DF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.rynxpense.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "apiUrl": "http://localhost:3000"
+    }
+  }
+}
