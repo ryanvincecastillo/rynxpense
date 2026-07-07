@@ -9,6 +9,11 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { colors, popularDestinations } from "@rynxpense/ui-tokens";
 import { formatCurrency } from "@rynxpense/shared";
+import { API_URL } from "../../App";
+
+function destinationImageUri(path: string) {
+  return path.startsWith("/") ? `${API_URL}${path}` : path;
+}
 
 export function DiscoverScreen() {
   const navigation = useNavigation<any>();
@@ -34,7 +39,7 @@ export function DiscoverScreen() {
             navigation.navigate("Plan", { destination: dest.name, budget: dest.budgetFrom })
           }
         >
-          <Image source={{ uri: dest.image }} style={styles.cardImage} />
+          <Image source={{ uri: destinationImageUri(dest.image) }} style={styles.cardImage} />
           <View style={styles.cardBody}>
             <Text style={styles.cardTitle}>{dest.name}</Text>
             <Text style={styles.cardMeta}>
