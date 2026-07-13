@@ -1,15 +1,18 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getApiUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import { fetchUserTrips } from "@/lib/trips";
+import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 export async function GET() {
   try {
-    const trips = await prisma.trip.findMany({
-      orderBy: { createdAt: "desc" },
-      include: {
-        expenses: { select: { amount: true } },
-        _count: { select: { expenses: true } },
-      },
-    });
+    if (!isSupabaseConfigured()) return NextResponse.json([]);
+
+    const userOrResponse = await getApiUser();
+    if (userOrResponse instanceof NextResponse) return userOrResponse;
+
+    const supabase = await createClient();
+    const trips = await fetchUserTrips(supabase, userOrResponse.id);
     return NextResponse.json(trips);
   } catch (error) {
     console.error("GET /api/trips:", error);

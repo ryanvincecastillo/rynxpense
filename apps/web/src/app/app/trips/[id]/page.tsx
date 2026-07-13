@@ -9,21 +9,12 @@ import {
   Lightbulb,
 } from "lucide-react";
 import { formatCurrency } from "@rynxpense/shared";
-import { prisma } from "@/lib/prisma";
 import type { Activity } from "@rynxpense/shared";
+import { createClient } from "@/lib/supabase/server";
+import { fetchTripById } from "@/lib/trips";
+import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 export const dynamic = "force-dynamic";
-
-async function getTrip(id: string) {
-  return prisma.trip.findUnique({
-    where: { id },
-    include: {
-      itineraryDays: { orderBy: { dayNumber: "asc" } },
-      expenses: { orderBy: { date: "desc" } },
-      shareLink: true,
-    },
-  });
-}
 
 export default async function TripDetailPage({
   params,
@@ -31,14 +22,17 @@ export default async function TripDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const trip = await getTrip(id);
+  if (!isSupabaseConfigured()) notFound();
+
+  const supabase = await createClient();
+  const trip = await fetchTripById(supabase, id);
   if (!trip) notFound();
 
-  const spent = trip.expenses.reduce((sum, e) => sum + e.amount, 0);
+  const spent = trip.expenses?.reduce((sum, e) => sum + e.amount, 0) ?? 0;
   const budget = trip.totalEstimated ?? trip.budgetAmount;
   const pct = budget > 0 ? Math.round((spent / budget) * 100) : 0;
-  const breakdown = trip.budgetBreakdown as Record<string, number> | null;
-  const tips = (trip.tips as string[]) ?? [];
+  const breakdown = trip.budgetBreakdown;
+  const tips = trip.tips ?? [];
 
   return (
     <div className="space-y-6">
@@ -118,7 +112,7 @@ export default async function TripDetailPage({
       <div>
         <h2 className="mb-4 text-lg font-bold">Itinerary</h2>
         <div className="space-y-4">
-          {trip.itineraryDays.map((day) => {
+          {trip.itineraryDays?.map((day) => {
             const activities = day.activities as Activity[];
             return (
               <div

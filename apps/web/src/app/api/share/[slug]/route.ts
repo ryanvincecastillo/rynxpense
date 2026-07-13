@@ -1,29 +1,26 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
+import { fetchSharedTripBySlug } from "@/lib/trips";
+import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ slug: string }> },
 ) {
   try {
-    const { slug } = await params;
-    const shareLink = await prisma.shareLink.findUnique({
-      where: { slug },
-      include: {
-        trip: {
-          include: {
-            itineraryDays: { orderBy: { dayNumber: "asc" } },
-            expenses: true,
-          },
-        },
-      },
-    });
+    if (!isSupabaseConfigured()) {
+      return NextResponse.json({ error: "Not configured" }, { status: 503 });
+    }
 
-    if (!shareLink || !shareLink.isPublic) {
+    const { slug } = await params;
+    const supabase = await createClient();
+    const trip = await fetchSharedTripBySlug(supabase, slug);
+
+    if (!trip) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    return NextResponse.json(shareLink.trip);
+    return NextResponse.json(trip);
   } catch {
     return NextResponse.json({ error: "Failed to fetch trip" }, { status: 500 });
   }

@@ -11,15 +11,14 @@ export function BrandLogo({
   return (
     <Link href="/" className="flex items-center gap-2.5">
       <Image
-        src="/logo.png"
+        src="/logo.svg"
         alt="Rynxpense"
-        width={size}
-        height={size}
-        className="rounded-lg"
+        width={showWordmark ? 120 : size}
+        height={showWordmark ? 40 : size}
         priority
       />
-      {showWordmark && (
-        <span className="text-xl font-bold text-text">Rynxpense</span>
+      {!showWordmark && (
+        <span className="sr-only">Rynxpense</span>
       )}
     </Link>
   );

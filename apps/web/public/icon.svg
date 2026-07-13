@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" role="img" aria-label="Rynxpense">
+  <rect width="48" height="48" rx="12" fill="#0283DF"/>
+  <path d="M14 30 L24 16 L34 30" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="24" cy="33" r="3" fill="#FF5722"/>
+</svg>

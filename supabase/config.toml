@@ -1,0 +1,10 @@
+# Rynxpense migrations for shared Supabase project
+# Link with: supabase link --project-ref YOUR_REF
+
+[db]
+major_version = 15
+
+[api]
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000

@@ -1,28 +1,15 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Calendar, Users, Wallet } from "lucide-react";
 import { formatCurrency } from "@rynxpense/shared";
-import { prisma } from "@/lib/prisma";
 import type { Activity } from "@rynxpense/shared";
-import Link from "next/link";
-import Image from "next/image";
+import { createClient } from "@/lib/supabase/server";
+import { fetchSharedTripBySlug } from "@/lib/trips";
+import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 export const dynamic = "force-dynamic";
-
-async function getSharedTrip(slug: string) {
-  const shareLink = await prisma.shareLink.findUnique({
-    where: { slug },
-    include: {
-      trip: {
-        include: {
-          itineraryDays: { orderBy: { dayNumber: "asc" } },
-        },
-      },
-    },
-  });
-  if (!shareLink?.isPublic) return null;
-  return shareLink.trip;
-}
 
 export async function generateMetadata({
   params,
@@ -30,18 +17,22 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const trip = await getSharedTrip(slug);
+  if (!isSupabaseConfigured()) return { title: "Trip not found" };
+
+  const supabase = await createClient();
+  const trip = await fetchSharedTripBySlug(supabase, slug);
   if (!trip) return { title: "Trip not found" };
 
   const budget = trip.totalEstimated ?? trip.budgetAmount;
   return {
     title: `${trip.destination} Trip Plan — Rynxpense`,
-    description: `AI-planned ${trip.destination} trip with an estimated budget of ${formatCurrency(budget)}. View the full itinerary.`,
+    description: `AI-planned ${trip.destination} trip with an estimated budget of ${formatCurrency(budget)}.`,
     openGraph: {
       title: `${trip.destination} Trip — ${formatCurrency(budget)} budget`,
       description: `Day-by-day itinerary for ${trip.destination}`,
       type: "website",
       url: `https://rynxpense.com/trip/${slug}`,
+      images: [{ url: "https://rynxpense.com/og-banner.png" }],
     },
   };
 }
@@ -52,19 +43,21 @@ export default async function ShareTripPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const trip = await getSharedTrip(slug);
+  if (!isSupabaseConfigured()) notFound();
+
+  const supabase = await createClient();
+  const trip = await fetchSharedTripBySlug(supabase, slug);
   if (!trip) notFound();
 
   const budget = trip.totalEstimated ?? trip.budgetAmount;
-  const breakdown = trip.budgetBreakdown as Record<string, number> | null;
+  const breakdown = trip.budgetBreakdown;
 
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-white">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo.png" alt="Rynxpense" width={32} height={32} className="rounded-lg" />
-            <span className="font-bold">Rynxpense</span>
+            <Image src="/logo.svg" alt="Rynxpense" width={120} height={40} />
           </Link>
           <Link
             href="/app/trips/new"
@@ -109,7 +102,7 @@ export default async function ShareTripPage({
 
         <h2 className="mb-4 text-xl font-bold">Itinerary</h2>
         <div className="space-y-4">
-          {trip.itineraryDays.map((day) => {
+          {trip.itineraryDays?.map((day) => {
             const activities = day.activities as Activity[];
             return (
               <div key={day.id} className="rounded-xl bg-white shadow-sm ring-1 ring-border">
@@ -132,16 +125,6 @@ export default async function ShareTripPage({
               </div>
             );
           })}
-        </div>
-
-        <div className="mt-8 rounded-xl bg-accent/10 p-6 text-center">
-          <p className="mb-3 font-semibold">Want your own AI trip plan?</p>
-          <Link
-            href="/app/trips/new"
-            className="inline-block rounded-lg bg-accent px-6 py-3 font-semibold text-white"
-          >
-            Start planning free
-          </Link>
         </div>
       </main>
     </div>
