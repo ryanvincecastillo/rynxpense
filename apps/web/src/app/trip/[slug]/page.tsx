@@ -56,11 +56,11 @@ export default async function ShareTripPage({
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-white">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/home" className="flex items-center gap-2">
             <Image src="/logo.svg" alt="Rynxpense" width={120} height={40} />
           </Link>
           <Link
-            href="/app/trips/new"
+            href="/trips/new"
             className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white"
           >
             Plan your trip

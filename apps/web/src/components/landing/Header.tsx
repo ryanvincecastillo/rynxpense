@@ -1,37 +1,38 @@
 import Link from "next/link";
-import { MapPin } from "lucide-react";
+import { MapPin, Sparkles } from "lucide-react";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-white/95 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 border-b border-border/80 bg-white/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
         <BrandLogo />
 
         <nav className="hidden items-center gap-8 md:flex">
-          <a href="#discover" className="text-sm font-medium text-muted hover:text-primary">
+          <a href="#discover" className="text-sm font-medium text-muted transition hover:text-primary">
             Discover
           </a>
-          <a href="#how-it-works" className="text-sm font-medium text-muted hover:text-primary">
+          <a href="#how-it-works" className="text-sm font-medium text-muted transition hover:text-primary">
             How it works
           </a>
-          <a href="#features" className="text-sm font-medium text-muted hover:text-primary">
+          <a href="#features" className="text-sm font-medium text-muted transition hover:text-primary">
             Features
           </a>
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Link
-            href="/app"
-            className="hidden rounded-lg px-4 py-2 text-sm font-medium text-primary hover:bg-primary/5 sm:block"
+            href="/discover"
+            className="hidden rounded-lg px-4 py-2 text-sm font-medium text-primary transition hover:bg-primary/5 sm:block"
           >
-            My Trips
+            Open app
           </Link>
           <Link
-            href="/app/trips/new"
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-accent-dark"
+            href="/trips/new"
+            className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-accent-dark sm:px-5"
           >
-            Plan a trip
+            <Sparkles className="h-4 w-4" />
+            Plan free
           </Link>
         </div>
       </div>
@@ -50,39 +51,44 @@ export function Footer() {
             </div>
             <p className="max-w-sm text-sm text-muted">
               AI-powered trip budget planner. Plan your itinerary, estimate costs, and track
-              spending — all in one place.
+              spending — free to use, no account required.
             </p>
           </div>
           <div>
             <h4 className="mb-3 font-semibold">Product</h4>
             <ul className="space-y-2 text-sm text-muted">
               <li>
-                <Link href="/app" className="hover:text-primary">
-                  Web App
-                </Link>
-              </li>
-              <li>
-                <Link href="/app/trips/new" className="hover:text-primary">
+                <Link href="/trips/new" className="transition hover:text-primary">
                   Plan a Trip
                 </Link>
               </li>
               <li>
-                <a href="#discover" className="hover:text-primary">
+                <Link href="/discover" className="transition hover:text-primary">
+                  Web App
+                </Link>
+              </li>
+              <li>
+                <a href="#discover" className="transition hover:text-primary">
                   Popular Destinations
                 </a>
               </li>
             </ul>
           </div>
           <div>
-            <h4 className="mb-3 font-semibold">Company</h4>
+            <h4 className="mb-3 font-semibold">Account</h4>
             <ul className="space-y-2 text-sm text-muted">
               <li>
-                <a href="#waitlist" className="hover:text-primary">
-                  Join Waitlist
+                <Link href="/login" className="transition hover:text-primary">
+                  Sign in (optional)
+                </Link>
+              </li>
+              <li>
+                <a href="#waitlist" className="transition hover:text-primary">
+                  Get updates
                 </a>
               </li>
               <li>
-                <a href="mailto:hello@rynxpense.com" className="hover:text-primary">
+                <a href="mailto:hello@rynxpense.com" className="transition hover:text-primary">
                   Contact
                 </a>
               </li>

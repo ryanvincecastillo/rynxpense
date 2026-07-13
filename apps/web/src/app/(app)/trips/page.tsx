@@ -24,7 +24,7 @@ export default async function MyTripsPage() {
           <p className="text-muted">{trips.length} trip{trips.length !== 1 ? "s" : ""}</p>
         </div>
         <Link
-          href="/app/trips/new"
+          href="/trips/new"
           className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white"
         >
           + New trip
@@ -37,7 +37,7 @@ export default async function MyTripsPage() {
           <h2 className="mb-2 text-lg font-bold">No trips yet</h2>
           <p className="mb-6 text-muted">Plan your first AI-powered trip budget</p>
           <Link
-            href="/app/trips/new"
+            href="/trips/new"
             className="inline-block rounded-lg bg-primary px-6 py-3 font-semibold text-white"
           >
             Plan a trip
@@ -65,7 +65,7 @@ export default async function MyTripsPage() {
               return (
                 <Link
                   key={trip.id}
-                  href={`/app/trips/${trip.id}`}
+                  href={`/trips/${trip.id}`}
                   className="block overflow-hidden rounded-xl bg-white shadow-md ring-1 ring-black/5 transition hover:shadow-lg"
                 >
                   <div className="border-b border-border bg-primary/5 px-5 py-4">

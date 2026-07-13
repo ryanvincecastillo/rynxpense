@@ -9,7 +9,7 @@ export async function GET() {
     if (!isSupabaseConfigured()) return NextResponse.json([]);
 
     const userOrResponse = await getApiUser();
-    if (userOrResponse instanceof NextResponse) return userOrResponse;
+    if (userOrResponse instanceof NextResponse) return NextResponse.json([]);
 
     const supabase = await createClient();
     const trips = await fetchUserTrips(supabase, userOrResponse.id);

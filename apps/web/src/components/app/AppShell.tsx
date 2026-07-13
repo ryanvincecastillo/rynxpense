@@ -6,10 +6,10 @@ import { usePathname } from "next/navigation";
 import { Home, Map, PlusCircle, User } from "lucide-react";
 
 const tabs = [
-  { href: "/app", label: "Home", icon: Home },
-  { href: "/app/trips", label: "Trips", icon: Map },
-  { href: "/app/trips/new", label: "Plan", icon: PlusCircle },
-  { href: "/app/profile", label: "Profile", icon: User },
+  { href: "/discover", label: "Home", icon: Home },
+  { href: "/trips", label: "Trips", icon: Map },
+  { href: "/trips/new", label: "Plan", icon: PlusCircle },
+  { href: "/profile", label: "Profile", icon: User },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -19,12 +19,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-40 border-b border-border bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/discover" className="flex items-center gap-2">
             <Image src="/logo.png" alt="Rynxpense" width={32} height={32} className="rounded-lg" />
             <span className="font-bold text-text">Rynxpense</span>
           </Link>
           <Link
-            href="/app/trips/new"
+            href="/trips/new"
             className="hidden rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white sm:block"
           >
             + Plan trip
@@ -38,8 +38,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex max-w-lg justify-around py-2">
           {tabs.map((tab) => {
             const active =
-              tab.href === "/app"
-                ? pathname === "/app"
+              tab.href === "/discover"
+                ? pathname === "/discover"
                 : pathname.startsWith(tab.href);
             return (
               <Link

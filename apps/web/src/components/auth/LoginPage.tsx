@@ -18,8 +18,8 @@ function friendlyAuthError(message: string): string {
 
 function OtpLoginForm() {
   const params = useSearchParams();
-  const rawNext = params.get("next") || "/app";
-  const next = rawNext.startsWith("/") ? rawNext : "/app";
+  const rawNext = params.get("next") || "/discover";
+  const next = rawNext.startsWith("/") ? rawNext : "/discover";
 
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
@@ -170,7 +170,7 @@ export default function LoginPage() {
           <OtpLoginForm />
         </Suspense>
         <p className="mt-6 text-center text-sm text-muted">
-          <Link href="/" className="text-primary hover:underline">
+          <Link href="/home" className="text-primary hover:underline">
             ← Back to home
           </Link>
         </p>

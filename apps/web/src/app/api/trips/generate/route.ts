@@ -1,14 +1,26 @@
 import { NextResponse } from "next/server";
 import { generateTripSchema, generateShareSlug } from "@rynxpense/shared";
 import { generateTripPlan } from "@/lib/groq";
-import { getApiUser, ensureProfile } from "@/lib/auth";
+import { ensureProfile, getUser } from "@/lib/auth";
 import { getProjectId } from "@/lib/project";
 import { createClient } from "@/lib/supabase/server";
 import { fetchTripById } from "@/lib/trips";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { buildGuestTrip } from "@/lib/build-guest-trip";
 
 export async function POST(request: Request) {
   try {
+    const body = await request.json();
+    const input = generateTripSchema.parse(body);
+    const plan = await generateTripPlan(input);
+
+    const user = await getUser();
+
+    if (!user) {
+      const guestTrip = buildGuestTrip(input, plan);
+      return NextResponse.json({ ...guestTrip, guest: true }, { status: 201 });
+    }
+
     if (!isSupabaseConfigured()) {
       return NextResponse.json(
         { error: "Supabase not configured" },
@@ -16,22 +28,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const userOrResponse = await getApiUser();
-    if (userOrResponse instanceof NextResponse) return userOrResponse;
-
-    await ensureProfile(userOrResponse.email?.split("@")[0] ?? "");
+    await ensureProfile(user.email?.split("@")[0] ?? "");
     const projectId = await getProjectId();
     const supabase = await createClient();
-
-    const body = await request.json();
-    const input = generateTripSchema.parse(body);
-    const plan = await generateTripPlan(input);
 
     const { data: trip, error: tripError } = await supabase
       .from("rynxpense_trips")
       .insert({
         project_id: projectId,
-        owner_user_id: userOrResponse.id,
+        owner_user_id: user.id,
         destination: input.destination,
         start_date: input.startDate,
         end_date: input.endDate,

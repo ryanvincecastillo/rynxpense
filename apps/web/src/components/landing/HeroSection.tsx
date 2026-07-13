@@ -1,33 +1,68 @@
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { SearchWidget } from "./SearchWidget";
+import { HeroCarousel } from "./HeroCarousel";
 
 export function HeroSection() {
   return (
-    <section className="relative isolate overflow-hidden bg-gradient-to-br from-primary/[0.07] via-background to-accent/[0.06] pb-12 pt-16 sm:pb-16 sm:pt-20 lg:pb-20 lg:pt-24">
-      {/* Decorative background — no image, no duplicate text */}
+    <section className="relative isolate overflow-hidden pb-14 pt-10 sm:pb-20 sm:pt-14 lg:pb-24 lg:pt-16">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
       >
-        <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute -bottom-32 -right-16 h-80 w-80 rounded-full bg-accent/10 blur-3xl" />
-        <div className="absolute left-1/2 top-1/3 h-64 w-64 -translate-x-1/2 rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute -bottom-40 -right-20 h-[28rem] w-[28rem] rounded-full bg-accent/10 blur-3xl" />
+        <div className="absolute left-1/2 top-0 h-72 w-[40rem] -translate-x-1/2 rounded-full bg-primary/5 blur-3xl" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-5xl px-4 sm:px-6">
-        <div className="mb-10 text-center sm:mb-12">
-          <span className="mb-5 inline-block rounded-full bg-accent/10 px-4 py-1.5 text-sm font-semibold text-accent">
-            AI Trip Budget Planner
-          </span>
-          <h1 className="mx-auto max-w-3xl text-4xl font-bold leading-[1.15] tracking-tight text-text sm:text-5xl lg:text-6xl">
-            Plan your trip.{" "}
-            <span className="text-primary">Track every peso.</span>
-          </h1>
-          <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-muted sm:mt-6">
-            Tell us where you&apos;re going and your budget — get a day-by-day itinerary with
-            estimated costs, then track spending on the go.
-          </p>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
+          <div className="animate-fade-up">
+            <div className="mb-5 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center rounded-full bg-accent/10 px-4 py-1.5 text-sm font-semibold text-accent">
+                AI Trip Budget Planner
+              </span>
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary">
+                Free · No account
+              </span>
+            </div>
+
+            <h1 className="max-w-xl text-4xl font-bold leading-[1.1] tracking-tight text-text sm:text-5xl lg:text-[3.25rem]">
+              Plan your trip.{" "}
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                Track every peso.
+              </span>
+            </h1>
+            <p className="mt-5 max-w-lg text-lg leading-relaxed text-muted">
+              Tell us where you&apos;re going and your budget — get a day-by-day itinerary with
+              estimated costs. Use it right away, no sign-up required.
+            </p>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                href="/trips/new"
+                className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3.5 font-semibold text-white shadow-lg transition hover:bg-accent-dark hover:shadow-xl"
+              >
+                Start planning free
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <a
+                href="#how-it-works"
+                className="inline-flex items-center rounded-xl bg-white px-6 py-3.5 font-semibold text-text shadow-md ring-1 ring-border transition hover:ring-primary/30"
+              >
+                See how it works
+              </a>
+            </div>
+
+            <div className="mt-10">
+              <SearchWidget />
+            </div>
+          </div>
+
+          <div className="animate-fade-up lg:pl-4" style={{ animationDelay: "150ms" }}>
+            <HeroCarousel />
+          </div>
         </div>
-        <SearchWidget />
       </div>
     </section>
   );

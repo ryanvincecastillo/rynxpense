@@ -1,5 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import {
   Calendar,
   Users,
@@ -7,26 +9,47 @@ import {
   Share2,
   Receipt,
   Lightbulb,
+  Cloud,
 } from "lucide-react";
 import { formatCurrency } from "@rynxpense/shared";
 import type { Activity } from "@rynxpense/shared";
-import { createClient } from "@/lib/supabase/server";
-import { fetchTripById } from "@/lib/trips";
-import { isSupabaseConfigured } from "@/lib/supabase/client";
+import type { ApiTrip } from "@/lib/types";
+import { getGuestTrip } from "@/lib/guest-trips";
 
-export const dynamic = "force-dynamic";
+export function TripDetailClient({ tripId }: { tripId: string }) {
+  const [trip, setTrip] = useState<ApiTrip | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isGuest, setIsGuest] = useState(false);
 
-export default async function TripDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  if (!isSupabaseConfigured()) notFound();
+  useEffect(() => {
+    const guest = getGuestTrip(tripId);
+    if (guest) {
+      setTrip(guest);
+      setIsGuest(true);
+      setLoading(false);
+      return;
+    }
 
-  const supabase = await createClient();
-  const trip = await fetchTripById(supabase, id);
-  if (!trip) notFound();
+    fetch(`/api/trips/${tripId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setTrip(data))
+      .finally(() => setLoading(false));
+  }, [tripId]);
+
+  if (loading) {
+    return <div className="py-12 text-center text-muted">Loading your trip...</div>;
+  }
+
+  if (!trip) {
+    return (
+      <div className="py-12 text-center">
+        <p className="text-muted">Trip not found</p>
+        <Link href="/trips/new" className="mt-4 inline-block text-primary">
+          Plan a new trip
+        </Link>
+      </div>
+    );
+  }
 
   const spent = trip.expenses?.reduce((sum, e) => sum + e.amount, 0) ?? 0;
   const budget = trip.totalEstimated ?? trip.budgetAmount;
@@ -36,6 +59,22 @@ export default async function TripDetailPage({
 
   return (
     <div className="space-y-6">
+      {isGuest && (
+        <div className="flex items-start gap-3 rounded-xl bg-primary/5 px-4 py-3 ring-1 ring-primary/15">
+          <Cloud className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+          <div className="text-sm">
+            <p className="font-semibold text-text">Saved on this device</p>
+            <p className="text-muted">
+              No account needed.{" "}
+              <Link href="/login" className="font-medium text-primary hover:underline">
+                Sign in
+              </Link>{" "}
+              to sync trips across devices.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-black/5">
         <div className="bg-gradient-to-r from-primary to-primary-dark p-6 text-white">
           <div className="flex items-start justify-between">
@@ -68,16 +107,16 @@ export default async function TripDetailPage({
             </div>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/30">
               <div
-                className="h-full rounded-full bg-white"
+                className="h-full rounded-full bg-white transition-all duration-500"
                 style={{ width: `${Math.min(pct, 100)}%` }}
               />
             </div>
           </div>
         </div>
 
-        <div className="flex gap-2 border-b border-border p-4">
+        <div className="flex flex-wrap gap-2 border-b border-border p-4">
           <Link
-            href={`/app/trips/${trip.id}/expenses`}
+            href={`/trips/${trip.id}/expenses`}
             className="flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-2 text-sm font-semibold text-primary"
           >
             <Receipt className="h-4 w-4" />

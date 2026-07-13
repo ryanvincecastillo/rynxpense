@@ -16,7 +16,7 @@ async function getTrips() {
   }
 }
 
-export default async function AppHomePage() {
+export default async function DiscoverPage() {
   const trips = await getTrips();
 
   return (
@@ -34,7 +34,7 @@ export default async function AppHomePage() {
           {categories.map((cat) => (
             <Link
               key={cat.id}
-              href={`/app/trips/new?category=${cat.id}`}
+              href={`/trips/new?category=${cat.id}`}
               className="shrink-0 rounded-full bg-white px-4 py-2 text-sm font-medium shadow-sm ring-1 ring-border hover:ring-primary/30"
             >
               {cat.emoji} {cat.label}
@@ -46,7 +46,7 @@ export default async function AppHomePage() {
       <section>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-bold">Popular destinations</h2>
-          <Link href="/app/trips/new" className="text-sm font-semibold text-primary">
+          <Link href="/trips/new" className="text-sm font-semibold text-primary">
             See all
           </Link>
         </div>
@@ -54,7 +54,7 @@ export default async function AppHomePage() {
           {popularDestinations.slice(0, 4).map((dest) => (
             <Link
               key={dest.id}
-              href={`/app/trips/new?destination=${encodeURIComponent(dest.name)}&budget=${dest.budgetFrom}`}
+              href={`/trips/new?destination=${encodeURIComponent(dest.name)}&budget=${dest.budgetFrom}`}
               className="group overflow-hidden rounded-xl bg-white shadow-md ring-1 ring-black/5"
             >
               <div className="relative h-36">
@@ -80,7 +80,7 @@ export default async function AppHomePage() {
         <section>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-bold">Your recent trips</h2>
-            <Link href="/app/trips" className="text-sm font-semibold text-primary">
+            <Link href="/trips" className="text-sm font-semibold text-primary">
               View all
             </Link>
           </div>
@@ -88,7 +88,7 @@ export default async function AppHomePage() {
             {trips.slice(0, 3).map((trip: { id: string; destination: string; budgetAmount: number; status: string }) => (
               <Link
                 key={trip.id}
-                href={`/app/trips/${trip.id}`}
+                href={`/trips/${trip.id}`}
                 className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm ring-1 ring-border"
               >
                 <div>
@@ -105,7 +105,7 @@ export default async function AppHomePage() {
       )}
 
       <Link
-        href="/app/trips/new"
+        href="/trips/new"
         className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-dark p-5 text-white shadow-lg"
       >
         <Sparkles className="h-5 w-5" />

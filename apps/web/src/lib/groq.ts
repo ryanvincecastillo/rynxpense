@@ -5,9 +5,14 @@ import {
   type CreateTripInput,
 } from "@rynxpense/shared";
 
+function getGroqApiKey(): string | null {
+  return process.env.RYNXPENSE_GROQ_API_KEY ?? process.env.GROQ_API_KEY ?? null;
+}
+
 function getGroqClient() {
-  if (!process.env.GROQ_API_KEY) return null;
-  return new Groq({ apiKey: process.env.GROQ_API_KEY });
+  const apiKey = getGroqApiKey();
+  if (!apiKey) return null;
+  return new Groq({ apiKey });
 }
 
 function buildPrompt(input: CreateTripInput): string {
@@ -61,18 +66,48 @@ Use realistic ${input.currency} prices. Keep totalEstimated close to but not exc
 Include 3-5 activities per day with varied categories.`;
 }
 
-export async function generateTripPlan(input: CreateTripInput): Promise<AITripPlan> {
-  const groq = getGroqClient();
-  if (!groq) {
-    return getMockTripPlan(input);
+async function generateViaEdgeFunction(
+  input: CreateTripInput,
+): Promise<AITripPlan | null> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+
+  const res = await fetch(`${url}/functions/v1/rynxpense-generate-trip`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+
+  if (!res.ok) {
+    const detail = await res.text();
+    console.error("rynxpense-generate-trip edge function:", res.status, detail);
+    return null;
   }
+
+  const data = await res.json();
+  if (data.error) {
+    console.error("rynxpense-generate-trip edge function:", data.error);
+    return null;
+  }
+
+  return aiTripPlanSchema.parse(data);
+}
+
+async function generateViaGroqSdk(input: CreateTripInput): Promise<AITripPlan> {
+  const groq = getGroqClient();
+  if (!groq) throw new Error("Groq client not configured");
 
   const completion = await groq.chat.completions.create({
     model: "llama-3.3-70b-versatile",
     messages: [
       {
         role: "system",
-        content: "You are a travel planning assistant. Always respond with valid JSON only, no markdown.",
+        content:
+          "You are a travel planning assistant. Always respond with valid JSON only, no markdown.",
       },
       { role: "user", content: buildPrompt(input) },
     ],
@@ -88,6 +123,17 @@ export async function generateTripPlan(input: CreateTripInput): Promise<AITripPl
 
   const parsed = JSON.parse(jsonMatch[0]);
   return aiTripPlanSchema.parse(parsed);
+}
+
+export async function generateTripPlan(input: CreateTripInput): Promise<AITripPlan> {
+  if (getGroqApiKey()) {
+    return generateViaGroqSdk(input);
+  }
+
+  const viaEdge = await generateViaEdgeFunction(input);
+  if (viaEdge) return viaEdge;
+
+  return getMockTripPlan(input);
 }
 
 function getMockTripPlan(input: CreateTripInput): AITripPlan {

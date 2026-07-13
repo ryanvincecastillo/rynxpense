@@ -1,13 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PROTECTED_PREFIXES = ["/app"];
-
-function isProtectedPath(path: string) {
-  return PROTECTED_PREFIXES.some((p) => path === p || path.startsWith(p + "/"));
-}
-
-/** Refreshes Supabase session and gates /app routes. */
+/** Refreshes Supabase session. App routes are open to guests. */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -42,16 +36,9 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
-  if (isProtectedPath(path) && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", path);
-    return copyCookies(response, NextResponse.redirect(url));
-  }
-
   if (path === "/login" && user) {
     const url = request.nextUrl.clone();
-    url.pathname = "/app";
+    url.pathname = "/discover";
     url.search = "";
     return copyCookies(response, NextResponse.redirect(url));
   }

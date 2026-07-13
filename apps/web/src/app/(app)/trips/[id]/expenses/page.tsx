@@ -5,6 +5,11 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { formatCurrency } from "@rynxpense/shared";
+import {
+  getGuestTrip,
+  addGuestExpense,
+  removeGuestExpense,
+} from "@/lib/guest-trips";
 
 interface Expense {
   id: string;
@@ -28,6 +33,7 @@ export default function ExpensesPage() {
   const params = useParams();
   const tripId = params.id as string;
   const [trip, setTrip] = useState<Trip | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -38,6 +44,20 @@ export default function ExpensesPage() {
   });
 
   const loadTrip = async () => {
+    const guest = getGuestTrip(tripId);
+    if (guest) {
+      setTrip({
+        id: guest.id,
+        destination: guest.destination,
+        budgetAmount: guest.budgetAmount,
+        totalEstimated: guest.totalEstimated,
+        expenses: guest.expenses ?? [],
+      });
+      setIsGuest(true);
+      setLoading(false);
+      return;
+    }
+
     const res = await fetch(`/api/trips/${tripId}`);
     if (res.ok) setTrip(await res.json());
     setLoading(false);
@@ -49,6 +69,33 @@ export default function ExpensesPage() {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isGuest) {
+      const updated = addGuestExpense(tripId, {
+        amount: Number(form.amount),
+        category: form.category,
+        note: form.note || null,
+        date: form.date,
+      });
+      if (updated) {
+        setTrip({
+          id: updated.id,
+          destination: updated.destination,
+          budgetAmount: updated.budgetAmount,
+          totalEstimated: updated.totalEstimated,
+          expenses: updated.expenses ?? [],
+        });
+        setForm({
+          amount: "",
+          category: "food",
+          note: "",
+          date: new Date().toISOString().split("T")[0],
+        });
+        setShowForm(false);
+      }
+      return;
+    }
+
     const res = await fetch(`/api/trips/${tripId}/expenses`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -60,14 +107,35 @@ export default function ExpensesPage() {
       }),
     });
     if (res.ok) {
-      setForm({ amount: "", category: "food", note: "", date: new Date().toISOString().split("T")[0] });
+      setForm({
+        amount: "",
+        category: "food",
+        note: "",
+        date: new Date().toISOString().split("T")[0],
+      });
       setShowForm(false);
       loadTrip();
     }
   };
 
   const handleDelete = async (expenseId: string) => {
-    await fetch(`/api/trips/${tripId}/expenses?expenseId=${expenseId}`, { method: "DELETE" });
+    if (isGuest) {
+      const updated = removeGuestExpense(tripId, expenseId);
+      if (updated) {
+        setTrip({
+          id: updated.id,
+          destination: updated.destination,
+          budgetAmount: updated.budgetAmount,
+          totalEstimated: updated.totalEstimated,
+          expenses: updated.expenses ?? [],
+        });
+      }
+      return;
+    }
+
+    await fetch(`/api/trips/${tripId}/expenses?expenseId=${expenseId}`, {
+      method: "DELETE",
+    });
     loadTrip();
   };
 
@@ -82,7 +150,7 @@ export default function ExpensesPage() {
   return (
     <div>
       <Link
-        href={`/app/trips/${tripId}`}
+        href={`/trips/${tripId}`}
         className="mb-4 inline-flex items-center gap-1 text-sm text-primary"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -111,14 +179,17 @@ export default function ExpensesPage() {
         </div>
         <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/30">
           <div
-            className={`h-full rounded-full ${pct > 100 ? "bg-red-300" : "bg-white"}`}
+            className={`h-full rounded-full transition-all duration-500 ${pct > 100 ? "bg-red-300" : "bg-white"}`}
             style={{ width: `${Math.min(pct, 100)}%` }}
           />
         </div>
       </div>
 
       {showForm ? (
-        <form onSubmit={handleAdd} className="mb-6 space-y-3 rounded-xl bg-white p-5 shadow-sm ring-1 ring-border">
+        <form
+          onSubmit={handleAdd}
+          className="mb-6 space-y-3 rounded-xl bg-white p-5 shadow-sm ring-1 ring-border"
+        >
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-medium">Amount (₱)</label>

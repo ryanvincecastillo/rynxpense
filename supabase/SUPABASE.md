@@ -1,22 +1,44 @@
 # Supabase — Rynxpense on shared project
 
-Tenant slug: **`rynxpense-dev`**
+Tenant slug: **`rynxpense-dev`**  
+Table prefix: **`rynxpense_`**  
+Shared project ref: **`xkoyoleurdafejlyxpxk`** (Ryan's Projects)
 
-Table prefix: **`rynxpense_`**
+## Status (applied)
 
-## Push migration
+- [x] Migration SQL executed on shared DB (`rynxpense-dev` project row + all `rynxpense_*` tables)
+- [x] Vercel env vars set (production + preview)
+- [x] Production redeploy triggered
+- [x] `auth-send-email` edge function updated with Rynxpense branding
+- [x] Auth redirect URLs added (`rynxpense://login-callback`, `https://rynxpense.com/**`)
 
-From repo root (linked to shared Supabase project):
+The `https://rynxpense.com/**` wildcard covers all post-login redirects including `/discover`, `/trips`, and `/home` — no Supabase dashboard changes needed after the route restructure.
+
+## Routes (web app)
+
+| Path | Purpose |
+|------|---------|
+| `/` | Redirects to `/home` |
+| `/home` | Marketing landing page |
+| `/discover` | App home (browse / discover) |
+| `/trips` | My trips list |
+| `/trips/new` | Plan a new trip |
+| `/trips/[id]` | Trip detail |
+| `/trips/[id]/expenses` | Expense tracker |
+| `/profile` | User profile |
+| `/login` | Sign in (redirects to `/discover` when authenticated) |
+
+## Push migration (if re-running)
 
 ```bash
-cd supabase
-supabase link --project-ref YOUR_PROJECT_REF
-supabase db push
+cd /Users/ryanvincecastillo/Projects/rynxpense
+supabase link --project-ref xkoyoleurdafejlyxpxk
+supabase db query --linked -f supabase/migrations/20260713220000_rynxpense_initial.sql
 ```
 
-Or run SQL manually: `migrations/20260713220000_rynxpense_initial.sql`
+Note: `supabase db push` fails on shared project (other apps' migrations not in this repo). Use `db query -f` for additive SQL.
 
-## Tables created
+## Tables
 
 - `rynxpense_profiles`
 - `rynxpense_trips`
@@ -28,12 +50,28 @@ Or run SQL manually: `migrations/20260713220000_rynxpense_initial.sql`
 ## RPCs
 
 - `rynxpense_ensure_profile(p_project_id, p_display_name)`
-- `rynxpense_get_shared_trip(p_slug)` — public read for share pages
+- `rynxpense_get_shared_trip(p_slug)`
 
 ## Env (Vercel + local)
 
-See `apps/web/.env.example`
+See `apps/web/.env.example`. Local copy: `apps/web/.env.local`
+
+| Variable | Where | Purpose |
+|----------|-------|---------|
+| `RYNXPENSE_GROQ_API_KEY` | Supabase secret (+ optional Vercel/local fallback) | Groq API key for AI trip generation |
+| `GROQ_API_KEY` | Local only (legacy) | Fallback if `RYNXPENSE_GROQ_API_KEY` unset |
+| `SUPABASE_SERVICE_ROLE_KEY` | Vercel + local | Invokes `rynxpense-generate-trip` edge function |
+
+## Edge functions
+
+### `rynxpense-generate-trip`
+
+AI trip plan generation via Groq (`RYNXPENSE_GROQ_API_KEY`). Called from Next.js `/api/trips/generate` with service-role bearer token.
+
+```bash
+supabase functions deploy rynxpense-generate-trip --project-ref xkoyoleurdafejlyxpxk
+```
 
 ## Auth email
 
-Patch shared `auth-send-email` — see `supabase/functions/auth-send-email/README.md`
+Patched in `inaanapp/supabase/functions/auth-send-email` — deployed with `RYNXPENSE_FROM_EMAIL` secret.

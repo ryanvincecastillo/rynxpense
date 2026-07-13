@@ -3,6 +3,7 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Sparkles, Loader2 } from "lucide-react";
+import { saveGuestTrip } from "@/lib/guest-trips";
 
 function TripBuilderForm() {
   const router = useRouter();
@@ -48,7 +49,12 @@ function TripBuilderForm() {
       }
 
       const trip = await res.json();
-      router.push(`/app/trips/${trip.id}`);
+
+      if (trip.guest) {
+        saveGuestTrip(trip);
+      }
+
+      router.push(`/trips/${trip.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {

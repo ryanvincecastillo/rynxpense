@@ -9,7 +9,7 @@ export function BrandLogo({
   size?: number;
 }) {
   return (
-    <Link href="/" className="flex items-center gap-2.5">
+    <Link href="/home" className="flex items-center gap-2.5">
       <Image
         src="/logo.svg"
         alt="Rynxpense"
