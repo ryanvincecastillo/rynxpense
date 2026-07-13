@@ -67,7 +67,8 @@ export const popularDestinations = [
     id: "tokyo",
     name: "Tokyo",
     country: "Japan",
-    image: "/destinations/tokyo.jpg",
+    image:
+      "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=520&h=320&fit=crop",
     days: 5,
     budgetFrom: 65000,
     rating: 4.9,
@@ -77,7 +78,8 @@ export const popularDestinations = [
     id: "bali",
     name: "Bali",
     country: "Indonesia",
-    image: "/destinations/bali.jpg",
+    image:
+      "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=520&h=320&fit=crop",
     days: 4,
     budgetFrom: 35000,
     rating: 4.8,
@@ -87,7 +89,8 @@ export const popularDestinations = [
     id: "seoul",
     name: "Seoul",
     country: "South Korea",
-    image: "/destinations/seoul.jpg",
+    image:
+      "https://images.unsplash.com/photo-1517154428043-feb7e033dce0?w=520&h=320&fit=crop",
     days: 4,
     budgetFrom: 45000,
     rating: 4.7,
@@ -97,7 +100,8 @@ export const popularDestinations = [
     id: "boracay",
     name: "Boracay",
     country: "Philippines",
-    image: "/destinations/boracay.jpg",
+    image:
+      "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=520&h=320&fit=crop",
     days: 3,
     budgetFrom: 18000,
     rating: 4.8,
@@ -107,7 +111,8 @@ export const popularDestinations = [
     id: "singapore",
     name: "Singapore",
     country: "Singapore",
-    image: "/destinations/singapore.jpg",
+    image:
+      "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=520&h=320&fit=crop",
     days: 3,
     budgetFrom: 40000,
     rating: 4.9,
