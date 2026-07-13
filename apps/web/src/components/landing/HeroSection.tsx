@@ -1,9 +1,21 @@
+import Image from "next/image";
 import { SearchWidget } from "./SearchWidget";
 
 export function HeroSection() {
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-accent/5 pb-8 pt-12">
-      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1600&h=900&fit=crop')] bg-cover bg-center opacity-5" />
+      <div className="absolute inset-0 opacity-20">
+        <Image
+          src="/banner-hero.png"
+          alt=""
+          fill
+          className="object-cover object-center"
+          priority
+          sizes="100vw"
+        />
+      </div>
+      <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-white/70 to-background" />
+
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
         <div className="mb-8 text-center">
           <span className="mb-4 inline-block rounded-full bg-accent/10 px-4 py-1.5 text-sm font-semibold text-accent">

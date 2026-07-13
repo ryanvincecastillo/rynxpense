@@ -5,6 +5,7 @@ import { formatCurrency } from "@rynxpense/shared";
 import { prisma } from "@/lib/prisma";
 import type { Activity } from "@rynxpense/shared";
 import Link from "next/link";
+import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
@@ -62,9 +63,7 @@ export default async function ShareTripPage({
       <header className="border-b border-border bg-white">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white">
-              R
-            </div>
+            <Image src="/logo.png" alt="Rynxpense" width={32} height={32} className="rounded-lg" />
             <span className="font-bold">Rynxpense</span>
           </Link>
           <Link

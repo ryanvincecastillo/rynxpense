@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Home, Map, PlusCircle, User } from "lucide-react";
 
@@ -19,9 +20,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-40 border-b border-border bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white">
-              R
-            </div>
+            <Image src="/logo.png" alt="Rynxpense" width={32} height={32} className="rounded-lg" />
             <span className="font-bold text-text">Rynxpense</span>
           </Link>
           <Link

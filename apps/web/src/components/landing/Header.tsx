@@ -1,16 +1,12 @@
 import Link from "next/link";
 import { MapPin } from "lucide-react";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 
 export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-white/95 backdrop-blur-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-lg font-bold text-white">
-            R
-          </div>
-          <span className="text-xl font-bold text-text">Rynxpense</span>
-        </Link>
+        <BrandLogo />
 
         <nav className="hidden items-center gap-8 md:flex">
           <a href="#discover" className="text-sm font-medium text-muted hover:text-primary">
@@ -49,11 +45,8 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <div className="grid gap-8 md:grid-cols-4">
           <div className="md:col-span-2">
-            <div className="mb-4 flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-lg font-bold text-white">
-                R
-              </div>
-              <span className="text-xl font-bold">Rynxpense</span>
+            <div className="mb-4">
+              <BrandLogo />
             </div>
             <p className="max-w-sm text-sm text-muted">
               AI-powered trip budget planner. Plan your itinerary, estimate costs, and track
