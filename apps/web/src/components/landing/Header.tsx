@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { MapPin, Sparkles } from "lucide-react";
+import { popularDestinations } from "@rynxpense/ui-tokens";
 import { BrandLogo } from "@/components/ui/BrandLogo";
+
+const footerDestinations = popularDestinations.slice(0, 8);
 
 export function Header({ variant = "hero" }: { variant?: "hero" | "solid" }) {
   const isHero = variant === "hero";
@@ -63,13 +66,13 @@ export function Footer() {
   return (
     <footer className="border-t border-border bg-white">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
-        <div className="grid gap-8 md:grid-cols-4">
-          <div className="md:col-span-2">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
             <div className="mb-4">
               <BrandLogo />
             </div>
             <p className="max-w-sm text-sm leading-relaxed text-muted">
-              DIY trip plans for Filipino travelers — named stays, food, and activities in
+              DIY trip planner for Filipino travelers — named stays, food, and activities in
               pesos. Share your plan to socials when you&apos;re ready.
             </p>
           </div>
@@ -77,18 +80,43 @@ export function Footer() {
             <h4 className="mb-3 font-display font-semibold">Product</h4>
             <ul className="space-y-2 text-sm text-muted">
               <li>
+                <Link href="/home" className="transition hover:text-primary">
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link href="/discover" className="transition hover:text-primary">
+                  Discover destinations
+                </Link>
+              </li>
+              <li>
                 <Link href="/trips/new" className="transition hover:text-primary">
                   Plan my trip
                 </Link>
               </li>
               <li>
-                <Link href="/discover" className="transition hover:text-primary">
-                  Discover
-                </Link>
-              </li>
-              <li>
                 <Link href="/trips" className="transition hover:text-primary">
                   My Trips
+                </Link>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="mb-3 font-display font-semibold">Popular destinations</h4>
+            <ul className="space-y-2 text-sm text-muted">
+              {footerDestinations.map((dest) => (
+                <li key={dest.id}>
+                  <Link
+                    href={`/trips/new?destination=${encodeURIComponent(dest.name)}&budget=${dest.budgetFrom}`}
+                    className="transition hover:text-primary"
+                  >
+                    {dest.name} trip budget
+                  </Link>
+                </li>
+              ))}
+              <li>
+                <Link href="/discover" className="font-medium text-primary transition hover:underline">
+                  View all destinations
                 </Link>
               </li>
             </ul>

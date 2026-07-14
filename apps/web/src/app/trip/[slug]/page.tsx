@@ -32,12 +32,14 @@ export async function generateMetadata({
   return {
     title: `${title} — Rynxpense`,
     description,
+    alternates: { canonical: url },
     openGraph: {
       title,
       description,
       type: "website",
       url,
       siteName: "Rynxpense",
+      locale: "en_PH",
       images: [
         {
           url: "https://rynxpense.com/hero-tropical.png",

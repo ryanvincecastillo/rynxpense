@@ -1,5 +1,12 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Figtree } from "next/font/google";
+import {
+  SITE_NAME,
+  SITE_URL,
+  absoluteUrl,
+  defaultDescription,
+  defaultTitle,
+} from "@/lib/seo";
 import "./globals.css";
 
 const figtree = Figtree({
@@ -14,17 +21,34 @@ const bricolage = Bricolage_Grotesque({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  themeColor: "#0283DF",
+  width: "device-width",
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
-  title: "Rynxpense — DIY trip plans in pesos for Filipino travelers",
-  description:
-    "Plan the trip yourself. Know the pesos before you book. Named stays, food, and activities — then share your plan to Facebook, X, or group chats.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: defaultTitle,
+    template: `%s · ${SITE_NAME}`,
+  },
+  description: defaultDescription,
+  applicationName: SITE_NAME,
   keywords: [
-    "DIY trip planner",
-    "peso trip planner",
-    "Philippines travel budget",
-    "AI itinerary PHP",
+    "DIY trip planner Philippines",
+    "peso travel budget planner",
+    "AI itinerary Philippines",
+    "travel budget PHP",
+    "El Nido trip budget",
+    "Tokyo trip planner pesos",
+    "Filipino travel planner",
     "share travel itinerary",
   ],
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  category: "travel",
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },
@@ -35,28 +59,41 @@ export const metadata: Metadata = {
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
     shortcut: ["/favicon.ico"],
   },
+  alternates: {
+    canonical: absoluteUrl("/home"),
+  },
   openGraph: {
-    title: "Rynxpense — Named trip plans with a peso reality check",
-    description:
-      "Destination + budget in. Named plan + peso reality check out. Free for Filipino travelers.",
-    url: "https://rynxpense.com",
-    siteName: "Rynxpense",
+    title: defaultTitle,
+    description: defaultDescription,
+    url: absoluteUrl("/home"),
+    siteName: SITE_NAME,
+    locale: "en_PH",
     type: "website",
     images: [
       {
-        url: "https://rynxpense.com/og-banner.png",
+        url: absoluteUrl("/og-banner.png"),
         width: 1200,
         height: 630,
-        alt: "Rynxpense — AI Trip Budget Planner",
+        alt: "Rynxpense — DIY trip plans in pesos",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rynxpense — Peso trip planner",
-    description:
-      "Can you afford the trip? Get a named plan in pesos before you book.",
-    images: ["https://rynxpense.com/og-banner.png"],
+    title: defaultTitle,
+    description: defaultDescription,
+    images: [absoluteUrl("/og-banner.png")],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
 };
 
@@ -66,7 +103,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${figtree.variable} ${bricolage.variable}`}>
+    <html lang="en-PH" className={`${figtree.variable} ${bricolage.variable}`}>
       <body className="min-h-screen font-sans antialiased">{children}</body>
     </html>
   );

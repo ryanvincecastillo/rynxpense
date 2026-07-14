@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Calendar, MapPin, Wallet } from "lucide-react";
 import { formatCurrency } from "@rynxpense/shared";
+
+export const metadata: Metadata = {
+  title: "My Trips",
+  robots: { index: false, follow: false },
+};
 
 async function getTrips() {
   try {
