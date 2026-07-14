@@ -4,18 +4,27 @@ import { BrandLogo } from "@/components/ui/BrandLogo";
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-50 border-b border-border/80 bg-white/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-        <BrandLogo />
+    <header className="absolute inset-x-0 top-0 z-50">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
+        <BrandLogo variant="onDark" />
 
         <nav className="hidden items-center gap-8 md:flex">
-          <a href="#discover" className="text-sm font-medium text-muted transition hover:text-primary">
-            Discover
+          <a
+            href="#start"
+            className="text-sm font-medium text-white/80 transition hover:text-white"
+          >
+            Start
           </a>
-          <a href="#how-it-works" className="text-sm font-medium text-muted transition hover:text-primary">
+          <a
+            href="#how-it-works"
+            className="text-sm font-medium text-white/80 transition hover:text-white"
+          >
             How it works
           </a>
-          <a href="#features" className="text-sm font-medium text-muted transition hover:text-primary">
+          <a
+            href="#features"
+            className="text-sm font-medium text-white/80 transition hover:text-white"
+          >
             Features
           </a>
         </nav>
@@ -23,16 +32,16 @@ export function Header() {
         <div className="flex items-center gap-2 sm:gap-3">
           <Link
             href="/discover"
-            className="hidden rounded-lg px-4 py-2 text-sm font-medium text-primary transition hover:bg-primary/5 sm:block"
+            className="hidden rounded-lg px-4 py-2 text-sm font-medium text-white/85 transition hover:bg-white/10 sm:block"
           >
             Open app
           </Link>
           <Link
             href="/trips/new"
-            className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-accent-dark sm:px-5"
+            className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-dark sm:px-5"
           >
             <Sparkles className="h-4 w-4" />
-            Plan free
+            Plan my trip
           </Link>
         </div>
       </div>
@@ -50,8 +59,8 @@ export function Footer() {
               <BrandLogo />
             </div>
             <p className="max-w-sm text-sm text-muted">
-              Turn social travel inspiration into peso-realistic plans — stays, food, and
-              activities included.
+              Destination and budget in — named plan and peso reality check out. Free to
+              use, no account required.
             </p>
           </div>
           <div>
@@ -59,17 +68,17 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-muted">
               <li>
                 <Link href="/trips/new" className="transition hover:text-primary">
-                  Plan a Trip
+                  Plan my trip
                 </Link>
               </li>
               <li>
                 <Link href="/discover" className="transition hover:text-primary">
-                  Web App
+                  Open app
                 </Link>
               </li>
               <li>
                 <a href="#discover" className="transition hover:text-primary">
-                  Popular Destinations
+                  Popular destinations
                 </a>
               </li>
             </ul>
@@ -84,7 +93,7 @@ export function Footer() {
               </li>
               <li>
                 <a href="#waitlist" className="transition hover:text-primary">
-                  Get updates
+                  Mobile updates
                 </a>
               </li>
               <li>
@@ -96,7 +105,9 @@ export function Footer() {
           </div>
         </div>
         <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 sm:flex-row">
-          <p className="text-sm text-muted">© {new Date().getFullYear()} Rynxpense. All rights reserved.</p>
+          <p className="text-sm text-muted">
+            © {new Date().getFullYear()} Rynxpense. All rights reserved.
+          </p>
           <div className="flex items-center gap-1 text-sm text-muted">
             <MapPin className="h-4 w-4" />
             Made for travelers in the Philippines and beyond

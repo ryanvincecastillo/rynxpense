@@ -13,9 +13,15 @@
   --color-border: var(--color-border);
   --color-success: var(--color-success);
   --color-error: var(--color-error);
+  --color-warning: var(--color-warning);
   --color-text: var(--color-text);
   --color-text-light: var(--color-text-light);
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-syne), ui-sans-serif, system-ui, sans-serif;
+}
+
+@utility font-display {
+  font-family: var(--font-display);
 }
 
 * {
@@ -106,6 +112,15 @@ body {
 
 .animate-pulse-soft {
   animation: pulse-soft 3s ease-in-out infinite;
+}
+
+@keyframes hero-zoom {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.06);
+  }
 }
 
 .input-field {

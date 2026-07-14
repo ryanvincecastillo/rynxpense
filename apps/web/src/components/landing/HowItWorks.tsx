@@ -1,26 +1,26 @@
 import Link from "next/link";
-import { Pin, Map, Receipt, Share2, ArrowRight } from "lucide-react";
+import { Wallet, Map, Scale, ArrowRight } from "lucide-react";
 
 const steps = [
   {
-    icon: Pin,
-    title: "Get curated picks",
+    icon: Wallet,
+    title: "Set destination & budget",
     description:
-      "AI generates named hotels, restaurants, and activities — your inspiration board, ready to share.",
+      "Tell us where you’re going, when, and how many pesos you have — no account needed.",
     color: "bg-accent/10 text-accent",
   },
   {
     icon: Map,
-    title: "Get a peso plan",
+    title: "Get a named plan",
     description:
-      "AI turns your saves into a day-by-day plan with named hotels, restaurants, and activities — priced in PHP.",
+      "AI builds a day-by-day itinerary with real stays, food spots, and activities in PHP.",
     color: "bg-primary/10 text-primary",
   },
   {
-    icon: Receipt,
+    icon: Scale,
     title: "Reality check & track",
     description:
-      "See if the plan fits your budget (flights included). Track spending during the trip so nothing surprises you.",
+      "See if it fits (flights included). Track spending on the trip so nothing surprises you.",
     color: "bg-primary/10 text-primary",
   },
 ];
@@ -29,22 +29,23 @@ export function HowItWorks() {
   return (
     <section id="how-it-works" className="bg-white py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="mb-12 text-center">
+        <div className="mb-12 max-w-2xl">
           <span className="text-sm font-semibold uppercase tracking-wider text-primary">
             Not another booking app
           </span>
-          <h2 className="mt-2 text-2xl font-bold text-text sm:text-3xl">
-            From scattered saves to one clear plan
+          <h2 className="mt-2 font-display text-2xl font-bold text-text sm:text-3xl">
+            From “can we afford it?” to a clear peso plan
           </h2>
-          <p className="mx-auto mt-2 max-w-lg text-muted">
-            Klook sells tickets. Rynxpense answers: &quot;We saw it on TikTok — can we afford it?&quot;
+          <p className="mt-3 text-muted">
+            Klook sells tickets. Rynxpense answers the question before you book: does this
+            trip fit your budget?
           </p>
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {steps.map((step, i) => (
             <div
               key={step.title}
-              className="group animate-fade-up relative overflow-hidden rounded-2xl bg-background p-8 ring-1 ring-border transition hover:-translate-y-1 hover:shadow-lg"
+              className="animate-fade-up relative overflow-hidden rounded-2xl bg-background p-8 ring-1 ring-border"
               style={{ animationDelay: `${i * 100}ms` }}
             >
               <div
@@ -52,20 +53,20 @@ export function HowItWorks() {
               >
                 <step.icon className="h-7 w-7" />
               </div>
-              <span className="mb-2 inline-block rounded-full bg-accent/10 px-3 py-1 text-xs font-bold text-accent">
+              <span className="mb-2 inline-block text-xs font-bold uppercase tracking-wider text-accent">
                 Step {i + 1}
               </span>
-              <h3 className="mb-2 text-lg font-bold">{step.title}</h3>
+              <h3 className="mb-2 font-display text-lg font-bold">{step.title}</h3>
               <p className="text-sm leading-relaxed text-muted">{step.description}</p>
             </div>
           ))}
         </div>
-        <div className="mt-10 text-center">
+        <div className="mt-10">
           <Link
             href="/trips/new"
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-semibold text-white shadow-md transition hover:bg-primary-dark"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-semibold text-white transition hover:bg-primary-dark"
           >
-            Start with your saves
+            Plan my trip
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
@@ -78,22 +79,15 @@ export function FeaturesSection() {
   return (
     <section id="features" className="py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="mb-12 text-center">
-          <h2 className="text-2xl font-bold text-text sm:text-3xl">
-            What you get that Klook doesn&apos;t
+        <div className="mb-12 max-w-2xl">
+          <h2 className="font-display text-2xl font-bold text-text sm:text-3xl">
+            What you get that booking apps skip
           </h2>
-          <p className="mt-2 text-muted">Your inspiration, your budget, your peso math</p>
+          <p className="mt-2 text-muted">
+            A named plan, peso math, and a shareable inspiration board — before checkout.
+          </p>
         </div>
         <div className="grid gap-6 lg:grid-cols-3">
-          <FeatureMock
-            title="Inspiration inbox"
-            accent="border-accent"
-            items={[
-              { time: "TikTok", name: "Ichiran Ramen Shibuya", cost: "~₱450" },
-              { time: "IG", name: "teamLab Borderless", cost: "~₱1,800" },
-              { time: "Reddit", name: "Hotel Gracery Shinjuku", cost: "~₱4,200/night" },
-            ]}
-          />
           <FeatureMock
             title="Named itinerary"
             accent="border-primary"
@@ -105,11 +99,20 @@ export function FeaturesSection() {
             isBudget
           />
           <FeatureMock
+            title="Inspiration board"
+            accent="border-accent"
+            items={[
+              { time: "AI pick", name: "Ichiran Ramen Shibuya", cost: "~₱450" },
+              { time: "AI pick", name: "teamLab Borderless", cost: "~₱1,800" },
+              { time: "AI pick", name: "Hotel Gracery Shinjuku", cost: "~₱4,200/night" },
+            ]}
+          />
+          <FeatureMock
             title="Reality check"
             accent="border-warning"
             items={[
               { time: "Flights", name: "MNL → NRT round-trip", cost: "₱22,000" },
-              { time: "Plan total", name: "Inspo + itinerary", cost: "₱68,400" },
+              { time: "Plan total", name: "Stay + food + activities", cost: "₱68,400" },
               { time: "Verdict", name: "Fits ₱80k budget", cost: "✓" },
             ]}
             isTracker
@@ -135,10 +138,10 @@ function FeatureMock({
 }) {
   return (
     <div
-      className={`animate-fade-up overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-black/5 transition hover:-translate-y-1 hover:shadow-xl border-t-4 ${accent}`}
+      className={`animate-fade-up overflow-hidden rounded-2xl bg-white ring-1 ring-black/5 border-t-4 ${accent}`}
     >
-      <div className="border-b border-border bg-gradient-to-r from-primary/[0.04] to-transparent px-5 py-4">
-        <h3 className="font-bold text-text">{title}</h3>
+      <div className="border-b border-border px-5 py-4">
+        <h3 className="font-display font-bold text-text">{title}</h3>
       </div>
       <div className="p-5">
         {items.map((item) => (

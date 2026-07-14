@@ -1,42 +1,42 @@
-import { Pin, Scale, Sparkles } from "lucide-react";
+import { Map, Scale, Sparkles } from "lucide-react";
 
 const items = [
   {
-    icon: Pin,
-    title: "Curated inspiration",
+    icon: Map,
+    title: "Named peso plan",
     description:
-      "AI outputs named stays, food spots, and activities — a mood board from your plan, not generic lists.",
+      'Real hotels, restaurants, and activities — priced in PHP, not generic "sightseeing."',
   },
   {
     icon: Scale,
-    title: "Peso reality check",
+    title: "Budget reality check",
     description:
-      "See if that viral itinerary actually fits your budget — flights and hotels included.",
+      "See if the trip fits before you book — flights and hotels included in the math.",
   },
   {
     icon: Sparkles,
-    title: "Named recommendations",
+    title: "Inspiration from the plan",
     description:
-      "Real venues for stays, food, and activities — not generic \"lunch\" or \"sightseeing.\"",
+      "AI curates a shareable mood board from your itinerary — stays, food, and spots.",
   },
 ];
 
 export function TrustBar() {
   return (
-    <section className="border-y border-border bg-white py-8">
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 sm:grid-cols-3 sm:px-6">
+    <section className="border-y border-border bg-white py-10">
+      <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:grid-cols-3 sm:px-6">
         {items.map((item, i) => (
           <div
             key={item.title}
             className="animate-fade-up flex items-start gap-4"
-            style={{ animationDelay: `${i * 120}ms` }}
+            style={{ animationDelay: `${i * 100}ms` }}
           >
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
               <item.icon className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-bold text-text">{item.title}</h3>
-              <p className="mt-0.5 text-sm text-muted">{item.description}</p>
+              <h3 className="font-display font-bold text-text">{item.title}</h3>
+              <p className="mt-1 text-sm leading-relaxed text-muted">{item.description}</p>
             </div>
           </div>
         ))}

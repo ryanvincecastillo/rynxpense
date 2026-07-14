@@ -1,5 +1,6 @@
 import { Header, Footer } from "@/components/landing/Header";
 import { HeroSection } from "@/components/landing/HeroSection";
+import { PlanStarter } from "@/components/landing/PlanStarter";
 import { TrustBar } from "@/components/landing/TrustBar";
 import { DestinationMarquee } from "@/components/landing/DestinationMarquee";
 import { HowItWorks, FeaturesSection } from "@/components/landing/HowItWorks";
@@ -12,6 +13,7 @@ export default function HomePage() {
       <Header />
       <main>
         <HeroSection />
+        <PlanStarter />
         <TrustBar />
         <DestinationMarquee />
         <HowItWorks />

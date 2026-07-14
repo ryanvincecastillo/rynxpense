@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Star } from "lucide-react";
 import { popularDestinations } from "@rynxpense/ui-tokens";
 import { formatCurrency } from "@rynxpense/shared";
 
@@ -15,20 +14,20 @@ export function DestinationMarquee() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <span className="mb-2 inline-block text-sm font-semibold uppercase tracking-wider text-primary">
-              Discover
+              Budget templates
             </span>
-            <h2 className="text-2xl font-bold text-text sm:text-3xl">
-              Where will you go next?
+            <h2 className="font-display text-2xl font-bold text-text sm:text-3xl">
+              Popular trips Filipinos plan
             </h2>
             <p className="mt-2 max-w-lg text-muted">
-              Trending on TikTok &amp; Reddit — tap to start with a peso budget template.
+              Tap a destination to start with a peso budget — then get a named plan.
             </p>
           </div>
           <Link
             href="/trips/new"
-            className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-primary-dark"
+            className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-dark"
           >
-            Plan any destination →
+            Plan my trip →
           </Link>
         </div>
       </div>
@@ -42,48 +41,31 @@ export function DestinationMarquee() {
             <Link
               key={`${dest.id}-${i}`}
               href={`/trips/new?destination=${encodeURIComponent(dest.name)}&budget=${dest.budgetFrom}`}
-              className="group relative w-[280px] shrink-0 overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-black/5 transition hover:-translate-y-1 hover:shadow-xl"
+              className="group relative w-[260px] shrink-0 overflow-hidden rounded-2xl bg-white ring-1 ring-black/5 transition hover:-translate-y-1"
             >
-              <div className="relative h-44 overflow-hidden">
+              <div className="relative h-40 overflow-hidden">
                 <Image
                   src={dest.image}
                   alt={dest.name}
                   fill
-                  className="object-cover transition duration-500 group-hover:scale-110"
-                  sizes="280px"
+                  className="object-cover transition duration-500 group-hover:scale-105"
+                  sizes="260px"
                 />
-                {dest.badge && (
-                  <span className="absolute left-3 top-3 rounded-lg bg-accent px-2.5 py-1 text-xs font-bold text-white shadow">
-                    {dest.badge}
-                  </span>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
                 <div className="absolute bottom-3 left-3 right-3 text-white">
-                  <h3 className="text-lg font-bold">{dest.name}</h3>
+                  <h3 className="font-display text-lg font-bold">{dest.name}</h3>
                   <p className="text-sm text-white/80">{dest.country}</p>
                 </div>
               </div>
               <div className="p-4">
                 <p className="mb-2 line-clamp-1 text-xs text-muted">{dest.samplePlan}</p>
-                <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-border">
-                  <div
-                    className="h-full rounded-full bg-primary"
-                    style={{ width: `${Math.min(100, (dest.budgetFrom / 80000) * 100)}%` }}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted">
-                    from{" "}
-                    <span className="font-bold text-primary">
-                      {formatCurrency(dest.budgetFrom)}
-                    </span>
-                    <span className="text-muted"> / {dest.days}d</span>
-                  </p>
-                  <div className="flex items-center gap-1 text-sm font-medium">
-                    <Star className="h-3.5 w-3.5 fill-warning text-warning" />
-                    {dest.rating}
-                  </div>
-                </div>
+                <p className="text-sm text-muted">
+                  from{" "}
+                  <span className="font-bold text-primary">
+                    {formatCurrency(dest.budgetFrom)}
+                  </span>
+                  <span> / {dest.days} days</span>
+                </p>
               </div>
             </Link>
           ))}
