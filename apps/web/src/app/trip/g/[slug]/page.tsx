@@ -98,7 +98,7 @@ export default async function GuestShareTripPage({
   const shareText = `Check out this ${trip.destination} DIY trip plan — about ${formatCurrency(budget)}.`;
 
   return (
-    <div className="min-h-screen bg-[#FFF8F0]">
+    <div className="min-h-screen bg-white">
       <header className="border-b border-border bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
           <BrandLogo />

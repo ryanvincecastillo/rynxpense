@@ -36,7 +36,7 @@ export function DestinationsTease() {
             <Link
               key={dest.id}
               href={`/trips/new?destination=${encodeURIComponent(dest.name)}&budget=${dest.budgetFrom}`}
-              className="group overflow-hidden rounded-2xl bg-[#FFF8F0] ring-1 ring-black/5 transition hover:-translate-y-0.5"
+              className="group overflow-hidden rounded-2xl bg-white ring-1 ring-black/5 transition hover:-translate-y-0.5"
             >
               <div className="relative h-40 overflow-hidden">
                 <Image

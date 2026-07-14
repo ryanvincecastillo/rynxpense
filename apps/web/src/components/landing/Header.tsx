@@ -10,7 +10,7 @@ export function Header({ variant = "hero" }: { variant?: "hero" | "solid" }) {
       className={
         isHero
           ? "absolute inset-x-0 top-0 z-50"
-          : "sticky top-0 z-50 border-b border-border/70 bg-[#FFFaf5]/90 backdrop-blur-md"
+          : "sticky top-0 z-50 border-b border-border/70 bg-white/95 backdrop-blur-md"
       }
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">

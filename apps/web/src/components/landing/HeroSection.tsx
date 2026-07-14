@@ -1,25 +1,84 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
+const slides = [
+  {
+    src: "/hero-tropical.png",
+    alt: "DIY traveler at a tropical lagoon",
+    position: "object-[center_35%]",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=2000&h=1200&fit=crop&q=80",
+    alt: "Friends exploring a sunny coastal town",
+    position: "object-center",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=2000&h=1200&fit=crop&q=80",
+    alt: "Travelers overlooking a bright mountain lake",
+    position: "object-[center_40%]",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=2000&h=1200&fit=crop&q=80",
+    alt: "Bright alpine lake and travel landscape",
+    position: "object-center",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=2000&h=1200&fit=crop&q=80",
+    alt: "Friends traveling together in a sunny city",
+    position: "object-[center_30%]",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=2000&h=1200&fit=crop&q=80",
+    alt: "Road trip adventure under bright sky",
+    position: "object-[center_45%]",
+  },
+];
+
+const INTERVAL_MS = 3500;
+
 export function HeroSection() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((i) => (i + 1) % slides.length);
+    }, INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <section className="relative isolate min-h-[90vh] overflow-hidden">
-      <Image
-        src="/hero-tropical.png"
-        alt="DIY traveler at a tropical lagoon"
-        fill
-        priority
-        className="object-cover object-[center_35%] animate-[hero-zoom_22s_ease-in-out_infinite_alternate]"
-        sizes="100vw"
+      {slides.map((slide, i) => (
+        <div
+          key={slide.src}
+          className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+            i === index ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          <Image
+            src={slide.src}
+            alt={slide.alt}
+            fill
+            priority={i === 0}
+            className={`object-cover scale-105 transition-transform duration-[4000ms] ease-out ${slide.position} ${
+              i === index ? "scale-100" : "scale-105"
+            }`}
+            sizes="100vw"
+          />
+        </div>
+      ))}
+
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-gradient-to-r from-[#062018]/88 via-[#062018]/55 to-[#062018]/20"
       />
       <div
         aria-hidden
-        className="absolute inset-0 bg-gradient-to-r from-[#062018]/92 via-[#062018]/70 to-[#062018]/25"
-      />
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-gradient-to-t from-[#062018]/85 via-transparent to-[#062018]/40"
+        className="absolute inset-0 bg-gradient-to-t from-[#062018]/80 via-transparent to-[#062018]/35"
       />
 
       <div className="relative z-10 mx-auto flex min-h-[90vh] max-w-7xl flex-col justify-end px-4 pb-20 pt-28 sm:px-6 sm:pb-24 lg:justify-center lg:pb-28">
@@ -52,6 +111,20 @@ export function HeroSection() {
             >
               Why DIY here
             </a>
+          </div>
+
+          <div className="mt-8 flex gap-1.5" aria-hidden>
+            {slides.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                aria-label={`Show slide ${i + 1}`}
+                onClick={() => setIndex(i)}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === index ? "w-7 bg-white" : "w-1.5 bg-white/45 hover:bg-white/70"
+                }`}
+              />
+            ))}
           </div>
         </div>
       </div>

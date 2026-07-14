@@ -5,7 +5,7 @@ import { DestinationCatalog } from "@/components/discover/DestinationCatalog";
 
 export default function DiscoverPage() {
   return (
-    <div className="bg-[#FFF8F0]">
+    <div className="bg-white">
       <Header variant="solid" />
       <main>
         <section className="relative overflow-hidden border-b border-border bg-[#062018] text-white">

@@ -9,7 +9,7 @@ import { WaitlistForm } from "@/components/landing/WaitlistForm";
 
 export default function HomePage() {
   return (
-    <div className="bg-[#FFF8F0]">
+    <div className="bg-white">
       <Header />
       <main>
         <HeroSection />
