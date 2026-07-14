@@ -2,40 +2,82 @@ import Link from "next/link";
 import { MapPin, Sparkles } from "lucide-react";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 
-export function Header() {
+export function Header({ variant = "hero" }: { variant?: "hero" | "solid" }) {
+  const isHero = variant === "hero";
+
   return (
-    <header className="absolute inset-x-0 top-0 z-50">
+    <header
+      className={
+        isHero
+          ? "absolute inset-x-0 top-0 z-50"
+          : "sticky top-0 z-50 border-b border-border/80 bg-white/95 backdrop-blur-md"
+      }
+    >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
-        <BrandLogo variant="onDark" />
+        <BrandLogo variant={isHero ? "onDark" : "default"} />
 
         <nav className="hidden items-center gap-8 md:flex">
-          <a
-            href="#start"
-            className="text-sm font-medium text-white/80 transition hover:text-white"
-          >
-            Start
-          </a>
-          <a
-            href="#how-it-works"
-            className="text-sm font-medium text-white/80 transition hover:text-white"
-          >
-            How it works
-          </a>
-          <a
-            href="#features"
-            className="text-sm font-medium text-white/80 transition hover:text-white"
-          >
-            Features
-          </a>
+          {isHero ? (
+            <>
+              <a
+                href="#start"
+                className="text-sm font-medium text-white/80 transition hover:text-white"
+              >
+                Start
+              </a>
+              <a
+                href="#how-it-works"
+                className="text-sm font-medium text-white/80 transition hover:text-white"
+              >
+                How it works
+              </a>
+              <Link
+                href="/discover"
+                className="text-sm font-medium text-white/80 transition hover:text-white"
+              >
+                Destinations
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/home"
+                className="text-sm font-medium text-muted transition hover:text-primary"
+              >
+                Home
+              </Link>
+              <Link
+                href="/discover"
+                className="text-sm font-medium text-primary transition"
+              >
+                Destinations
+              </Link>
+              <Link
+                href="/trips"
+                className="text-sm font-medium text-muted transition hover:text-primary"
+              >
+                My trips
+              </Link>
+            </>
+          )}
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <Link
-            href="/discover"
-            className="hidden rounded-lg px-4 py-2 text-sm font-medium text-white/85 transition hover:bg-white/10 sm:block"
-          >
-            Open app
-          </Link>
+          {isHero ? (
+            <Link
+              href="/discover"
+              className="hidden rounded-lg px-4 py-2 text-sm font-medium text-white/85 transition hover:bg-white/10 sm:block"
+            >
+              Destinations
+            </Link>
+          ) : (
+            <Link
+              href="/home"
+              className="hidden rounded-lg px-4 py-2 text-sm font-medium text-muted transition hover:bg-primary/5 sm:block"
+            >
+              About
+            </Link>
+          )}
           <Link
             href="/trips/new"
             className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-dark sm:px-5"
@@ -73,13 +115,13 @@ export function Footer() {
               </li>
               <li>
                 <Link href="/discover" className="transition hover:text-primary">
-                  Open app
+                  Destinations
                 </Link>
               </li>
               <li>
-                <a href="#discover" className="transition hover:text-primary">
-                  Popular destinations
-                </a>
+                <Link href="/trips" className="transition hover:text-primary">
+                  My trips
+                </Link>
               </li>
             </ul>
           </div>
@@ -92,7 +134,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="#waitlist" className="transition hover:text-primary">
+                <a href="/home#waitlist" className="transition hover:text-primary">
                   Mobile updates
                 </a>
               </li>

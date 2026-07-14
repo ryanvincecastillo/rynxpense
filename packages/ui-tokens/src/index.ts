@@ -54,19 +54,24 @@ export const fontSize = {
 } as const;
 
 export const categories = [
-  { id: "beach", label: "Beach", emoji: "🏖️" },
-  { id: "city", label: "City Break", emoji: "🏙️" },
-  { id: "budget", label: "Budget", emoji: "💰" },
-  { id: "family", label: "Family", emoji: "👨‍👩‍👧" },
-  { id: "foodie", label: "Foodie", emoji: "🍜" },
-  { id: "adventure", label: "Adventure", emoji: "🎿" },
+  { id: "beach", label: "Beach" },
+  { id: "city", label: "City Break" },
+  { id: "budget", label: "Budget" },
+  { id: "family", label: "Family" },
+  { id: "foodie", label: "Foodie" },
+  { id: "adventure", label: "Adventure" },
 ] as const;
+
+export type DestinationCategory = (typeof categories)[number]["id"];
+export type DestinationRegion = "philippines" | "asia";
 
 export const popularDestinations = [
   {
     id: "tokyo",
     name: "Tokyo",
     country: "Japan",
+    region: "asia" as const,
+    tags: ["city", "foodie"] as DestinationCategory[],
     image:
       "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=520&h=320&fit=crop",
     heroImage:
@@ -81,6 +86,8 @@ export const popularDestinations = [
     id: "bali",
     name: "Bali",
     country: "Indonesia",
+    region: "asia" as const,
+    tags: ["beach", "budget", "adventure"] as DestinationCategory[],
     image:
       "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=520&h=320&fit=crop",
     heroImage:
@@ -95,6 +102,8 @@ export const popularDestinations = [
     id: "seoul",
     name: "Seoul",
     country: "South Korea",
+    region: "asia" as const,
+    tags: ["city", "foodie"] as DestinationCategory[],
     image:
       "https://images.unsplash.com/photo-1517154428043-feb7e033dce0?w=520&h=320&fit=crop",
     heroImage:
@@ -109,6 +118,8 @@ export const popularDestinations = [
     id: "boracay",
     name: "Boracay",
     country: "Philippines",
+    region: "philippines" as const,
+    tags: ["beach", "family"] as DestinationCategory[],
     image:
       "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=520&h=320&fit=crop",
     heroImage:
@@ -123,6 +134,8 @@ export const popularDestinations = [
     id: "singapore",
     name: "Singapore",
     country: "Singapore",
+    region: "asia" as const,
+    tags: ["city", "foodie", "family"] as DestinationCategory[],
     image:
       "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=520&h=320&fit=crop",
     heroImage:
@@ -137,6 +150,8 @@ export const popularDestinations = [
     id: "elnido",
     name: "El Nido",
     country: "Philippines",
+    region: "philippines" as const,
+    tags: ["beach", "adventure"] as DestinationCategory[],
     image:
       "https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=520&h=320&fit=crop",
     heroImage:
@@ -151,6 +166,8 @@ export const popularDestinations = [
     id: "siargao",
     name: "Siargao",
     country: "Philippines",
+    region: "philippines" as const,
+    tags: ["beach", "adventure", "budget"] as DestinationCategory[],
     image:
       "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=520&h=320&fit=crop",
     heroImage:
@@ -161,4 +178,54 @@ export const popularDestinations = [
     badge: "Surf & chill",
     samplePlan: "Cloud 9, Magpupungko pools",
   },
+  {
+    id: "cebu",
+    name: "Cebu",
+    country: "Philippines",
+    region: "philippines" as const,
+    tags: ["beach", "foodie", "family"] as DestinationCategory[],
+    image:
+      "https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=520&h=320&fit=crop",
+    heroImage:
+      "https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=1200&h=600&fit=crop",
+    days: 4,
+    budgetFrom: 20000,
+    rating: 4.6,
+    badge: "Island hopping",
+    samplePlan: "Kawasan Falls, OsLob, lechon",
+  },
+  {
+    id: "hongkong",
+    name: "Hong Kong",
+    country: "Hong Kong",
+    region: "asia" as const,
+    tags: ["city", "foodie", "family"] as DestinationCategory[],
+    image:
+      "https://images.unsplash.com/photo-1536599018102-9f803c140fc1?w=520&h=320&fit=crop",
+    heroImage:
+      "https://images.unsplash.com/photo-1536599018102-9f803c140fc1?w=1200&h=600&fit=crop",
+    days: 4,
+    budgetFrom: 38000,
+    rating: 4.7,
+    badge: "City classic",
+    samplePlan: "Victoria Peak, Temple Street, dim sum",
+  },
+  {
+    id: "bangkok",
+    name: "Bangkok",
+    country: "Thailand",
+    region: "asia" as const,
+    tags: ["city", "foodie", "budget"] as DestinationCategory[],
+    image:
+      "https://images.unsplash.com/photo-1563492065599-3520f775eeed?w=520&h=320&fit=crop",
+    heroImage:
+      "https://images.unsplash.com/photo-1563492065599-3520f775eeed?w=1200&h=600&fit=crop",
+    days: 4,
+    budgetFrom: 28000,
+    rating: 4.7,
+    badge: "Food capital",
+    samplePlan: "Chatuchak, temples, street food",
+  },
 ] as const;
+
+export type PopularDestination = (typeof popularDestinations)[number];
