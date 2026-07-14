@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Figtree, Syne } from "next/font/google";
+import { Bricolage_Grotesque, Figtree } from "next/font/google";
 import "./globals.css";
 
 const figtree = Figtree({
@@ -8,9 +8,9 @@ const figtree = Figtree({
   display: "swap",
 });
 
-const syne = Syne({
+const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
-  variable: "--font-syne",
+  variable: "--font-bricolage",
   display: "swap",
 });
 
@@ -65,7 +65,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${figtree.variable} ${syne.variable}`}>
+    <html lang="en" className={`${figtree.variable} ${bricolage.variable}`}>
       <body className="min-h-screen font-sans antialiased">{children}</body>
     </html>
   );

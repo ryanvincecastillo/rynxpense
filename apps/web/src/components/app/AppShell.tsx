@@ -19,15 +19,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-40 border-b border-border bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link href="/discover" className="flex items-center gap-2">
-            <Image src="/logo.png" alt="Rynxpense" width={32} height={32} className="rounded-lg" />
-            <span className="font-bold text-text">Rynxpense</span>
+          <Link href="/discover" className="flex items-center gap-2.5">
+            <Image
+              src="/icon.svg"
+              alt=""
+              width={32}
+              height={32}
+              className="rounded-[9px]"
+            />
+            <span className="font-display text-lg font-bold tracking-tight text-text">
+              Rynxpense
+            </span>
           </Link>
           <Link
             href="/trips/new"
             className="hidden rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white sm:block"
           >
-            + Plan trip
+            Plan my trip
           </Link>
         </div>
       </header>

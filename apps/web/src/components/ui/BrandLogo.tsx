@@ -10,18 +10,30 @@ export function BrandLogo({
   size?: number;
   variant?: "default" | "onDark";
 }) {
-  const src = variant === "onDark" ? "/logo-white.svg" : "/logo.svg";
+  const wordClass =
+    variant === "onDark"
+      ? "text-white"
+      : "text-text";
 
   return (
     <Link href="/home" className="flex items-center gap-2.5">
       <Image
-        src={src}
-        alt="Rynxpense"
-        width={showWordmark ? 120 : size}
-        height={showWordmark ? 40 : size}
+        src="/icon.svg"
+        alt=""
+        width={size}
+        height={size}
         priority
+        className="rounded-[10px]"
       />
-      {!showWordmark && <span className="sr-only">Rynxpense</span>}
+      {showWordmark ? (
+        <span
+          className={`font-display text-[1.35rem] font-bold leading-none tracking-[-0.02em] ${wordClass}`}
+        >
+          Rynxpense
+        </span>
+      ) : (
+        <span className="sr-only">Rynxpense</span>
+      )}
     </Link>
   );
 }
