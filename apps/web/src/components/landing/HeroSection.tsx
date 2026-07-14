@@ -27,14 +27,14 @@ export function HeroSection() {
             </div>
 
             <h1 className="max-w-xl text-4xl font-bold leading-[1.1] tracking-tight text-text sm:text-5xl lg:text-[3.25rem]">
-              Turn saved travel inspo into a trip you can{" "}
+              Turn travel inspo into a trip you can{" "}
               <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 actually afford.
               </span>
             </h1>
             <p className="mt-5 max-w-lg text-lg leading-relaxed text-muted">
-              Paste links from TikTok, Instagram, Facebook, or Reddit — get named stays, food, and
-              activities with peso estimates. No sign-up required.
+              Set your destination and budget — AI builds your itinerary and curates named stays,
+              food, and activities in pesos. No sign-up required.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -42,7 +42,7 @@ export function HeroSection() {
                 href="/trips/new"
                 className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3.5 font-semibold text-white shadow-lg transition hover:bg-accent-dark"
               >
-                Paste your saves
+                Plan your trip
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <a

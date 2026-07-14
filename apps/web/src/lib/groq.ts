@@ -7,7 +7,8 @@ import {
 } from "@rynxpense/shared";
 
 function getGroqApiKey(): string | null {
-  return process.env.RYNXPENSE_GROQ_API_KEY ?? process.env.GROQ_API_KEY ?? null;
+  // Use tenant-specific key only — legacy GROQ_API_KEY on Vercel is often stale/invalid
+  return process.env.RYNXPENSE_GROQ_API_KEY ?? null;
 }
 
 function getGroqClient() {
@@ -16,11 +17,21 @@ function getGroqClient() {
   return new Groq({ apiKey });
 }
 
+function canUseEdgeFunction(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.RYNXPENSE_EDGE_SECRET,
+  );
+}
+
+function getEdgeAuthToken(): string | null {
+  return process.env.RYNXPENSE_EDGE_SECRET ?? null;
+}
+
 async function generateViaEdgeFunction(
   input: CreateTripInputWithInspo,
 ): Promise<AITripPlan | null> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = getEdgeAuthToken();
   if (!url || !key) return null;
 
   const res = await fetch(`${url}/functions/v1/rynxpense-generate-trip`, {
@@ -78,13 +89,22 @@ async function generateViaGroqSdk(input: CreateTripInputWithInspo): Promise<AITr
 export async function generateTripPlan(
   input: CreateTripInputWithInspo,
 ): Promise<AITripPlan> {
-  if (getGroqApiKey()) {
-    return generateViaGroqSdk(input);
+  if (canUseEdgeFunction()) {
+    const viaEdge = await generateViaEdgeFunction(input);
+    if (viaEdge) return viaEdge;
+    console.warn("Edge trip generation failed; trying fallbacks");
   }
 
-  const viaEdge = await generateViaEdgeFunction(input);
-  if (viaEdge) return viaEdge;
+  const apiKey = getGroqApiKey();
+  if (apiKey) {
+    try {
+      return await generateViaGroqSdk(input);
+    } catch (error) {
+      console.error("Groq SDK failed:", error);
+    }
+  }
 
+  console.warn("Using mock trip plan — configure edge function or RYNXPENSE_GROQ_API_KEY");
   return getMockTripPlan(input);
 }
 
@@ -96,7 +116,6 @@ function getMockTripPlan(input: CreateTripInputWithInspo): AITripPlan {
     Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1,
   );
   const perDay = Math.floor(input.budgetAmount / dayCount);
-  const saved = input.inspirationItems?.[0];
 
   const days = Array.from({ length: dayCount }, (_, i) => ({
     day: i + 1,
@@ -104,15 +123,15 @@ function getMockTripPlan(input: CreateTripInputWithInspo): AITripPlan {
     activities: [
       {
         time: "08:00",
-        title: saved && i === 0 ? saved.title : `${input.destination} Breakfast Spot`,
-        description: saved?.description ?? "Local breakfast spot",
+        title: `Tsukiji Outer Market`,
+        description: "Fresh sushi breakfast — popular on food TikTok",
         estimatedCost: Math.floor(perDay * 0.1),
         category: "food" as const,
-        source: saved && i === 0 ? ("from_save" as const) : ("ai_pick" as const),
+        source: "ai_pick" as const,
       },
       {
         time: "10:00",
-        title: `${input.destination} City Walk`,
+        title: `Senso-ji Temple`,
         description: "Explore top attractions",
         estimatedCost: Math.floor(perDay * 0.25),
         category: "activities" as const,
@@ -120,16 +139,16 @@ function getMockTripPlan(input: CreateTripInputWithInspo): AITripPlan {
       },
       {
         time: "13:00",
-        title: "Local Restaurant",
-        description: "Recommended dining",
+        title: `Ichiran Ramen`,
+        description: "Instagram-famous solo ramen booths",
         estimatedCost: Math.floor(perDay * 0.15),
         category: "food" as const,
         source: "ai_pick" as const,
       },
       {
         time: "19:00",
-        title: i === 0 ? "Budget Hotel Check-in" : "Evening activity",
-        description: i === 0 ? "Mid-range stay near city center" : "Night market or views",
+        title: i === 0 ? "Hotel Gracery Shinjuku" : "Shibuya Crossing",
+        description: i === 0 ? "Mid-range stay near station" : "Evening city views",
         estimatedCost: Math.floor(perDay * (i === 0 ? 0.35 : 0.2)),
         category: (i === 0 ? "hotel" : "activities") as "hotel" | "activities",
         source: "ai_pick" as const,
@@ -152,7 +171,7 @@ function getMockTripPlan(input: CreateTripInputWithInspo): AITripPlan {
     totalEstimated: input.budgetAmount,
     tips: [
       `Book accommodations early for ${input.destination}`,
-      "Paste TikTok and IG saves into your inspo inbox before generating",
+      "Check your inspiration board below for curated stays and food picks",
       "Use the reality check — viral budgets often skip flights",
     ],
   };

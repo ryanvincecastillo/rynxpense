@@ -3,23 +3,15 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Sparkles, Loader2 } from "lucide-react";
-import type { InspirationItem } from "@rynxpense/shared";
 import { saveGuestTrip } from "@/lib/guest-trips";
-import {
-  listPendingInspiration,
-  savePendingInspiration,
-  movePendingToTrip,
-} from "@/lib/inspiration";
-import { InspirationInbox } from "@/components/app/InspirationInbox";
+import { saveTripInspiration } from "@/lib/inspiration";
+import { extractInspirationFromTrip } from "@/lib/inspiration-from-plan";
 
 function TripBuilderForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [inspiration, setInspiration] = useState<InspirationItem[]>(() =>
-    typeof window !== "undefined" ? listPendingInspiration() : [],
-  );
 
   const today = new Date().toISOString().split("T")[0];
   const defaultEnd = new Date(Date.now() + 4 * 86400000).toISOString().split("T")[0];
@@ -32,11 +24,6 @@ function TripBuilderForm() {
     travelers: searchParams.get("travelers") || "2",
     preferences: searchParams.get("category") || "",
   });
-
-  const handleInspirationChange = (items: InspirationItem[]) => {
-    setInspiration(items);
-    savePendingInspiration(items);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +42,6 @@ function TripBuilderForm() {
           currency: "PHP",
           travelers: Number(form.travelers),
           preferences: form.preferences || undefined,
-          inspirationItems: inspiration.length ? inspiration : undefined,
         }),
       });
 
@@ -70,7 +56,7 @@ function TripBuilderForm() {
         saveGuestTrip(trip);
       }
 
-      movePendingToTrip(trip.id);
+      saveTripInspiration(trip.id, extractInspirationFromTrip(trip));
 
       router.push(`/trips/${trip.id}`);
     } catch (err) {
@@ -81,22 +67,16 @@ function TripBuilderForm() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-lg space-y-6">
       <div className="text-center">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
           <Sparkles className="h-7 w-7 text-primary" />
         </div>
-        <h1 className="text-2xl font-bold">Turn inspo into a peso plan</h1>
+        <h1 className="text-2xl font-bold">Plan your trip</h1>
         <p className="text-muted">
-          Save TikTok &amp; IG finds below, then generate a named itinerary with stays and food
+          Enter destination and budget — AI builds your itinerary and curates inspiration picks
         </p>
       </div>
-
-      <InspirationInbox
-        mode="pending"
-        items={inspiration}
-        onChange={handleInspirationChange}
-      />
 
       <form
         onSubmit={handleSubmit}
@@ -162,7 +142,7 @@ function TripBuilderForm() {
 
         <Field label="Preferences (optional)">
           <textarea
-            placeholder="e.g. foodie, budget-friendly, kid-friendly..."
+            placeholder="e.g. foodie, budget-friendly, kid-friendly, beach..."
             value={form.preferences}
             onChange={(e) => setForm({ ...form, preferences: e.target.value })}
             className="input min-h-[80px] resize-none"
@@ -187,7 +167,7 @@ function TripBuilderForm() {
           ) : (
             <>
               <Sparkles className="h-5 w-5" />
-              Generate plan from inspo + budget
+              Generate trip plan
             </>
           )}
         </button>

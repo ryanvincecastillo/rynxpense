@@ -8,3 +8,6 @@ major_version = 15
 schemas = ["public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
+
+[functions.rynxpense-generate-trip]
+verify_jwt = false

@@ -4,9 +4,9 @@ import { Pin, Map, Receipt, Share2, ArrowRight } from "lucide-react";
 const steps = [
   {
     icon: Pin,
-    title: "Save your inspo",
+    title: "Get curated picks",
     description:
-      "Paste TikTok, Instagram, Reddit, or Facebook links — or type what you saw. Build your mood board in one place.",
+      "AI generates named hotels, restaurants, and activities — your inspiration board, ready to share.",
     color: "bg-accent/10 text-accent",
   },
   {

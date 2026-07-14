@@ -19,12 +19,10 @@ import {
 import type { Activity } from "@rynxpense/shared";
 import type { InspirationItem } from "@rynxpense/shared";
 import type { ApiTrip } from "@/lib/types";
-import { getGuestTrip, saveGuestTrip } from "@/lib/guest-trips";
-import {
-  listTripInspiration,
-  saveTripInspiration,
-} from "@/lib/inspiration";
-import { InspirationInbox } from "@/components/app/InspirationInbox";
+import { getGuestTrip } from "@/lib/guest-trips";
+import { listTripInspiration } from "@/lib/inspiration";
+import { extractInspirationFromTrip } from "@/lib/inspiration-from-plan";
+import { InspirationBoard } from "@/components/app/InspirationBoard";
 import { BudgetTallyBar } from "@/components/app/BudgetTallyBar";
 import { RealityCheckButton } from "@/components/app/RealityCheckModal";
 import { TripHero } from "@/components/app/TripHero";
@@ -40,7 +38,8 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
     if (guest) {
       setTrip(guest);
       setIsGuest(true);
-      setInspiration(listTripInspiration(tripId));
+      const saved = listTripInspiration(tripId);
+      setInspiration(saved.length ? saved : extractInspirationFromTrip(guest));
       setLoading(false);
       return;
     }
@@ -48,19 +47,14 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
     fetch(`/api/trips/${tripId}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        setTrip(data);
-        setInspiration(listTripInspiration(tripId));
+        if (data) {
+          setTrip(data);
+          const saved = listTripInspiration(tripId);
+          setInspiration(saved.length ? saved : extractInspirationFromTrip(data));
+        }
       })
       .finally(() => setLoading(false));
   }, [tripId]);
-
-  const handleInspirationChange = (items: InspirationItem[]) => {
-    setInspiration(items);
-    saveTripInspiration(tripId, items);
-    if (isGuest && trip) {
-      saveGuestTrip({ ...trip, guest: true });
-    }
-  };
 
   const tally = useMemo(() => {
     if (!trip) return null;
@@ -120,7 +114,7 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
               <Link href="/login" className="font-medium text-primary hover:underline">
                 Sign in
               </Link>{" "}
-              to sync trips and inspo across devices.
+              to sync trips across devices.
             </p>
           </div>
         </div>
@@ -128,12 +122,7 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
 
       {tally && <BudgetTallyBar tally={tally} />}
 
-      <InspirationInbox
-        mode="trip"
-        tripId={tripId}
-        items={inspiration}
-        onChange={handleInspirationChange}
-      />
+      <InspirationBoard items={inspiration} />
 
       <div className="overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-black/5">
         <div className="bg-gradient-to-r from-primary to-primary-dark p-6 text-white">
@@ -236,11 +225,6 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
                       <div className="flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="font-medium">{activity.title}</p>
-                          {activity.source === "from_save" && (
-                            <span className="rounded bg-accent/10 px-1.5 py-0.5 text-[10px] font-bold uppercase text-accent">
-                              From your save
-                            </span>
-                          )}
                           {activity.source === "ai_pick" && (
                             <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold uppercase text-primary">
                               Recommended

@@ -3,9 +3,9 @@ import { Pin, Scale, Sparkles } from "lucide-react";
 const items = [
   {
     icon: Pin,
-    title: "Save from social",
+    title: "Curated inspiration",
     description:
-      "Paste TikTok, IG, Reddit, or Facebook links — build a mood board before you book anything.",
+      "AI outputs named stays, food spots, and activities — a mood board from your plan, not generic lists.",
   },
   {
     icon: Scale,

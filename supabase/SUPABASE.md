@@ -58,9 +58,9 @@ See `apps/web/.env.example`. Local copy: `apps/web/.env.local`
 
 | Variable | Where | Purpose |
 |----------|-------|---------|
+| `RYNXPENSE_EDGE_SECRET` | Supabase secret + Vercel | Auth token for `rynxpense-generate-trip` edge function |
 | `RYNXPENSE_GROQ_API_KEY` | Supabase secret (+ optional Vercel/local fallback) | Groq API key for AI trip generation |
-| `GROQ_API_KEY` | Local only (legacy) | Fallback if `RYNXPENSE_GROQ_API_KEY` unset |
-| `SUPABASE_SERVICE_ROLE_KEY` | Vercel + local | Invokes `rynxpense-generate-trip` edge function |
+| `SUPABASE_SERVICE_ROLE_KEY` | Vercel + local | Legacy edge auth fallback; also used for server-side Supabase admin |
 
 ## Edge functions
 

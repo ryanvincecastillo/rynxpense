@@ -84,8 +84,11 @@ export async function POST(request: Request) {
     return NextResponse.json(fullTrip, { status: 201 });
   } catch (error) {
     console.error("POST /api/trips/generate:", error);
+    const raw = error instanceof Error ? error.message : "";
     const message =
-      error instanceof Error ? error.message : "Failed to generate trip";
+      raw.includes("Invalid API Key") || raw.includes("401")
+        ? "Trip generation is temporarily unavailable. Please try again shortly."
+        : raw || "Failed to generate trip";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

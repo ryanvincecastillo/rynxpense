@@ -39,7 +39,7 @@ export const inspirationItemSchema = z.object({
   estimatedCost: z.number().nonnegative().optional(),
   sourceUrl: z.string().optional(),
   imageUrl: z.string().optional(),
-  sourceType: z.enum(["manual", "link", "text", "screenshot"]).default("manual"),
+  sourceType: z.enum(["manual", "link", "text", "screenshot", "ai"]).default("manual"),
   priority: inspirationPrioritySchema.default("maybe"),
 });
 

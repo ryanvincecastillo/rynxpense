@@ -5,7 +5,7 @@ import Groq from "groq-sdk";
 const schema = z.object({ text: z.string().min(3) });
 
 function getGroqKey() {
-  return process.env.RYNXPENSE_GROQ_API_KEY ?? process.env.GROQ_API_KEY ?? null;
+  return process.env.RYNXPENSE_GROQ_API_KEY ?? null;
 }
 
 export async function POST(request: Request) {
