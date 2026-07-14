@@ -5,43 +5,44 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
+/** All AI-generated. People/places weighted to the right; left kept open for copy. */
 const slides = [
   {
-    src: "/hero-tropical.png",
-    alt: "DIY traveler at a tropical lagoon",
-    position: "object-[center_35%]",
+    src: "/hero-elnido.png",
+    alt: "Travelers at El Nido lagoons, Philippines",
+    place: "El Nido",
+    region: "Philippines",
+    position: "object-[70%_center]",
   },
   {
-    src: "https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=2000&h=1200&fit=crop&q=80",
-    alt: "Friends exploring a sunny coastal town",
-    position: "object-center",
+    src: "/hero-boracay.png",
+    alt: "Friends on Boracay White Beach, Philippines",
+    place: "Boracay",
+    region: "Philippines",
+    position: "object-[65%_center]",
   },
   {
-    src: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=2000&h=1200&fit=crop&q=80",
-    alt: "Travelers overlooking a bright mountain lake",
-    position: "object-[center_40%]",
+    src: "/hero-siargao.png",
+    alt: "Surfers in Siargao, Philippines",
+    place: "Siargao",
+    region: "Philippines",
+    position: "object-[68%_center]",
   },
   {
-    src: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=2000&h=1200&fit=crop&q=80",
-    alt: "Bright alpine lake and travel landscape",
-    position: "object-center",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=2000&h=1200&fit=crop&q=80",
-    alt: "Friends traveling together in a sunny city",
-    position: "object-[center_30%]",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=2000&h=1200&fit=crop&q=80",
-    alt: "Road trip adventure under bright sky",
-    position: "object-[center_45%]",
+    src: "/hero-bali.png",
+    alt: "Travelers at Bali rice terraces",
+    place: "Bali",
+    region: "Indonesia",
+    position: "object-[72%_center]",
   },
 ];
+/** Tokyo/Seoul/Singapore AI gens had baked-in city titles — kept out of carousel until clean. */
 
-const INTERVAL_MS = 3500;
+const INTERVAL_MS = 4000;
 
 export function HeroSection() {
   const [index, setIndex] = useState(0);
+  const active = slides[index];
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -51,7 +52,7 @@ export function HeroSection() {
   }, []);
 
   return (
-    <section className="relative isolate min-h-[90vh] overflow-hidden">
+    <section className="relative isolate min-h-[90vh] overflow-hidden bg-white">
       {slides.map((slide, i) => (
         <div
           key={slide.src}
@@ -64,35 +65,36 @@ export function HeroSection() {
             alt={slide.alt}
             fill
             priority={i === 0}
-            className={`object-cover scale-105 transition-transform duration-[4000ms] ease-out ${slide.position} ${
-              i === index ? "scale-100" : "scale-105"
+            className={`object-cover transition-transform duration-[4500ms] ease-out ${slide.position} ${
+              i === index ? "scale-100" : "scale-[1.04]"
             }`}
             sizes="100vw"
           />
         </div>
       ))}
 
+      {/* Soft left scrim only — keeps photos bright, no tropical green filter */}
       <div
         aria-hidden
-        className="absolute inset-0 bg-gradient-to-r from-[#062018]/88 via-[#062018]/55 to-[#062018]/20"
+        className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent"
       />
       <div
         aria-hidden
-        className="absolute inset-0 bg-gradient-to-t from-[#062018]/80 via-transparent to-[#062018]/35"
+        className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/35 to-transparent"
       />
 
       <div className="relative z-10 mx-auto flex min-h-[90vh] max-w-7xl flex-col justify-end px-4 pb-20 pt-28 sm:px-6 sm:pb-24 lg:justify-center lg:pb-28">
-        <div className="max-w-2xl animate-fade-up">
-          <p className="font-display text-xs font-semibold uppercase tracking-[0.28em] text-[#A7F3D0] sm:text-sm">
+        <div className="max-w-xl animate-fade-up lg:max-w-2xl">
+          <p className="font-display text-xs font-semibold uppercase tracking-[0.28em] text-white/80 sm:text-sm">
             Rynxpense · DIY travel
           </p>
-          <h1 className="mt-4 font-display text-[2.85rem] font-bold leading-[1.02] tracking-[-0.03em] text-white sm:text-6xl lg:text-[4.25rem]">
+          <h1 className="mt-4 font-display text-[2.85rem] font-bold leading-[1.02] tracking-[-0.03em] text-white sm:text-6xl lg:text-[4.25rem] drop-shadow-sm">
             Plan the trip yourself.
-            <span className="mt-3 block text-[#7DD3FC]">
+            <span className="mt-3 block text-white">
               Know the pesos before you book.
             </span>
           </h1>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/88 sm:text-xl">
+          <p className="mt-6 max-w-lg text-lg leading-relaxed text-white/90 sm:text-xl">
             Built for Filipino travelers who DIY — named stays, food, and activities with a
             budget reality check. Free, no account needed.
           </p>
@@ -107,24 +109,31 @@ export function HeroSection() {
             </Link>
             <a
               href="#why"
-              className="text-base font-semibold text-white/85 underline-offset-4 transition hover:text-white hover:underline"
+              className="text-base font-semibold text-white/90 underline-offset-4 transition hover:text-white hover:underline"
             >
               Why DIY here
             </a>
           </div>
 
-          <div className="mt-8 flex gap-1.5" aria-hidden>
-            {slides.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                aria-label={`Show slide ${i + 1}`}
-                onClick={() => setIndex(i)}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === index ? "w-7 bg-white" : "w-1.5 bg-white/45 hover:bg-white/70"
-                }`}
-              />
-            ))}
+          <div className="mt-8 flex flex-wrap items-center gap-4">
+            <div className="flex gap-1.5">
+              {slides.map((slide, i) => (
+                <button
+                  key={slide.src}
+                  type="button"
+                  aria-label={`Show ${slide.place}`}
+                  onClick={() => setIndex(i)}
+                  className={`h-1.5 rounded-full transition-all ${
+                    i === index ? "w-7 bg-white" : "w-1.5 bg-white/50 hover:bg-white/75"
+                  }`}
+                />
+              ))}
+            </div>
+            <p className="text-sm font-medium text-white/85">
+              <span className="font-display font-bold text-white">{active.place}</span>
+              <span className="mx-1.5 text-white/50">·</span>
+              <span>{active.region}</span>
+            </p>
           </div>
         </div>
       </div>
