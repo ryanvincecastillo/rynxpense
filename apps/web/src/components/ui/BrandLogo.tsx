@@ -15,7 +15,7 @@ export function BrandLogo({
   return (
     <Link href="/home" className="flex items-center gap-2.5">
       <Image
-        src="/icon.svg"
+        src="/icon.png"
         alt=""
         width={size}
         height={size}

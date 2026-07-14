@@ -21,7 +21,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <Link href="/discover" className="flex items-center gap-2.5">
             <Image
-              src="/icon.svg"
+              src="/icon.png"
               alt=""
               width={32}
               height={32}
