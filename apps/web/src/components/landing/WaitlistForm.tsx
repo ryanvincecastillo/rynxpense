@@ -41,10 +41,7 @@ export function WaitlistForm() {
             <span className="font-medium">You&apos;re on the list!</span>
           </div>
         ) : (
-          <form
-            onSubmit={handleSubmit}
-            className="mt-4 flex flex-col gap-3 sm:flex-row"
-          >
+          <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
               <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
               <input

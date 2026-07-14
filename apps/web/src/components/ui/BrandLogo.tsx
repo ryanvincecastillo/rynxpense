@@ -10,10 +10,7 @@ export function BrandLogo({
   size?: number;
   variant?: "default" | "onDark";
 }) {
-  const wordClass =
-    variant === "onDark"
-      ? "text-white"
-      : "text-text";
+  const wordClass = variant === "onDark" ? "text-white" : "text-text";
 
   return (
     <Link href="/home" className="flex items-center gap-2.5">
@@ -27,7 +24,7 @@ export function BrandLogo({
       />
       {showWordmark ? (
         <span
-          className={`font-display text-[1.35rem] font-bold leading-none tracking-[-0.02em] ${wordClass}`}
+          className={`font-display text-[1.4rem] font-bold leading-none tracking-[-0.03em] ${wordClass}`}
         >
           Rynxpense
         </span>

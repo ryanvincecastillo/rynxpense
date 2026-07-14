@@ -10,7 +10,7 @@ export function Header({ variant = "hero" }: { variant?: "hero" | "solid" }) {
       className={
         isHero
           ? "absolute inset-x-0 top-0 z-50"
-          : "sticky top-0 z-50 border-b border-border/80 bg-white/95 backdrop-blur-md"
+          : "sticky top-0 z-50 border-b border-border/70 bg-[#FFFaf5]/90 backdrop-blur-md"
       }
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
@@ -26,10 +26,10 @@ export function Header({ variant = "hero" }: { variant?: "hero" | "solid" }) {
                 Start
               </a>
               <a
-                href="#how-it-works"
+                href="#why"
                 className="text-sm font-medium text-white/80 transition hover:text-white"
               >
-                How it works
+                Why DIY
               </a>
               <Link
                 href="/discover"
@@ -48,7 +48,7 @@ export function Header({ variant = "hero" }: { variant?: "hero" | "solid" }) {
               </Link>
               <Link
                 href="/discover"
-                className="text-sm font-medium text-primary transition"
+                className="text-sm font-medium text-primary"
               >
                 Destinations
               </Link>
@@ -62,30 +62,13 @@ export function Header({ variant = "hero" }: { variant?: "hero" | "solid" }) {
           )}
         </nav>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          {isHero ? (
-            <Link
-              href="/discover"
-              className="hidden rounded-lg px-4 py-2 text-sm font-medium text-white/85 transition hover:bg-white/10 sm:block"
-            >
-              Destinations
-            </Link>
-          ) : (
-            <Link
-              href="/home"
-              className="hidden rounded-lg px-4 py-2 text-sm font-medium text-muted transition hover:bg-primary/5 sm:block"
-            >
-              About
-            </Link>
-          )}
-          <Link
-            href="/trips/new"
-            className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-dark sm:px-5"
-          >
-            <Sparkles className="h-4 w-4" />
-            Plan my trip
-          </Link>
-        </div>
+        <Link
+          href="/trips/new"
+          className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-dark sm:px-5"
+        >
+          <Sparkles className="h-4 w-4" />
+          Plan my trip
+        </Link>
       </div>
     </header>
   );
@@ -100,13 +83,13 @@ export function Footer() {
             <div className="mb-4">
               <BrandLogo />
             </div>
-            <p className="max-w-sm text-sm text-muted">
-              Destination and budget in — named plan and peso reality check out. Free to
-              use, no account required.
+            <p className="max-w-sm text-sm leading-relaxed text-muted">
+              DIY trip plans for Filipino travelers — named stays, food, and activities in
+              pesos. Share your plan to socials when you&apos;re ready.
             </p>
           </div>
           <div>
-            <h4 className="mb-3 font-semibold">Product</h4>
+            <h4 className="mb-3 font-display font-semibold">Product</h4>
             <ul className="space-y-2 text-sm text-muted">
               <li>
                 <Link href="/trips/new" className="transition hover:text-primary">
@@ -126,7 +109,7 @@ export function Footer() {
             </ul>
           </div>
           <div>
-            <h4 className="mb-3 font-semibold">Account</h4>
+            <h4 className="mb-3 font-display font-semibold">Account</h4>
             <ul className="space-y-2 text-sm text-muted">
               <li>
                 <Link href="/login" className="transition hover:text-primary">
@@ -152,7 +135,7 @@ export function Footer() {
           </p>
           <div className="flex items-center gap-1 text-sm text-muted">
             <MapPin className="h-4 w-4" />
-            Made for travelers in the Philippines and beyond
+            Made for DIY travelers in the Philippines
           </div>
         </div>
       </div>

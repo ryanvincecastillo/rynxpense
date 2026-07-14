@@ -1,27 +1,26 @@
 import { Header, Footer } from "@/components/landing/Header";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { PlanStarter } from "@/components/landing/PlanStarter";
-import { TrustBar } from "@/components/landing/TrustBar";
-import { DestinationMarquee } from "@/components/landing/DestinationMarquee";
-import { HowItWorks, FeaturesSection } from "@/components/landing/HowItWorks";
+import { DiyBeats } from "@/components/landing/DiyBeats";
+import { DestinationsTease } from "@/components/landing/DestinationsTease";
+import { ShareMoment } from "@/components/landing/ShareMoment";
 import { CtaBanner } from "@/components/landing/CtaBanner";
 import { WaitlistForm } from "@/components/landing/WaitlistForm";
 
 export default function HomePage() {
   return (
-    <>
+    <div className="bg-[#FFF8F0]">
       <Header />
       <main>
         <HeroSection />
         <PlanStarter />
-        <TrustBar />
-        <DestinationMarquee />
-        <HowItWorks />
-        <FeaturesSection />
+        <DiyBeats />
+        <DestinationsTease />
+        <ShareMoment />
         <CtaBanner />
         <WaitlistForm />
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

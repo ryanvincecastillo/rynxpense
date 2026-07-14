@@ -15,15 +15,15 @@ const bricolage = Bricolage_Grotesque({
 });
 
 export const metadata: Metadata = {
-  title: "Rynxpense — Named trip plans with a peso reality check",
+  title: "Rynxpense — DIY trip plans in pesos for Filipino travelers",
   description:
-    "Set your destination and budget. Get a named itinerary in pesos — stays, food, and activities — plus a reality check before you book. Free, no account required.",
+    "Plan the trip yourself. Know the pesos before you book. Named stays, food, and activities — then share your plan to Facebook, X, or group chats.",
   keywords: [
-    "trip budget planner",
+    "DIY trip planner",
     "peso trip planner",
     "Philippines travel budget",
     "AI itinerary PHP",
-    "travel affordability",
+    "share travel itinerary",
   ],
   icons: {
     icon: [

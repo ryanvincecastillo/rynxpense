@@ -6,7 +6,6 @@ import {
   Calendar,
   Users,
   Wallet,
-  Share2,
   Receipt,
   Lightbulb,
   Cloud,
@@ -26,6 +25,7 @@ import { InspirationBoard } from "@/components/app/InspirationBoard";
 import { BudgetTallyBar } from "@/components/app/BudgetTallyBar";
 import { RealityCheckButton } from "@/components/app/RealityCheckModal";
 import { TripHero } from "@/components/app/TripHero";
+import { TripSharePanel } from "@/components/share/TripSharePanel";
 
 export function TripDetailClient({ tripId }: { tripId: string }) {
   const [trip, setTrip] = useState<ApiTrip | null>(null);
@@ -171,17 +171,10 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
             Track expenses
           </Link>
           {realityCheck && <RealityCheckButton result={realityCheck} />}
-          {trip.shareLink && (
-            <Link
-              href={`/trip/${trip.shareLink.slug}`}
-              className="flex items-center gap-2 rounded-lg bg-accent/10 px-4 py-2 text-sm font-semibold text-accent"
-            >
-              <Share2 className="h-4 w-4" />
-              Share trip
-            </Link>
-          )}
         </div>
       </div>
+
+      <TripSharePanel trip={trip} isGuest={isGuest} />
 
       {breakdown && (
         <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-border">

@@ -5,12 +5,41 @@ import { Calendar, Users, Wallet } from "lucide-react";
 import { formatCurrency } from "@rynxpense/shared";
 import type { Activity } from "@rynxpense/shared";
 import { createClient } from "@/lib/supabase/server";
-import { fetchSharedTripBySlug } from "@/lib/trips";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { ShareButtons } from "@/components/share/ShareButtons";
 
 export const dynamic = "force-dynamic";
+
+type GuestPayload = {
+  destination: string;
+  startDate: string;
+  endDate: string;
+  budgetAmount: number;
+  travelers: number;
+  totalEstimated?: number;
+  budgetBreakdown?: Record<string, number> | null;
+  itineraryDays?: {
+    dayNumber: number;
+    title: string;
+    activities: Activity[];
+    estimatedCost: number;
+  }[];
+};
+
+async function loadGuestShare(slug: string): Promise<GuestPayload | null> {
+  if (!isSupabaseConfigured()) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("rynxpense_guest_shares")
+    .select("payload, expires_at")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  if (data.expires_at && new Date(data.expires_at) < new Date()) return null;
+  return data.payload as GuestPayload;
+}
 
 export async function generateMetadata({
   params,
@@ -18,16 +47,13 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  if (!isSupabaseConfigured()) return { title: "Trip not found" };
-
-  const supabase = await createClient();
-  const trip = await fetchSharedTripBySlug(supabase, slug);
+  const trip = await loadGuestShare(slug);
   if (!trip) return { title: "Trip not found" };
 
   const budget = trip.totalEstimated ?? trip.budgetAmount;
   const title = `${trip.destination} · ${formatCurrency(budget)} DIY plan`;
-  const description = `Day-by-day DIY itinerary for ${trip.destination} with a peso budget of ${formatCurrency(budget)}. Named stays, food, and activities — planned on Rynxpense.`;
-  const url = `https://rynxpense.com/trip/${slug}`;
+  const description = `Day-by-day DIY itinerary for ${trip.destination} with a peso budget of ${formatCurrency(budget)}.`;
+  const url = `https://rynxpense.com/trip/g/${slug}`;
 
   return {
     title: `${title} — Rynxpense`,
@@ -56,21 +82,18 @@ export async function generateMetadata({
   };
 }
 
-export default async function ShareTripPage({
+export default async function GuestShareTripPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  if (!isSupabaseConfigured()) notFound();
-
-  const supabase = await createClient();
-  const trip = await fetchSharedTripBySlug(supabase, slug);
+  const trip = await loadGuestShare(slug);
   if (!trip) notFound();
 
   const budget = trip.totalEstimated ?? trip.budgetAmount;
   const breakdown = trip.budgetBreakdown;
-  const shareUrl = `https://rynxpense.com/trip/${slug}`;
+  const shareUrl = `https://rynxpense.com/trip/g/${slug}`;
   const shareTitle = `${trip.destination} · ${formatCurrency(budget)} DIY plan`;
   const shareText = `Check out this ${trip.destination} DIY trip plan — about ${formatCurrency(budget)}.`;
 
@@ -129,29 +152,29 @@ export default async function ShareTripPage({
 
         <h2 className="mb-4 font-display text-xl font-bold">Itinerary</h2>
         <div className="space-y-4">
-          {trip.itineraryDays?.map((day) => {
-            const activities = day.activities as Activity[];
-            return (
-              <div key={day.id} className="rounded-xl bg-white shadow-sm ring-1 ring-border">
-                <div className="border-b border-border px-5 py-3">
-                  <span className="text-xs font-bold text-primary">Day {day.dayNumber}</span>
-                  <h3 className="font-bold">{day.title}</h3>
-                </div>
-                <div className="divide-y divide-border">
-                  {activities.map((a, i) => (
-                    <div key={i} className="flex gap-4 px-5 py-3 text-sm">
-                      <span className="w-12 shrink-0 text-muted">{a.time}</span>
-                      <div className="flex-1">
-                        <p className="font-medium">{a.title}</p>
-                        <p className="text-muted">{a.description}</p>
-                      </div>
-                      <span className="font-semibold">{formatCurrency(a.estimatedCost)}</span>
-                    </div>
-                  ))}
-                </div>
+          {(trip.itineraryDays ?? []).map((day) => (
+            <div
+              key={`${day.dayNumber}-${day.title}`}
+              className="rounded-xl bg-white shadow-sm ring-1 ring-border"
+            >
+              <div className="border-b border-border px-5 py-3">
+                <span className="text-xs font-bold text-primary">Day {day.dayNumber}</span>
+                <h3 className="font-bold">{day.title}</h3>
               </div>
-            );
-          })}
+              <div className="divide-y divide-border">
+                {(day.activities as Activity[]).map((a, i) => (
+                  <div key={i} className="flex gap-4 px-5 py-3 text-sm">
+                    <span className="w-12 shrink-0 text-muted">{a.time}</span>
+                    <div className="flex-1">
+                      <p className="font-medium">{a.title}</p>
+                      <p className="text-muted">{a.description}</p>
+                    </div>
+                    <span className="font-semibold">{formatCurrency(a.estimatedCost)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </main>
     </div>

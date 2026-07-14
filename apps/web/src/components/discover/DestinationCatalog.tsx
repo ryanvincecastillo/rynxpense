@@ -78,7 +78,7 @@ export function DestinationCatalog() {
 
   return (
     <div className="space-y-8">
-      <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-border sm:p-5">
+      <div className="rounded-2xl bg-white/95 p-4 shadow-sm ring-1 ring-border sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
@@ -192,7 +192,7 @@ export function DestinationCatalog() {
             <Link
               key={dest.id}
               href={`/trips/new?destination=${encodeURIComponent(dest.name)}&budget=${dest.budgetFrom}`}
-              className="group overflow-hidden rounded-2xl bg-white ring-1 ring-black/5 transition hover:-translate-y-1"
+              className="group overflow-hidden rounded-2xl bg-white ring-1 ring-black/5 transition hover:-translate-y-0.5"
             >
               <div className="relative h-44 overflow-hidden">
                 <Image

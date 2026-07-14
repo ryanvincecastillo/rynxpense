@@ -52,6 +52,7 @@ Migration lives in **InaanApp** repo: `supabase/migrations/20260715000001_projec
 - `rynxpense_expenses`
 - `rynxpense_share_links`
 - `rynxpense_waitlist_entries`
+- `rynxpense_guest_shares` (public DIY plan snapshots for share-to-social)
 
 ## RPCs
 
