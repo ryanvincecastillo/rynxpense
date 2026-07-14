@@ -27,11 +27,9 @@ export const getProjectId = cache(async (): Promise<string> => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { data, error } = await admin
-    .from("projects")
-    .select("id")
-    .eq("slug", slug)
-    .single();
+  const { data, error } = await admin.rpc("get_project_id_by_slug", {
+    p_slug: slug,
+  });
 
   if (error || !data) {
     throw new Error(
@@ -39,7 +37,7 @@ export const getProjectId = cache(async (): Promise<string> => {
     );
   }
 
-  warmProjectId = data.id as string;
+  warmProjectId = data as string;
   warmProjectSlug = slug;
   return warmProjectId;
 });

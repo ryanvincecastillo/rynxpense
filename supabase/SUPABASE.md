@@ -38,6 +38,12 @@ supabase db query --linked -f supabase/migrations/20260713220000_rynxpense_initi
 
 Note: `supabase db push` fails on shared project (other apps' migrations not in this repo). Use `db query -f` for additive SQL.
 
+## Shared control plane (`public.projects`)
+
+All tenant apps resolve `NEXT_PUBLIC_APP_PROJECT_SLUG` → project UUID via the `get_project_id_by_slug` RPC. Direct PostgREST access to `public.projects` is blocked by RLS.
+
+Migration lives in **InaanApp** repo: `supabase/migrations/20260715000001_projects_rls_secure_lookup.sql`
+
 ## Tables
 
 - `rynxpense_profiles`
