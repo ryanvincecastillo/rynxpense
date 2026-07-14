@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Home, Map, PlusCircle, User } from "lucide-react";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 
 const tabs = [
   { href: "/discover", label: "Explore", icon: Home },
@@ -19,18 +19,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-40 border-b border-border bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link href="/discover" className="flex items-center gap-2.5">
-            <Image
-              src="/icon.png"
-              alt=""
-              width={32}
-              height={32}
-              className="rounded-[9px]"
-            />
-            <span className="font-display text-lg font-bold tracking-tight text-text">
-              Rynxpense
-            </span>
-          </Link>
+          <BrandLogo size={32} href="/discover" />
           <Link
             href="/trips/new"
             className="hidden rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white sm:block"

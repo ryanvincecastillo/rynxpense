@@ -65,167 +65,293 @@ export const categories = [
 export type DestinationCategory = (typeof categories)[number]["id"];
 export type DestinationRegion = "philippines" | "asia";
 
-export const popularDestinations = [
-  {
-    id: "tokyo",
-    name: "Tokyo",
-    country: "Japan",
-    region: "asia" as const,
-    tags: ["city", "foodie"] as DestinationCategory[],
-    image:
-      "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=520&h=320&fit=crop",
-    heroImage:
-      "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=1200&h=600&fit=crop",
-    days: 5,
-    budgetFrom: 65000,
-    rating: 4.9,
-    badge: "TikTok favorite",
-    samplePlan: "Shibuya, teamLab, Ichiran ramen",
+function dest(
+  partial: {
+    id: string;
+    name: string;
+    country: string;
+    region: DestinationRegion;
+    tags: DestinationCategory[];
+    image: string;
+    days: number;
+    budgetFrom: number;
+    badge: string;
+    samplePlan: string;
+    blurb?: string;
   },
-  {
-    id: "bali",
-    name: "Bali",
-    country: "Indonesia",
-    region: "asia" as const,
-    tags: ["beach", "budget", "adventure"] as DestinationCategory[],
-    image:
-      "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=520&h=320&fit=crop",
-    heroImage:
-      "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1200&h=600&fit=crop",
-    days: 4,
-    budgetFrom: 35000,
-    rating: 4.8,
-    badge: "Best value",
-    samplePlan: "Ubud rice terraces, beach clubs",
-  },
-  {
-    id: "seoul",
-    name: "Seoul",
-    country: "South Korea",
-    region: "asia" as const,
-    tags: ["city", "foodie"] as DestinationCategory[],
-    image:
-      "https://images.unsplash.com/photo-1517154428043-feb7e033dce0?w=520&h=320&fit=crop",
-    heroImage:
-      "https://images.unsplash.com/photo-1517154428043-feb7e033dce0?w=1200&h=600&fit=crop",
-    days: 4,
-    budgetFrom: 45000,
+) {
+  return {
+    ...partial,
+    heroImage: partial.image.replace("w=800", "w=1400").replace("h=500", "h=800"),
     rating: 4.7,
-    badge: "IG hotspot",
-    samplePlan: "Myeongdong, Gyeongbokgung, street food",
-  },
-  {
-    id: "boracay",
-    name: "Boracay",
-    country: "Philippines",
-    region: "philippines" as const,
-    tags: ["beach", "family"] as DestinationCategory[],
-    image:
-      "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=520&h=320&fit=crop",
-    heroImage:
-      "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=1200&h=600&fit=crop",
-    days: 3,
-    budgetFrom: 18000,
-    rating: 4.8,
-    badge: "Local favorite",
-    samplePlan: "White Beach, island hopping",
-  },
-  {
-    id: "singapore",
-    name: "Singapore",
-    country: "Singapore",
-    region: "asia" as const,
-    tags: ["city", "foodie", "family"] as DestinationCategory[],
-    image:
-      "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=520&h=320&fit=crop",
-    heroImage:
-      "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=1200&h=600&fit=crop",
-    days: 3,
-    budgetFrom: 40000,
-    rating: 4.9,
-    badge: "Reddit pick",
-    samplePlan: "Marina Bay, hawker food, Gardens by the Bay",
-  },
-  {
+    blurb:
+      partial.blurb ??
+      `A DIY-friendly ${partial.country} trip with clear peso budgets for stays, food, and activities.`,
+  };
+}
+
+export const popularDestinations = [
+  dest({
     id: "elnido",
     name: "El Nido",
     country: "Philippines",
-    region: "philippines" as const,
-    tags: ["beach", "adventure"] as DestinationCategory[],
+    region: "philippines",
+    tags: ["beach", "adventure"],
     image:
-      "https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=520&h=320&fit=crop",
-    heroImage:
-      "https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=1200&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=800&h=500&fit=crop",
     days: 4,
     budgetFrom: 28000,
-    rating: 4.9,
-    badge: "TikTok viral",
-    samplePlan: "Big Lagoon, island tours",
-  },
-  {
+    badge: "Island classic",
+    samplePlan: "Big Lagoon, island tours, sunset dinner",
+    blurb: "Limestone cliffs, lagoons, and boat days — the DIY island itinerary Filipinos love.",
+  }),
+  dest({
+    id: "boracay",
+    name: "Boracay",
+    country: "Philippines",
+    region: "philippines",
+    tags: ["beach", "family"],
+    image:
+      "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800&h=500&fit=crop",
+    days: 3,
+    budgetFrom: 18000,
+    badge: "Weekend escape",
+    samplePlan: "White Beach, island hopping, nightlife",
+  }),
+  dest({
     id: "siargao",
     name: "Siargao",
     country: "Philippines",
-    region: "philippines" as const,
-    tags: ["beach", "adventure", "budget"] as DestinationCategory[],
+    region: "philippines",
+    tags: ["beach", "adventure", "budget"],
     image:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=520&h=320&fit=crop",
-    heroImage:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&h=500&fit=crop",
     days: 4,
     budgetFrom: 22000,
-    rating: 4.8,
     badge: "Surf & chill",
-    samplePlan: "Cloud 9, Magpupungko pools",
-  },
-  {
+    samplePlan: "Cloud 9, Magpupungko, island day trips",
+  }),
+  dest({
     id: "cebu",
     name: "Cebu",
     country: "Philippines",
-    region: "philippines" as const,
-    tags: ["beach", "foodie", "family"] as DestinationCategory[],
+    region: "philippines",
+    tags: ["beach", "foodie", "family"],
     image:
-      "https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=520&h=320&fit=crop",
-    heroImage:
-      "https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=1200&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=800&h=500&fit=crop",
     days: 4,
     budgetFrom: 20000,
-    rating: 4.6,
-    badge: "Island hopping",
-    samplePlan: "Kawasan Falls, OsLob, lechon",
-  },
-  {
-    id: "hongkong",
-    name: "Hong Kong",
-    country: "Hong Kong",
-    region: "asia" as const,
-    tags: ["city", "foodie", "family"] as DestinationCategory[],
+    badge: "City + islands",
+    samplePlan: "Kawasan, OsLob, lechon crawl",
+  }),
+  dest({
+    id: "coron",
+    name: "Coron",
+    country: "Philippines",
+    region: "philippines",
+    tags: ["beach", "adventure"],
     image:
-      "https://images.unsplash.com/photo-1536599018102-9f803c140fc1?w=520&h=320&fit=crop",
-    heroImage:
-      "https://images.unsplash.com/photo-1536599018102-9f803c140fc1?w=1200&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?w=800&h=500&fit=crop",
     days: 4,
-    budgetFrom: 38000,
-    rating: 4.7,
-    badge: "City classic",
-    samplePlan: "Victoria Peak, Temple Street, dim sum",
-  },
-  {
+    budgetFrom: 26000,
+    badge: "Kayangan views",
+    samplePlan: "Shipwrecks, lagoons, island hopping",
+  }),
+  dest({
+    id: "bohol",
+    name: "Bohol",
+    country: "Philippines",
+    region: "philippines",
+    tags: ["family", "adventure", "budget"],
+    image:
+      "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&h=500&fit=crop",
+    days: 3,
+    budgetFrom: 16000,
+    badge: "Chocolate Hills",
+    samplePlan: "Panglao beach, tarsiers, countryside tour",
+  }),
+  dest({
+    id: "palawan",
+    name: "Puerto Princesa",
+    country: "Philippines",
+    region: "philippines",
+    tags: ["adventure", "family"],
+    image:
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=500&fit=crop",
+    days: 4,
+    budgetFrom: 24000,
+    badge: "Underground river",
+    samplePlan: "Honda Bay, underground river, city eats",
+  }),
+  dest({
+    id: "baguio",
+    name: "Baguio",
+    country: "Philippines",
+    region: "philippines",
+    tags: ["budget", "family", "foodie"],
+    image:
+      "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&h=500&fit=crop",
+    days: 3,
+    budgetFrom: 10000,
+    badge: "Cool escape",
+    samplePlan: "Session Road, mines view, strawberry farms",
+  }),
+  dest({
+    id: "tokyo",
+    name: "Tokyo",
+    country: "Japan",
+    region: "asia",
+    tags: ["city", "foodie"],
+    image:
+      "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&h=500&fit=crop",
+    days: 5,
+    budgetFrom: 65000,
+    badge: "Bucket list",
+    samplePlan: "Shibuya, teamLab, Ichiran ramen",
+  }),
+  dest({
+    id: "osaka",
+    name: "Osaka",
+    country: "Japan",
+    region: "asia",
+    tags: ["city", "foodie", "budget"],
+    image:
+      "https://images.unsplash.com/photo-1590559899731-a382839d8f3d?w=800&h=500&fit=crop",
+    days: 4,
+    budgetFrom: 48000,
+    badge: "Food city",
+    samplePlan: "Dotonbori, Universal, day trip to Nara",
+  }),
+  dest({
+    id: "seoul",
+    name: "Seoul",
+    country: "South Korea",
+    region: "asia",
+    tags: ["city", "foodie"],
+    image:
+      "https://images.unsplash.com/photo-1517154428043-feb7e033dce0?w=800&h=500&fit=crop",
+    days: 4,
+    budgetFrom: 45000,
+    badge: "K-culture",
+    samplePlan: "Myeongdong, Gyeongbokgung, street food",
+  }),
+  dest({
+    id: "busan",
+    name: "Busan",
+    country: "South Korea",
+    region: "asia",
+    tags: ["beach", "city", "foodie"],
+    image:
+      "https://images.unsplash.com/photo-1546412414-e1885259563a?w=800&h=500&fit=crop",
+    days: 4,
+    budgetFrom: 42000,
+    badge: "Beach city",
+    samplePlan: "Haeundae, Gamcheon, seafood markets",
+  }),
+  dest({
     id: "bangkok",
     name: "Bangkok",
     country: "Thailand",
-    region: "asia" as const,
-    tags: ["city", "foodie", "budget"] as DestinationCategory[],
+    region: "asia",
+    tags: ["city", "foodie", "budget"],
     image:
-      "https://images.unsplash.com/photo-1563492065599-3520f775eeed?w=520&h=320&fit=crop",
-    heroImage:
-      "https://images.unsplash.com/photo-1563492065599-3520f775eeed?w=1200&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1563492065599-3520f775eeed?w=800&h=500&fit=crop",
     days: 4,
     budgetFrom: 28000,
-    rating: 4.7,
-    badge: "Food capital",
-    samplePlan: "Chatuchak, temples, street food",
-  },
+    badge: "Street food",
+    samplePlan: "Chatuchak, temples, night markets",
+  }),
+  dest({
+    id: "chiangmai",
+    name: "Chiang Mai",
+    country: "Thailand",
+    region: "asia",
+    tags: ["budget", "adventure", "foodie"],
+    image:
+      "https://images.unsplash.com/photo-1598965402089-897ce52e8355?w=800&h=500&fit=crop",
+    days: 4,
+    budgetFrom: 22000,
+    badge: "North Thailand",
+    samplePlan: "Old city temples, night bazaar, doikham",
+  }),
+  dest({
+    id: "bali",
+    name: "Bali",
+    country: "Indonesia",
+    region: "asia",
+    tags: ["beach", "budget", "adventure"],
+    image:
+      "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&h=500&fit=crop",
+    days: 4,
+    budgetFrom: 35000,
+    badge: "Best value",
+    samplePlan: "Ubud terraces, beach clubs, temples",
+  }),
+  dest({
+    id: "singapore",
+    name: "Singapore",
+    country: "Singapore",
+    region: "asia",
+    tags: ["city", "foodie", "family"],
+    image:
+      "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=800&h=500&fit=crop",
+    days: 3,
+    budgetFrom: 40000,
+    badge: "Easy layover",
+    samplePlan: "Marina Bay, hawkers, Gardens by the Bay",
+  }),
+  dest({
+    id: "hongkong",
+    name: "Hong Kong",
+    country: "Hong Kong",
+    region: "asia",
+    tags: ["city", "foodie", "family"],
+    image:
+      "https://images.unsplash.com/photo-1536599018102-9f803c140fc1?w=800&h=500&fit=crop",
+    days: 4,
+    budgetFrom: 38000,
+    badge: "City classic",
+    samplePlan: "Victoria Peak, Temple Street, dim sum",
+  }),
+  dest({
+    id: "taipei",
+    name: "Taipei",
+    country: "Taiwan",
+    region: "asia",
+    tags: ["city", "foodie", "budget"],
+    image:
+      "https://images.unsplash.com/photo-1523731407965-2430cd12f5e4?w=800&h=500&fit=crop",
+    days: 4,
+    budgetFrom: 32000,
+    badge: "Night markets",
+    samplePlan: "Shilin, Jiufen day trip, bubble tea trail",
+  }),
+  dest({
+    id: "hanoi",
+    name: "Hanoi",
+    country: "Vietnam",
+    region: "asia",
+    tags: ["city", "foodie", "budget"],
+    image:
+      "https://images.unsplash.com/photo-1528127269322-539801943592?w=800&h=500&fit=crop",
+    days: 4,
+    budgetFrom: 24000,
+    badge: "Old Quarter",
+    samplePlan: "Street food, Ha Long day trip, cafés",
+  }),
+  dest({
+    id: "kualalumpur",
+    name: "Kuala Lumpur",
+    country: "Malaysia",
+    region: "asia",
+    tags: ["city", "foodie", "family"],
+    image:
+      "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?w=800&h=500&fit=crop",
+    days: 3,
+    budgetFrom: 26000,
+    badge: "Twin towers",
+    samplePlan: "Batu Caves, Jalan Alor, malls",
+  }),
 ] as const;
 
 export type PopularDestination = (typeof popularDestinations)[number];

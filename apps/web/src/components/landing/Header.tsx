@@ -4,6 +4,9 @@ import { BrandLogo } from "@/components/ui/BrandLogo";
 
 export function Header({ variant = "hero" }: { variant?: "hero" | "solid" }) {
   const isHero = variant === "hero";
+  const linkHero = "text-sm font-medium text-white/80 transition hover:text-white";
+  const linkSolid = "text-sm font-medium text-muted transition hover:text-primary";
+  const linkSolidActive = "text-sm font-medium text-primary";
 
   return (
     <header
@@ -19,44 +22,26 @@ export function Header({ variant = "hero" }: { variant?: "hero" | "solid" }) {
         <nav className="hidden items-center gap-8 md:flex">
           {isHero ? (
             <>
-              <a
-                href="#start"
-                className="text-sm font-medium text-white/80 transition hover:text-white"
-              >
+              <a href="#start" className={linkHero}>
                 Start
               </a>
-              <a
-                href="#why"
-                className="text-sm font-medium text-white/80 transition hover:text-white"
-              >
-                Why DIY
-              </a>
-              <Link
-                href="/discover"
-                className="text-sm font-medium text-white/80 transition hover:text-white"
-              >
-                Destinations
+              <Link href="/discover" className={linkHero}>
+                Discover
+              </Link>
+              <Link href="/trips" className={linkHero}>
+                My Trips
               </Link>
             </>
           ) : (
             <>
-              <Link
-                href="/home"
-                className="text-sm font-medium text-muted transition hover:text-primary"
-              >
+              <Link href="/home" className={linkSolid}>
                 Home
               </Link>
-              <Link
-                href="/discover"
-                className="text-sm font-medium text-primary"
-              >
-                Destinations
+              <Link href="/discover" className={linkSolidActive}>
+                Discover
               </Link>
-              <Link
-                href="/trips"
-                className="text-sm font-medium text-muted transition hover:text-primary"
-              >
-                My trips
+              <Link href="/trips" className={linkSolid}>
+                My Trips
               </Link>
             </>
           )}
@@ -98,12 +83,12 @@ export function Footer() {
               </li>
               <li>
                 <Link href="/discover" className="transition hover:text-primary">
-                  Destinations
+                  Discover
                 </Link>
               </li>
               <li>
                 <Link href="/trips" className="transition hover:text-primary">
-                  My trips
+                  My Trips
                 </Link>
               </li>
             </ul>

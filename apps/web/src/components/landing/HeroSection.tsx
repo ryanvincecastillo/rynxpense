@@ -107,12 +107,12 @@ export function HeroSection() {
               Plan my trip
               <ArrowRight className="h-4 w-4" />
             </Link>
-            <a
-              href="#why"
+            <Link
+              href="/discover"
               className="text-base font-semibold text-white/90 underline-offset-4 transition hover:text-white hover:underline"
             >
-              Why DIY here
-            </a>
+              Discover destinations
+            </Link>
           </div>
 
           <div className="mt-8 flex flex-wrap items-center gap-4">
