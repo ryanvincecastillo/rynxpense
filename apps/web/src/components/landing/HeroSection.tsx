@@ -2,24 +2,30 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
+/** Clean travel photo — do not use banner-hero.png here (it has baked-in marketing copy). */
+const HERO_IMAGE =
+  "https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=2000&h=1200&fit=crop&q=80";
+
 export function HeroSection() {
   return (
     <section className="relative isolate min-h-[88vh] overflow-hidden sm:min-h-[92vh]">
       <Image
-        src="/banner-hero.png"
-        alt="Travel planning with a peso budget"
+        src={HERO_IMAGE}
+        alt="Island lagoon in the Philippines — plan trips you can afford"
         fill
         priority
-        className="object-cover object-center animate-[hero-zoom_18s_ease-in-out_infinite_alternate]"
+        className="object-cover object-[center_40%] animate-[hero-zoom_20s_ease-in-out_infinite_alternate]"
         sizes="100vw"
       />
+
+      {/* Solid left wash so HTML copy never fights photo detail */}
       <div
         aria-hidden
-        className="absolute inset-0 bg-gradient-to-r from-[#041824]/92 via-[#041824]/72 to-[#041824]/35"
+        className="absolute inset-0 bg-gradient-to-r from-[#041824] via-[#041824]/88 to-[#041824]/25"
       />
       <div
         aria-hidden
-        className="absolute inset-0 bg-gradient-to-t from-[#041824]/80 via-transparent to-[#041824]/40"
+        className="absolute inset-0 bg-gradient-to-t from-[#041824]/90 via-transparent to-[#041824]/45"
       />
 
       <div className="relative z-10 mx-auto flex min-h-[88vh] max-w-7xl flex-col justify-end px-4 pb-16 pt-28 sm:min-h-[92vh] sm:px-6 sm:pb-20 lg:justify-center lg:pb-24">
