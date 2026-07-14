@@ -38,7 +38,7 @@ export function SearchWidget() {
         <div className="border-b border-border/60 bg-gradient-to-r from-primary/[0.04] to-accent/[0.04] px-4 py-2.5">
           <p className="flex items-center gap-1.5 text-xs font-semibold text-primary">
             <Sparkles className="h-3.5 w-3.5" />
-            Free AI trip planner — no sign-up
+            Paste inspo links on the next screen — plan in pesos, no sign-up
           </p>
         </div>
 

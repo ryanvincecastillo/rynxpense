@@ -1,20 +1,23 @@
-import { Shield, Zap, UserX } from "lucide-react";
+import { Pin, Scale, Sparkles } from "lucide-react";
 
 const items = [
   {
-    icon: UserX,
-    title: "No account needed",
-    description: "Start planning instantly — sign in only if you want to sync across devices.",
+    icon: Pin,
+    title: "Save from social",
+    description:
+      "Paste TikTok, IG, Reddit, or Facebook links — build a mood board before you book anything.",
   },
   {
-    icon: Zap,
-    title: "AI in seconds",
-    description: "Get a full day-by-day itinerary with peso estimates in under a minute.",
+    icon: Scale,
+    title: "Peso reality check",
+    description:
+      "See if that viral itinerary actually fits your budget — flights and hotels included.",
   },
   {
-    icon: Shield,
-    title: "Free to use",
-    description: "Plan trips, track expenses, and share — no credit card, no hidden fees.",
+    icon: Sparkles,
+    title: "Named recommendations",
+    description:
+      "Real venues for stays, food, and activities — not generic \"lunch\" or \"sightseeing.\"",
   },
 ];
 

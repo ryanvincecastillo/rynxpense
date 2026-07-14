@@ -50,8 +50,8 @@ export function Footer() {
               <BrandLogo />
             </div>
             <p className="max-w-sm text-sm text-muted">
-              AI-powered trip budget planner. Plan your itinerary, estimate costs, and track
-              spending — free to use, no account required.
+              Turn social travel inspiration into peso-realistic plans — stays, food, and
+              activities included.
             </p>
           </div>
           <div>

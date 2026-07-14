@@ -21,7 +21,7 @@ export function DestinationMarquee() {
               Where will you go next?
             </h2>
             <p className="mt-2 max-w-lg text-muted">
-              Tap a destination to jump straight into the AI trip builder — no sign-up required.
+              Trending on TikTok &amp; Reddit — tap to start with a peso budget template.
             </p>
           </div>
           <Link
@@ -63,17 +63,26 @@ export function DestinationMarquee() {
                   <p className="text-sm text-white/80">{dest.country}</p>
                 </div>
               </div>
-              <div className="flex items-center justify-between p-4">
-                <p className="text-sm text-muted">
-                  from{" "}
-                  <span className="font-bold text-primary">
-                    {formatCurrency(dest.budgetFrom)}
-                  </span>
-                  <span className="text-muted"> / {dest.days} days</span>
-                </p>
-                <div className="flex items-center gap-1 text-sm font-medium">
-                  <Star className="h-3.5 w-3.5 fill-warning text-warning" />
-                  {dest.rating}
+              <div className="p-4">
+                <p className="mb-2 line-clamp-1 text-xs text-muted">{dest.samplePlan}</p>
+                <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-border">
+                  <div
+                    className="h-full rounded-full bg-primary"
+                    style={{ width: `${Math.min(100, (dest.budgetFrom / 80000) * 100)}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted">
+                    from{" "}
+                    <span className="font-bold text-primary">
+                      {formatCurrency(dest.budgetFrom)}
+                    </span>
+                    <span className="text-muted"> / {dest.days}d</span>
+                  </p>
+                  <div className="flex items-center gap-1 text-sm font-medium">
+                    <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+                    {dest.rating}
+                  </div>
                 </div>
               </div>
             </Link>

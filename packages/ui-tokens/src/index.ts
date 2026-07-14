@@ -69,10 +69,13 @@ export const popularDestinations = [
     country: "Japan",
     image:
       "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=520&h=320&fit=crop",
+    heroImage:
+      "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=1200&h=600&fit=crop",
     days: 5,
     budgetFrom: 65000,
     rating: 4.9,
-    badge: "AI Pick",
+    badge: "TikTok favorite",
+    samplePlan: "Shibuya, teamLab, Ichiran ramen",
   },
   {
     id: "bali",
@@ -80,10 +83,13 @@ export const popularDestinations = [
     country: "Indonesia",
     image:
       "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=520&h=320&fit=crop",
+    heroImage:
+      "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1200&h=600&fit=crop",
     days: 4,
     budgetFrom: 35000,
     rating: 4.8,
     badge: "Best value",
+    samplePlan: "Ubud rice terraces, beach clubs",
   },
   {
     id: "seoul",
@@ -91,10 +97,13 @@ export const popularDestinations = [
     country: "South Korea",
     image:
       "https://images.unsplash.com/photo-1517154428043-feb7e033dce0?w=520&h=320&fit=crop",
+    heroImage:
+      "https://images.unsplash.com/photo-1517154428043-feb7e033dce0?w=1200&h=600&fit=crop",
     days: 4,
     budgetFrom: 45000,
     rating: 4.7,
-    badge: null,
+    badge: "IG hotspot",
+    samplePlan: "Myeongdong, Gyeongbokgung, street food",
   },
   {
     id: "boracay",
@@ -102,10 +111,13 @@ export const popularDestinations = [
     country: "Philippines",
     image:
       "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=520&h=320&fit=crop",
+    heroImage:
+      "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=1200&h=600&fit=crop",
     days: 3,
     budgetFrom: 18000,
     rating: 4.8,
     badge: "Local favorite",
+    samplePlan: "White Beach, island hopping",
   },
   {
     id: "singapore",
@@ -113,9 +125,40 @@ export const popularDestinations = [
     country: "Singapore",
     image:
       "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=520&h=320&fit=crop",
+    heroImage:
+      "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=1200&h=600&fit=crop",
     days: 3,
     budgetFrom: 40000,
     rating: 4.9,
-    badge: null,
+    badge: "Reddit pick",
+    samplePlan: "Marina Bay, hawker food, Gardens by the Bay",
+  },
+  {
+    id: "elnido",
+    name: "El Nido",
+    country: "Philippines",
+    image:
+      "https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=520&h=320&fit=crop",
+    heroImage:
+      "https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=1200&h=600&fit=crop",
+    days: 4,
+    budgetFrom: 28000,
+    rating: 4.9,
+    badge: "TikTok viral",
+    samplePlan: "Big Lagoon, island tours",
+  },
+  {
+    id: "siargao",
+    name: "Siargao",
+    country: "Philippines",
+    image:
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=520&h=320&fit=crop",
+    heroImage:
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&h=600&fit=crop",
+    days: 4,
+    budgetFrom: 22000,
+    rating: 4.8,
+    badge: "Surf & chill",
+    samplePlan: "Cloud 9, Magpupungko pools",
   },
 ] as const;

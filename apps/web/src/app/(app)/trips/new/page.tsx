@@ -3,13 +3,23 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Sparkles, Loader2 } from "lucide-react";
+import type { InspirationItem } from "@rynxpense/shared";
 import { saveGuestTrip } from "@/lib/guest-trips";
+import {
+  listPendingInspiration,
+  savePendingInspiration,
+  movePendingToTrip,
+} from "@/lib/inspiration";
+import { InspirationInbox } from "@/components/app/InspirationInbox";
 
 function TripBuilderForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [inspiration, setInspiration] = useState<InspirationItem[]>(() =>
+    typeof window !== "undefined" ? listPendingInspiration() : [],
+  );
 
   const today = new Date().toISOString().split("T")[0];
   const defaultEnd = new Date(Date.now() + 4 * 86400000).toISOString().split("T")[0];
@@ -22,6 +32,11 @@ function TripBuilderForm() {
     travelers: searchParams.get("travelers") || "2",
     preferences: searchParams.get("category") || "",
   });
+
+  const handleInspirationChange = (items: InspirationItem[]) => {
+    setInspiration(items);
+    savePendingInspiration(items);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +55,7 @@ function TripBuilderForm() {
           currency: "PHP",
           travelers: Number(form.travelers),
           preferences: form.preferences || undefined,
+          inspirationItems: inspiration.length ? inspiration : undefined,
         }),
       });
 
@@ -54,6 +70,8 @@ function TripBuilderForm() {
         saveGuestTrip(trip);
       }
 
+      movePendingToTrip(trip.id);
+
       router.push(`/trips/${trip.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -63,21 +81,32 @@ function TripBuilderForm() {
   };
 
   return (
-    <div className="mx-auto max-w-lg">
-      <div className="mb-8 text-center">
+    <div className="mx-auto max-w-2xl space-y-6">
+      <div className="text-center">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
           <Sparkles className="h-7 w-7 text-primary" />
         </div>
-        <h1 className="text-2xl font-bold">Plan your trip</h1>
-        <p className="text-muted">AI will build your itinerary and budget breakdown</p>
+        <h1 className="text-2xl font-bold">Turn inspo into a peso plan</h1>
+        <p className="text-muted">
+          Save TikTok &amp; IG finds below, then generate a named itinerary with stays and food
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl bg-white p-6 shadow-lg ring-1 ring-black/5">
+      <InspirationInbox
+        mode="pending"
+        items={inspiration}
+        onChange={handleInspirationChange}
+      />
+
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 rounded-2xl bg-white p-6 shadow-lg ring-1 ring-black/5"
+      >
         <Field label="Destination">
           <input
             required
             type="text"
-            placeholder="e.g. Tokyo, Bali, Seoul"
+            placeholder="e.g. Tokyo, El Nido, Seoul"
             value={form.destination}
             onChange={(e) => setForm({ ...form, destination: e.target.value })}
             className="input-field"
@@ -133,7 +162,7 @@ function TripBuilderForm() {
 
         <Field label="Preferences (optional)">
           <textarea
-            placeholder="e.g. food-focused, budget-friendly, family-friendly, adventure..."
+            placeholder="e.g. foodie, budget-friendly, kid-friendly..."
             value={form.preferences}
             onChange={(e) => setForm({ ...form, preferences: e.target.value })}
             className="input min-h-[80px] resize-none"
@@ -153,12 +182,12 @@ function TripBuilderForm() {
           {loading ? (
             <>
               <Loader2 className="h-5 w-5 animate-spin" />
-              Generating your trip...
+              Building your plan...
             </>
           ) : (
             <>
               <Sparkles className="h-5 w-5" />
-              Generate AI itinerary
+              Generate plan from inspo + budget
             </>
           )}
         </button>

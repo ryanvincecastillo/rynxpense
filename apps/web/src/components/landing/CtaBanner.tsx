@@ -20,18 +20,18 @@ export function CtaBanner() {
               <Sparkles className="h-7 w-7" />
             </div>
             <h2 className="text-2xl font-bold sm:text-4xl">
-              Your next trip starts here
+              Saw it on TikTok? Let&apos;s see if you can afford it.
             </h2>
             <p className="mx-auto mt-4 max-w-lg text-white/85">
-              Open the planner, enter your destination and budget, and let AI build your
-              itinerary. No account. No friction. Just travel smarter.
+              Paste your saves, set your budget in pesos, and get named stays, food, and activities
+              — with a reality check before you book anything.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href="/trips/new"
                 className="inline-flex items-center gap-2 rounded-xl bg-accent px-8 py-4 font-semibold text-white shadow-lg transition hover:bg-accent-dark"
               >
-                Start planning free
+                Start with your saves
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link

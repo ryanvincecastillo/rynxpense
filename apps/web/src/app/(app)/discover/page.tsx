@@ -22,8 +22,10 @@ export default async function DiscoverPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Discover your next trip</h1>
-        <p className="text-muted">AI-powered itineraries within your budget</p>
+        <h1 className="text-2xl font-bold">Plan from your saves</h1>
+        <p className="text-muted">
+          Paste TikTok &amp; IG links, then build a peso-realistic itinerary
+        </p>
       </div>
 
       <SearchWidget />
@@ -67,7 +69,8 @@ export default async function DiscoverPage() {
               </div>
               <div className="p-4">
                 <h3 className="font-bold">{dest.name}</h3>
-                <p className="text-sm text-muted">
+                <p className="text-xs text-muted line-clamp-1">{dest.samplePlan}</p>
+                <p className="mt-1 text-sm text-muted">
                   from {formatCurrency(dest.budgetFrom)} / {dest.days} days
                 </p>
               </div>

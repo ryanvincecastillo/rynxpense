@@ -1,8 +1,9 @@
 import Groq from "groq-sdk";
 import {
   aiTripPlanSchema,
+  buildTripPrompt,
   type AITripPlan,
-  type CreateTripInput,
+  type CreateTripInputWithInspo,
 } from "@rynxpense/shared";
 
 function getGroqApiKey(): string | null {
@@ -15,59 +16,8 @@ function getGroqClient() {
   return new Groq({ apiKey });
 }
 
-function buildPrompt(input: CreateTripInput): string {
-  const start = new Date(input.startDate);
-  const end = new Date(input.endDate);
-  const dayCount = Math.max(
-    1,
-    Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1,
-  );
-
-  return `You are a travel planner and budget expert specializing in Filipino travelers.
-Create a realistic ${dayCount}-day trip plan.
-
-Destination: ${input.destination}
-Budget: ${input.currency} ${input.budgetAmount.toLocaleString()} total for ${input.travelers} traveler(s)
-Dates: ${input.startDate} to ${input.endDate}
-${input.preferences ? `Preferences: ${input.preferences}` : ""}
-
-Respond ONLY with valid JSON matching this structure:
-{
-  "destination": "${input.destination}",
-  "days": [
-    {
-      "day": 1,
-      "title": "Day theme",
-      "activities": [
-        {
-          "time": "09:00",
-          "title": "Activity name",
-          "description": "Brief description",
-          "estimatedCost": 500,
-          "category": "food|transport|activities|hotel|other"
-        }
-      ],
-      "estimatedCost": 8500
-    }
-  ],
-  "budgetBreakdown": {
-    "flights": 0,
-    "hotel": 0,
-    "food": 0,
-    "activities": 0,
-    "transport": 0,
-    "other": 0
-  },
-  "totalEstimated": ${input.budgetAmount},
-  "tips": ["tip 1", "tip 2"]
-}
-
-Use realistic ${input.currency} prices. Keep totalEstimated close to but not exceeding the budget.
-Include 3-5 activities per day with varied categories.`;
-}
-
 async function generateViaEdgeFunction(
-  input: CreateTripInput,
+  input: CreateTripInputWithInspo,
 ): Promise<AITripPlan | null> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -97,7 +47,7 @@ async function generateViaEdgeFunction(
   return aiTripPlanSchema.parse(data);
 }
 
-async function generateViaGroqSdk(input: CreateTripInput): Promise<AITripPlan> {
+async function generateViaGroqSdk(input: CreateTripInputWithInspo): Promise<AITripPlan> {
   const groq = getGroqClient();
   if (!groq) throw new Error("Groq client not configured");
 
@@ -107,9 +57,9 @@ async function generateViaGroqSdk(input: CreateTripInput): Promise<AITripPlan> {
       {
         role: "system",
         content:
-          "You are a travel planning assistant. Always respond with valid JSON only, no markdown.",
+          "You are a travel planning assistant for Filipino travelers. Always respond with valid JSON only, no markdown. Use real venue names.",
       },
-      { role: "user", content: buildPrompt(input) },
+      { role: "user", content: buildTripPrompt(input) },
     ],
     temperature: 0.7,
     max_tokens: 4096,
@@ -125,7 +75,9 @@ async function generateViaGroqSdk(input: CreateTripInput): Promise<AITripPlan> {
   return aiTripPlanSchema.parse(parsed);
 }
 
-export async function generateTripPlan(input: CreateTripInput): Promise<AITripPlan> {
+export async function generateTripPlan(
+  input: CreateTripInputWithInspo,
+): Promise<AITripPlan> {
   if (getGroqApiKey()) {
     return generateViaGroqSdk(input);
   }
@@ -136,7 +88,7 @@ export async function generateTripPlan(input: CreateTripInput): Promise<AITripPl
   return getMockTripPlan(input);
 }
 
-function getMockTripPlan(input: CreateTripInput): AITripPlan {
+function getMockTripPlan(input: CreateTripInputWithInspo): AITripPlan {
   const start = new Date(input.startDate);
   const end = new Date(input.endDate);
   const dayCount = Math.max(
@@ -144,6 +96,7 @@ function getMockTripPlan(input: CreateTripInput): AITripPlan {
     Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1,
   );
   const perDay = Math.floor(input.budgetAmount / dayCount);
+  const saved = input.inspirationItems?.[0];
 
   const days = Array.from({ length: dayCount }, (_, i) => ({
     day: i + 1,
@@ -151,38 +104,35 @@ function getMockTripPlan(input: CreateTripInput): AITripPlan {
     activities: [
       {
         time: "08:00",
-        title: "Breakfast",
-        description: "Local breakfast spot",
+        title: saved && i === 0 ? saved.title : `${input.destination} Breakfast Spot`,
+        description: saved?.description ?? "Local breakfast spot",
         estimatedCost: Math.floor(perDay * 0.1),
         category: "food" as const,
+        source: saved && i === 0 ? ("from_save" as const) : ("ai_pick" as const),
       },
       {
         time: "10:00",
-        title: "Morning sightseeing",
+        title: `${input.destination} City Walk`,
         description: "Explore top attractions",
         estimatedCost: Math.floor(perDay * 0.25),
         category: "activities" as const,
+        source: "ai_pick" as const,
       },
       {
         time: "13:00",
-        title: "Lunch",
-        description: "Recommended local restaurant",
+        title: "Local Restaurant",
+        description: "Recommended dining",
         estimatedCost: Math.floor(perDay * 0.15),
         category: "food" as const,
-      },
-      {
-        time: "15:00",
-        title: "Afternoon activity",
-        description: "Cultural experience or shopping",
-        estimatedCost: Math.floor(perDay * 0.2),
-        category: "activities" as const,
+        source: "ai_pick" as const,
       },
       {
         time: "19:00",
-        title: "Dinner",
-        description: "Evening dining",
-        estimatedCost: Math.floor(perDay * 0.15),
-        category: "food" as const,
+        title: i === 0 ? "Budget Hotel Check-in" : "Evening activity",
+        description: i === 0 ? "Mid-range stay near city center" : "Night market or views",
+        estimatedCost: Math.floor(perDay * (i === 0 ? 0.35 : 0.2)),
+        category: (i === 0 ? "hotel" : "activities") as "hotel" | "activities",
+        source: "ai_pick" as const,
       },
     ],
     estimatedCost: perDay,
@@ -202,8 +152,8 @@ function getMockTripPlan(input: CreateTripInput): AITripPlan {
     totalEstimated: input.budgetAmount,
     tips: [
       `Book accommodations early for ${input.destination}`,
-      "Use local transport to save on getting around",
-      "Try street food for authentic and budget-friendly meals",
+      "Paste TikTok and IG saves into your inspo inbox before generating",
+      "Use the reality check — viral budgets often skip flights",
     ],
   };
 }

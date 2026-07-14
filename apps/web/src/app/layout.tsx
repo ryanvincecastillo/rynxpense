@@ -2,15 +2,15 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Rynxpense — AI Trip Budget Planner",
+  title: "Rynxpense — Turn travel inspo into a peso plan",
   description:
-    "Plan your trip with AI. Get day-by-day itineraries with estimated costs, then track spending during your journey.",
+    "Paste TikTok, Instagram, and Reddit saves. Get named stays, food, and activities with peso estimates and a budget reality check.",
   keywords: [
     "trip budget planner",
-    "travel itinerary",
-    "AI travel planner",
+    "TikTok travel itinerary",
     "Philippines travel budget",
-    "expense tracker travel",
+    "peso trip planner",
+    "social media travel inspiration",
   ],
   icons: {
     icon: [
@@ -22,9 +22,9 @@ export const metadata: Metadata = {
     shortcut: "/favicon.ico",
   },
   openGraph: {
-    title: "Rynxpense — AI Trip Budget Planner",
+    title: "Rynxpense — Turn travel inspo into a peso plan",
     description:
-      "Tell us where you're going and your budget — get a day-by-day itinerary with estimated costs.",
+      "Paste your TikTok and IG saves — get a realistic trip plan in pesos with named stays and food.",
     url: "https://rynxpense.com",
     siteName: "Rynxpense",
     type: "website",

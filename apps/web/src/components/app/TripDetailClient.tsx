@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import {
   Calendar,
@@ -11,13 +11,27 @@ import {
   Lightbulb,
   Cloud,
 } from "lucide-react";
-import { formatCurrency } from "@rynxpense/shared";
+import {
+  formatCurrency,
+  computeBudgetTally,
+  computeRealityCheck,
+} from "@rynxpense/shared";
 import type { Activity } from "@rynxpense/shared";
+import type { InspirationItem } from "@rynxpense/shared";
 import type { ApiTrip } from "@/lib/types";
-import { getGuestTrip } from "@/lib/guest-trips";
+import { getGuestTrip, saveGuestTrip } from "@/lib/guest-trips";
+import {
+  listTripInspiration,
+  saveTripInspiration,
+} from "@/lib/inspiration";
+import { InspirationInbox } from "@/components/app/InspirationInbox";
+import { BudgetTallyBar } from "@/components/app/BudgetTallyBar";
+import { RealityCheckButton } from "@/components/app/RealityCheckModal";
+import { TripHero } from "@/components/app/TripHero";
 
 export function TripDetailClient({ tripId }: { tripId: string }) {
   const [trip, setTrip] = useState<ApiTrip | null>(null);
+  const [inspiration, setInspiration] = useState<InspirationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isGuest, setIsGuest] = useState(false);
 
@@ -26,15 +40,50 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
     if (guest) {
       setTrip(guest);
       setIsGuest(true);
+      setInspiration(listTripInspiration(tripId));
       setLoading(false);
       return;
     }
 
     fetch(`/api/trips/${tripId}`)
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setTrip(data))
+      .then((data) => {
+        setTrip(data);
+        setInspiration(listTripInspiration(tripId));
+      })
       .finally(() => setLoading(false));
   }, [tripId]);
+
+  const handleInspirationChange = (items: InspirationItem[]) => {
+    setInspiration(items);
+    saveTripInspiration(tripId, items);
+    if (isGuest && trip) {
+      saveGuestTrip({ ...trip, guest: true });
+    }
+  };
+
+  const tally = useMemo(() => {
+    if (!trip) return null;
+    const spent = trip.expenses?.reduce((sum, e) => sum + e.amount, 0) ?? 0;
+    return computeBudgetTally({
+      budgetAmount: trip.budgetAmount,
+      totalEstimated: trip.totalEstimated,
+      inspirationItems: inspiration,
+      itineraryTotal: trip.totalEstimated ?? trip.budgetAmount,
+      spent,
+    });
+  }, [trip, inspiration]);
+
+  const realityCheck = useMemo(() => {
+    if (!trip) return null;
+    return computeRealityCheck({
+      budgetAmount: trip.budgetAmount,
+      budgetBreakdown: trip.budgetBreakdown,
+      totalEstimated: trip.totalEstimated,
+      destination: trip.destination,
+      travelers: trip.travelers,
+    });
+  }, [trip]);
 
   if (loading) {
     return <div className="py-12 text-center text-muted">Loading your trip...</div>;
@@ -59,6 +108,8 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
 
   return (
     <div className="space-y-6">
+      <TripHero destination={trip.destination} />
+
       {isGuest && (
         <div className="flex items-start gap-3 rounded-xl bg-primary/5 px-4 py-3 ring-1 ring-primary/15">
           <Cloud className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
@@ -69,18 +120,26 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
               <Link href="/login" className="font-medium text-primary hover:underline">
                 Sign in
               </Link>{" "}
-              to sync trips across devices.
+              to sync trips and inspo across devices.
             </p>
           </div>
         </div>
       )}
 
+      {tally && <BudgetTallyBar tally={tally} />}
+
+      <InspirationInbox
+        mode="trip"
+        tripId={tripId}
+        items={inspiration}
+        onChange={handleInspirationChange}
+      />
+
       <div className="overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-black/5">
         <div className="bg-gradient-to-r from-primary to-primary-dark p-6 text-white">
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-bold">{trip.destination}</h1>
-              <div className="mt-2 flex flex-wrap gap-4 text-sm text-white/80">
+              <div className="mt-1 flex flex-wrap gap-4 text-sm text-white/80">
                 <span className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
                   {new Date(trip.startDate).toLocaleDateString()} –{" "}
@@ -122,6 +181,7 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
             <Receipt className="h-4 w-4" />
             Track expenses
           </Link>
+          {realityCheck && <RealityCheckButton result={realityCheck} />}
           {trip.shareLink && (
             <Link
               href={`/trip/${trip.shareLink.slug}`}
@@ -174,7 +234,19 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
                         {activity.time}
                       </span>
                       <div className="flex-1">
-                        <p className="font-medium">{activity.title}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-medium">{activity.title}</p>
+                          {activity.source === "from_save" && (
+                            <span className="rounded bg-accent/10 px-1.5 py-0.5 text-[10px] font-bold uppercase text-accent">
+                              From your save
+                            </span>
+                          )}
+                          {activity.source === "ai_pick" && (
+                            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold uppercase text-primary">
+                              Recommended
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-muted">{activity.description}</p>
                       </div>
                       <span className="shrink-0 text-sm font-semibold">

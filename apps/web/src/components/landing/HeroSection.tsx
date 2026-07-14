@@ -12,7 +12,6 @@ export function HeroSection() {
       >
         <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
         <div className="absolute -bottom-40 -right-20 h-[28rem] w-[28rem] rounded-full bg-accent/10 blur-3xl" />
-        <div className="absolute left-1/2 top-0 h-72 w-[40rem] -translate-x-1/2 rounded-full bg-primary/5 blur-3xl" />
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
@@ -20,7 +19,7 @@ export function HeroSection() {
           <div className="animate-fade-up">
             <div className="mb-5 flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center rounded-full bg-accent/10 px-4 py-1.5 text-sm font-semibold text-accent">
-                AI Trip Budget Planner
+                TikTok · IG · Reddit → Plan
               </span>
               <span className="inline-flex items-center rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary">
                 Free · No account
@@ -28,29 +27,29 @@ export function HeroSection() {
             </div>
 
             <h1 className="max-w-xl text-4xl font-bold leading-[1.1] tracking-tight text-text sm:text-5xl lg:text-[3.25rem]">
-              Plan your trip.{" "}
+              Turn saved travel inspo into a trip you can{" "}
               <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Track every peso.
+                actually afford.
               </span>
             </h1>
             <p className="mt-5 max-w-lg text-lg leading-relaxed text-muted">
-              Tell us where you&apos;re going and your budget — get a day-by-day itinerary with
-              estimated costs. Use it right away, no sign-up required.
+              Paste links from TikTok, Instagram, Facebook, or Reddit — get named stays, food, and
+              activities with peso estimates. No sign-up required.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 href="/trips/new"
-                className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3.5 font-semibold text-white shadow-lg transition hover:bg-accent-dark hover:shadow-xl"
+                className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3.5 font-semibold text-white shadow-lg transition hover:bg-accent-dark"
               >
-                Start planning free
+                Paste your saves
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <a
                 href="#how-it-works"
                 className="inline-flex items-center rounded-xl bg-white px-6 py-3.5 font-semibold text-text shadow-md ring-1 ring-border transition hover:ring-primary/30"
               >
-                See how it works
+                How it works
               </a>
             </div>
 

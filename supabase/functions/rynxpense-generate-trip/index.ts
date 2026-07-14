@@ -1,6 +1,5 @@
 // Supabase Edge Function: rynxpense-generate-trip
 // Deploy: supabase functions deploy rynxpense-generate-trip --project-ref xkoyoleurdafejlyxpxk
-// Secret: RYNXPENSE_GROQ_API_KEY (set via `supabase secrets set`)
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
@@ -8,6 +7,15 @@ const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+type InspirationItem = {
+  title: string;
+  description?: string;
+  category?: string;
+  estimatedCost?: number;
+  sourceUrl?: string;
+  priority?: string;
 };
 
 type CreateTripInput = {
@@ -18,6 +26,7 @@ type CreateTripInput = {
   currency: string;
   travelers: number;
   preferences?: string;
+  inspirationItems?: InspirationItem[];
 };
 
 type AITripPlan = {
@@ -31,6 +40,7 @@ type AITripPlan = {
       description: string;
       estimatedCost: number;
       category: "food" | "transport" | "activities" | "hotel" | "other";
+      source?: "ai_pick" | "from_save";
     }>;
     estimatedCost: number;
   }>;
@@ -65,47 +75,38 @@ function buildPrompt(input: CreateTripInput): string {
     Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1,
   );
 
-  return `You are a travel planner and budget expert specializing in Filipino travelers.
-Create a realistic ${dayCount}-day trip plan.
+  const inspoBlock =
+    input.inspirationItems?.length ?
+      `\nUser saved these places from TikTok, Instagram, Reddit, etc. — weave them into the itinerary:\n${input.inspirationItems
+        .map(
+          (item, i) =>
+            `${i + 1}. [${item.priority ?? "maybe"}] ${item.title} (${item.category ?? "activity"})${item.description ? ` — ${item.description}` : ""}`,
+        )
+        .join("\n")}\n`
+    : "";
+
+  return `You are a travel planner and budget expert specializing in Filipino travelers departing from the Philippines.
+Create a realistic ${dayCount}-day trip plan with NAMED venues (real restaurants, hotels, attractions).
 
 Destination: ${input.destination}
 Budget: ${input.currency} ${input.budgetAmount.toLocaleString()} total for ${input.travelers} traveler(s)
 Dates: ${input.startDate} to ${input.endDate}
-${input.preferences ? `Preferences: ${input.preferences}` : ""}
+${input.preferences ? `Preferences: ${input.preferences}` : ""}${inspoBlock}
 
-Respond ONLY with valid JSON matching this structure:
+Rules:
+- Use specific venue names, not generic labels
+- Include stay recommendation with category "hotel"
+- Price realistically in ${input.currency} from Manila (flights in budgetBreakdown)
+- Mark user saves with source "from_save", others "ai_pick"
+
+Respond ONLY with valid JSON:
 {
   "destination": "${input.destination}",
-  "days": [
-    {
-      "day": 1,
-      "title": "Day theme",
-      "activities": [
-        {
-          "time": "09:00",
-          "title": "Activity name",
-          "description": "Brief description",
-          "estimatedCost": 500,
-          "category": "food|transport|activities|hotel|other"
-        }
-      ],
-      "estimatedCost": 8500
-    }
-  ],
-  "budgetBreakdown": {
-    "flights": 0,
-    "hotel": 0,
-    "food": 0,
-    "activities": 0,
-    "transport": 0,
-    "other": 0
-  },
+  "days": [{"day": 1, "title": "Day theme", "activities": [{"time": "09:00", "title": "Venue name", "description": "Tip", "estimatedCost": 500, "category": "food|transport|activities|hotel|other", "source": "ai_pick|from_save"}], "estimatedCost": 8500}],
+  "budgetBreakdown": {"flights": 0, "hotel": 0, "food": 0, "activities": 0, "transport": 0, "other": 0},
   "totalEstimated": ${input.budgetAmount},
-  "tips": ["tip 1", "tip 2"]
-}
-
-Use realistic ${input.currency} prices. Keep totalEstimated close to but not exceeding the budget.
-Include 3-5 activities per day with varied categories.`;
+  "tips": ["tip 1"]
+}`;
 }
 
 async function callGroq(input: CreateTripInput): Promise<AITripPlan> {
@@ -126,7 +127,7 @@ async function callGroq(input: CreateTripInput): Promise<AITripPlan> {
         {
           role: "system",
           content:
-            "You are a travel planning assistant. Always respond with valid JSON only, no markdown.",
+            "You are a travel planning assistant for Filipino travelers. Always respond with valid JSON only, no markdown.",
         },
         { role: "user", content: buildPrompt(input) },
       ],
