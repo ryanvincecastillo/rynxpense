@@ -18,6 +18,7 @@ function TripBuilderForm() {
 
   const [form, setForm] = useState({
     destination: searchParams.get("destination") || "",
+    origin: searchParams.get("origin") || "Manila",
     startDate: searchParams.get("startDate") || today,
     endDate: searchParams.get("endDate") || defaultEnd,
     budgetAmount: searchParams.get("budget") || "50000",
@@ -36,6 +37,7 @@ function TripBuilderForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           destination: form.destination,
+          origin: form.origin || "Manila",
           startDate: form.startDate,
           endDate: form.endDate,
           budgetAmount: Number(form.budgetAmount),
@@ -72,9 +74,9 @@ function TripBuilderForm() {
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
           <Sparkles className="h-7 w-7 text-primary" />
         </div>
-        <h1 className="text-2xl font-bold">Plan your trip</h1>
+        <h1 className="text-2xl font-bold">Check your trip budget</h1>
         <p className="text-muted">
-          Enter destination and budget — AI builds your itinerary and curates inspiration picks
+          Get a peso feasibility score, then tweak what-ifs and make the plan fit
         </p>
       </div>
 
@@ -91,6 +93,20 @@ function TripBuilderForm() {
             onChange={(e) => setForm({ ...form, destination: e.target.value })}
             className="input-field"
           />
+        </Field>
+
+        <Field label="Flying from">
+          <select
+            value={form.origin}
+            onChange={(e) => setForm({ ...form, origin: e.target.value })}
+            className="input-field"
+          >
+            {["Manila", "Cebu", "Davao", "Clark", "Iloilo"].map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))}
+          </select>
         </Field>
 
         <div className="grid grid-cols-2 gap-4">
@@ -167,7 +183,7 @@ function TripBuilderForm() {
           ) : (
             <>
               <Sparkles className="h-5 w-5" />
-              Generate trip plan
+              Check feasibility
             </>
           )}
         </button>

@@ -1,40 +1,53 @@
-import { Map, Scale, Share2 } from "lucide-react";
+import Image from "next/image";
+import { Gauge, RefreshCw, Receipt } from "lucide-react";
 
 const beats = [
   {
-    icon: Map,
-    title: "Named DIY plan",
+    icon: Gauge,
+    title: "Feasibility first",
     description:
-      "Real hotels, restaurants, and activities — not generic “sightseeing” — priced in PHP.",
+      "A 0–100 score with affordable / tight / over — engine math, not chatbot guesses.",
   },
   {
-    icon: Scale,
-    title: "Peso reality check",
+    icon: RefreshCw,
+    title: "What-if + Make it fit",
     description:
-      "See if the trip fits before you book. Flights and hotels included in the math.",
+      "Change budget, travelers, or days. Apply Tipid / Balanced and the plan rewrites.",
   },
   {
-    icon: Share2,
-    title: "Share to socials",
+    icon: Receipt,
+    title: "Estimated → spent",
     description:
-      "Post your plan to FB, X, or group chats. Friends can open the link — no new social network.",
+      "Paste real prices, track expenses, then run a budget autopsy after the trip.",
   },
 ];
 
 export function DiyBeats() {
   return (
-    <section id="why" className="py-16 sm:py-20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+    <section id="why" className="relative overflow-hidden py-16 sm:py-20">
+      <div className="absolute inset-0">
+        <Image
+          src="/hero-siargao.png"
+          alt=""
+          fill
+          className="object-cover object-[center_40%] opacity-[0.1]"
+          sizes="100vw"
+          aria-hidden
+        />
+        <div aria-hidden className="absolute inset-0 bg-white/90" />
+      </div>
+
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
         <div className="max-w-2xl">
           <p className="text-sm font-semibold uppercase tracking-wider text-primary">
-            Why DIY on Rynxpense
+            Why Rynxpense
           </p>
           <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-text sm:text-4xl">
-            You plan it. We do the peso math.
+            A trip budget simulator for Filipino travelers
           </h2>
           <p className="mt-3 text-lg text-muted">
-            Klook sells tickets. Reddit debates vibes. Rynxpense is where DIY travelers turn
-            a budget into a real day-by-day plan.
+            Not another AI itinerary toy. Know if the pesos stretch — then reshape the trip
+            until they do.
           </p>
         </div>
 
@@ -42,7 +55,7 @@ export function DiyBeats() {
           {beats.map((beat, i) => (
             <div
               key={beat.title}
-              className="animate-fade-up rounded-2xl bg-white p-7 ring-1 ring-border"
+              className="animate-fade-up rounded-2xl bg-white/95 p-7 shadow-sm ring-1 ring-border backdrop-blur"
               style={{ animationDelay: `${i * 80}ms` }}
             >
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">

@@ -75,6 +75,7 @@ export function SearchWidget() {
   const router = useRouter();
   const rootRef = useRef<HTMLDivElement>(null);
   const [destination, setDestination] = useState("");
+  const [origin, setOrigin] = useState("Manila");
   const [budget, setBudget] = useState(50000);
   const [travelers, setTravelers] = useState(2);
   const [startDate, setStartDate] = useState("");
@@ -171,6 +172,7 @@ export function SearchWidget() {
     const defaultEnd = toISO(new Date(today.getTime() + 4 * 24 * 60 * 60 * 1000));
     const params = new URLSearchParams({
       destination: destination.trim() || "Tokyo",
+      origin: origin || "Manila",
       budget: String(budget || 50000),
       travelers: String(travelers || 2),
       startDate: startDate || defaultStart,
@@ -219,6 +221,21 @@ export function SearchWidget() {
                   className="w-full bg-transparent text-sm font-semibold text-text outline-none placeholder:font-medium placeholder:text-text-light"
                   autoComplete="off"
                 />
+                <div className="mt-1 flex items-center gap-1.5 text-xs text-muted">
+                  <span>from</span>
+                  <select
+                    value={origin}
+                    onChange={(e) => setOrigin(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-transparent font-semibold text-text outline-none"
+                  >
+                    {["Manila", "Cebu", "Davao", "Clark", "Iloilo"].map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               {destination ? (
                 <button
@@ -369,7 +386,7 @@ export function SearchWidget() {
             className="flex items-center justify-center gap-2 bg-primary px-6 py-4 text-sm font-semibold text-white transition hover:bg-primary-dark lg:rounded-r-2xl lg:py-3.5"
           >
             <Sparkles className="h-4 w-4" />
-            <span>Build plan</span>
+            <span>Check budget</span>
           </button>
         </div>
       </form>

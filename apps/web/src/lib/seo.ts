@@ -4,10 +4,10 @@ export const SITE_URL = "https://rynxpense.com";
 export const SITE_NAME = "Rynxpense";
 
 export const defaultTitle =
-  "Rynxpense — DIY trip planner in pesos for Filipino travelers";
+  "Rynxpense — Trip Budget Simulator for Filipino travelers";
 
 export const defaultDescription =
-  "Plan DIY trips with a peso budget. Get named stays, food, and activities — then share your plan. Free for Filipino travelers, no account needed.";
+  "Can you afford the trip? Feasibility score, what-if scenarios, make-it-fit plans, and estimated→spent tracking in pesos. Free — no account needed.";
 
 type BuildMetaInput = {
   title: string;

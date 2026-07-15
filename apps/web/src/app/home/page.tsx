@@ -1,7 +1,9 @@
 import { Header, Footer } from "@/components/landing/Header";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { PlanStarter } from "@/components/landing/PlanStarter";
+import { SimulatorStory } from "@/components/landing/SimulatorStory";
 import { DiyBeats } from "@/components/landing/DiyBeats";
+import { HowSimulatorWorks } from "@/components/landing/HowSimulatorWorks";
 import { DestinationsTease } from "@/components/landing/DestinationsTease";
 import { ShareMoment } from "@/components/landing/ShareMoment";
 import { CtaBanner } from "@/components/landing/CtaBanner";
@@ -10,9 +12,9 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { buildMetadata, SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/seo";
 
 export const metadata = buildMetadata({
-  title: "Rynxpense — DIY trip planner in pesos for Filipino travelers",
+  title: "Rynxpense — Trip Budget Simulator for Filipino travelers",
   description:
-    "Plan the trip yourself and know the pesos before you book. Free AI DIY itineraries with named stays, food, and activities — shareable to Facebook, X, and chats.",
+    "Can you afford the trip? Get a peso feasibility score, run what-ifs, make the plan fit, then track estimated vs spent. Free — no account needed.",
   path: "/home",
   image: "/og-banner.png",
   absoluteTitle: true,
@@ -24,7 +26,7 @@ const websiteLd = {
   name: SITE_NAME,
   url: SITE_URL,
   description:
-    "DIY trip planner for Filipino travelers with peso budgets and shareable itineraries.",
+    "Trip budget simulator for Filipino travelers — feasibility score, what-ifs, and make-it-fit plans in pesos.",
   inLanguage: "en-PH",
   potentialAction: {
     "@type": "SearchAction",
@@ -46,7 +48,7 @@ const appLd = {
   },
   url: absoluteUrl("/home"),
   description:
-    "Free DIY trip budget planner for Filipino travelers. Destination + peso budget in, named plan out.",
+    "Free trip budget simulator for Filipino travelers. Feasibility score, scenarios, and peso plans you can share.",
 };
 
 const orgLd = {
@@ -67,6 +69,8 @@ export default function HomePage() {
       <main>
         <HeroSection />
         <PlanStarter />
+        <SimulatorStory />
+        <HowSimulatorWorks />
         <DiyBeats />
         <DestinationsTease />
         <ShareMoment />

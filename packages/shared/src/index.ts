@@ -86,6 +86,7 @@ export const createTripSchema = z.object({
 
 export const generateTripSchema = createTripSchema.extend({
   inspirationItems: z.array(inspirationItemSchema).optional(),
+  origin: z.string().optional().default("Manila"),
 });
 
 export const createExpenseSchema = z.object({
@@ -138,10 +139,13 @@ export function buildTripPrompt(input: CreateTripInputWithInspo): string {
         .join("\n")}\n`
     : "";
 
+  const origin = input.origin?.trim() || "Manila";
+
   return `You are a travel planner and budget expert specializing in Filipino travelers departing from the Philippines.
 Create a realistic ${dayCount}-day trip plan with NAMED venues (real restaurants, hotels, attractions — not generic labels).
 
 Destination: ${input.destination}
+Flying from: ${origin}, Philippines
 Budget: ${input.currency} ${input.budgetAmount.toLocaleString()} total for ${input.travelers} traveler(s)
 Dates: ${input.startDate} to ${input.endDate}
 ${input.preferences ? `Preferences: ${input.preferences}` : ""}${inspoBlock}
@@ -149,7 +153,7 @@ ${input.preferences ? `Preferences: ${input.preferences}` : ""}${inspoBlock}
 Rules:
 - Use specific venue names (e.g. "Ichiran Ramen Shibuya", "Hotel Gracery Shinjuku", "teamLab Borderless")
 - Include at least one stay recommendation (hotel/hostel) in activities with category "hotel"
-- Price realistically in ${input.currency} from a Manila traveler perspective (include flights in budgetBreakdown)
+- Price realistically in ${input.currency} for travelers flying from ${origin} (include round-trip flights in budgetBreakdown)
 - Mark activities from user saves with source "from_save", others with "ai_pick"
 - Include 3-5 named activities per day across food, activities, transport
 
@@ -249,6 +253,44 @@ export interface RealityCheckResult {
   verdict: "fits" | "tight" | "over";
   warnings: string[];
 }
+
+export {
+  computeTripFeasibility,
+  buildMakeItFitStrategies,
+  itineraryDaysForEngine,
+} from "./feasibility";
+export type {
+  FeasibilityVerdict,
+  CategoryConfidence,
+  CategoryStatus,
+  FitStrategyId,
+  FeasibilityCategoryRow,
+  FeasibilityRisk,
+  FeasibilityLever,
+  TripFeasibilityResult,
+  ScenarioInput,
+  FeasibilityTripInput,
+  FitStrategy,
+} from "./feasibility";
+
+export {
+  buildCostLines,
+  effectiveLineAmount,
+  lineStage,
+  projectedFromLines,
+  linesToBreakdown,
+  parsePastePrice,
+  computeBudgetAutopsy,
+  updateTravelerCostProfile,
+} from "./budget-lifecycle";
+export type {
+  CostStage,
+  CostLineKey,
+  CostLine,
+  PastePriceResult,
+  BudgetAutopsyResult,
+  TravelerCostProfile,
+} from "./budget-lifecycle";
 
 export function computeRealityCheck(params: {
   budgetAmount: number;

@@ -15,13 +15,13 @@ export function DestinationsTease() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wider text-primary">
-              Destinations
+              Budget templates
             </p>
             <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-text sm:text-4xl">
-              Popular DIY trips
+              Start from a peso range
             </h2>
             <p className="mt-2 max-w-lg text-muted">
-              Tap a peso template — or browse all destinations with filters.
+              Pick a destination template, then run the feasibility simulator.
             </p>
           </div>
           <Link

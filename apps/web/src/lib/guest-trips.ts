@@ -82,3 +82,30 @@ export function removeGuestExpense(tripId: string, expenseId: string): GuestTrip
 export function isGuestTripId(id: string): boolean {
   return getGuestTrip(id) !== null;
 }
+
+/** Apply a mutated itinerary + budget to a guest trip (Make It Fit). */
+export function updateGuestTripPlan(
+  tripId: string,
+  patch: Partial<
+    Pick<
+      GuestTrip,
+      | "budgetAmount"
+      | "travelers"
+      | "endDate"
+      | "totalEstimated"
+      | "budgetBreakdown"
+      | "tips"
+      | "itineraryDays"
+    >
+  >,
+): GuestTrip | null {
+  const trip = getGuestTrip(tripId);
+  if (!trip) return null;
+  const updated: GuestTrip = {
+    ...trip,
+    ...patch,
+    updatedAt: new Date().toISOString(),
+  };
+  saveGuestTrip(updated);
+  return updated;
+}

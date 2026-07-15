@@ -55,7 +55,7 @@ export function Header({ variant = "hero" }: { variant?: "hero" | "solid" }) {
           className="flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-dark sm:px-5"
         >
           <Sparkles className="h-4 w-4" />
-          Plan my trip
+          Check budget
         </Link>
       </div>
     </header>
@@ -91,7 +91,7 @@ export function Footer() {
               </li>
               <li>
                 <Link href="/trips/new" className="transition hover:text-primary">
-                  Plan my trip
+                  Check trip budget
                 </Link>
               </li>
               <li>

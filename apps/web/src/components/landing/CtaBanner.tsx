@@ -29,18 +29,18 @@ export function CtaBanner() {
               Start planning
             </p>
             <h2 className="mt-3 max-w-xl font-display text-3xl font-bold tracking-tight text-white sm:text-5xl sm:leading-[1.05]">
-              Ready to DIY your next trip?
+              Can you afford the next trip?
             </h2>
             <p className="mt-4 max-w-md text-base leading-relaxed text-white/80 sm:text-lg">
-              Pick a destination and peso budget. Get a named plan — then share it with
-              anyone.
+              Run the peso feasibility check, try what-ifs, and make the plan fit before
+              you book.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
                 href="/trips/new"
                 className="inline-flex items-center gap-2 rounded-xl bg-accent px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-accent-dark sm:text-base"
               >
-                Plan my trip
+                Check my trip budget
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link

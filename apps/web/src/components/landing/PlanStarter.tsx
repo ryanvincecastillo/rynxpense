@@ -7,10 +7,10 @@ export function PlanStarter() {
         <div className="animate-fade-up overflow-visible rounded-2xl bg-white/95 p-5 shadow-xl ring-1 ring-black/5 backdrop-blur sm:p-6">
           <div className="mb-4">
             <h2 className="font-display text-xl font-bold tracking-tight text-text sm:text-2xl">
-              Start with where and how much
+              Check if the pesos will stretch
             </h2>
             <p className="mt-1 text-sm text-muted">
-              Destination + budget in pesos — AI builds a named DIY plan you can share.
+              Destination + budget → feasibility score, what-ifs, and a plan you can reshape.
             </p>
           </div>
           <SearchWidget />
