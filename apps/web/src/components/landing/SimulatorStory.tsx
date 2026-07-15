@@ -1,22 +1,22 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Gauge, SlidersHorizontal, Wand2 } from "lucide-react";
+import { ArrowRight, Gauge, ShoppingBag, Wand2 } from "lucide-react";
 
 const pillars = [
   {
     icon: Gauge,
-    title: "Feasibility score",
-    body: "Not vibes — deterministic peso math with a clear affordable / tight / over verdict.",
+    title: "Breathing room",
+    body: "Plan-level health in pesos — not a vibes score. Know if the trip still fits.",
   },
   {
-    icon: SlidersHorizontal,
-    title: "What-if simulator",
-    body: "Drop the budget, add a traveler, shorten days. Score updates instantly.",
+    icon: ShoppingBag,
+    title: "Can I afford this?",
+    body: "Check a purchase before you swipe. See free-to-spend and daily allowance change.",
   },
   {
     icon: Wand2,
-    title: "Make it fit",
-    body: "Apply Comfortable, Balanced, or Tipid — the plan rewrites to your pesos.",
+    title: "Find money to cut",
+    body: "When it doesn’t fit, get deterministic cost-line tradeoffs — then rebuild the plan.",
   },
 ];
 
@@ -42,14 +42,14 @@ export function SimulatorStory() {
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">
-              Trip budget simulator
+              Travel budget decision engine
             </p>
             <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-text sm:text-4xl">
-              ChatGPT can write an itinerary. Rynxpense answers: can you afford it?
+              ChatGPT can write an itinerary. Rynxpense answers: what happens if I buy this?
             </h2>
             <p className="mt-4 text-lg leading-relaxed text-muted">
-              Set destination and pesos. Get a feasibility score, pressure-test scenarios,
-              then rebuild the trip until it fits — before you book.
+              Free to spend is honest — optional plans are never silently sacrificed. When you
+              need a tradeoff, we show the cost-line cuts first.
             </p>
             <ul className="mt-8 space-y-5">
               {pillars.map((p) => (
@@ -68,12 +68,11 @@ export function SimulatorStory() {
               href="/trips/new"
               className="mt-8 inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-accent-dark"
             >
-              Check my trip budget
+              Check my trip
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
-          {/* Product mock */}
           <div className="relative">
             <div
               aria-hidden
@@ -81,45 +80,35 @@ export function SimulatorStory() {
             />
             <div className="relative overflow-hidden rounded-[1.75rem] bg-[#0B1F2A] p-6 text-white shadow-2xl ring-1 ring-white/10 sm:p-8">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">
-                Tokyo · 5 days · from Manila
+                Tokyo · ₱100,000 · 5 days
               </p>
               <div className="mt-4 flex items-end justify-between gap-4">
                 <div>
-                  <p className="font-display text-6xl font-bold tabular-nums">82</p>
-                  <p className="text-sm font-semibold text-emerald-300">
-                    Yes — you can afford this trip
+                  <p className="text-xs font-semibold uppercase tracking-wider text-white/50">
+                    Breathing room
                   </p>
+                  <p className="font-display text-5xl font-bold tabular-nums">₱10,000</p>
+                  <p className="mt-1 text-sm font-semibold text-emerald-300">SAFE</p>
                 </div>
                 <div className="text-right text-sm text-white/70">
                   <p>
-                    Projected <span className="font-bold text-white">₱64,800</span>
+                    Free to spend <span className="font-bold text-white">₱10,000</span>
                   </p>
                   <p>
-                    Budget <span className="font-bold text-white">₱70,000</span>
+                    Daily <span className="font-bold text-white">₱2,000</span>
                   </p>
                 </div>
               </div>
 
-              <div className="mt-6 space-y-2">
-                {[
-                  { label: "Flights", status: "watch", amt: "₱29,400" },
-                  { label: "Stay", status: "ok", amt: "₱13,800" },
-                  { label: "Activities", status: "over", amt: "₱9,850" },
-                ].map((row) => (
-                  <div
-                    key={row.label}
-                    className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2.5 text-sm"
-                  >
-                    <span className="text-white/80">{row.label}</span>
-                    <span className="font-semibold">{row.amt}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-5 rounded-xl bg-accent/20 px-4 py-3 text-sm ring-1 ring-accent/30">
-                <p className="font-semibold text-orange-200">What if budget → ₱50,000?</p>
+              <div className="mt-6 rounded-xl bg-white/5 px-4 py-3 text-sm">
+                <p className="font-semibold text-orange-200">
+                  ¥18,000 shoes · rate 0.38 → ₱6,840
+                </p>
                 <p className="mt-1 text-white/75">
-                  Score drops to 41. Tipid mode shortens to 4 days and cuts 2 paid attractions.
+                  FITS. Free to spend ₱10,000 → ₱3,160. No plans auto-sacrificed.
+                </p>
+                <p className="mt-2 text-xs text-white/50">
+                  Kaya yan. Basta wag ka lang magastos.
                 </p>
               </div>
             </div>

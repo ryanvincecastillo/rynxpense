@@ -275,7 +275,10 @@ export type {
 
 export {
   buildCostLines,
+  buildMoneyLines,
   effectiveLineAmount,
+  effectiveTotal,
+  remainingPayable,
   lineStage,
   projectedFromLines,
   linesToBreakdown,
@@ -287,10 +290,61 @@ export type {
   CostStage,
   CostLineKey,
   CostLine,
+  CostLineOverride,
   PastePriceResult,
   BudgetAutopsyResult,
   TravelerCostProfile,
 } from "./budget-lifecycle";
+
+export {
+  COST_LINE_META,
+  COST_LINE_KEYS,
+  SEED_FX_RATES,
+  DEFAULT_BUFFER_PCT,
+  convertWithFx,
+  maxReclaimable,
+  normalizeOverride,
+} from "./money-model";
+export type {
+  Necessity,
+  Flexibility,
+  TripMoneyStatus,
+  FxSnapshot,
+  FxSource,
+} from "./money-model";
+
+export {
+  computeTripMoneyState,
+  applyDecision,
+  computeRequiredCuts,
+  computeReclaimableAmount,
+  impactIfBookFound,
+  moneyStateFromBreakdown,
+  computeRemainingDays,
+} from "./impact-engine";
+export type {
+  AffordVerdict,
+  DecisionType,
+  Decision,
+  RequiredCut,
+  SuggestedPlanChange,
+  TripMoneyState,
+  ImpactResult,
+  MoneyStateInput,
+} from "./impact-engine";
+
+export {
+  RYNX_COPY,
+  RYNX_NO_JOKE_CONTEXTS,
+  pickRynxCopy,
+  affordContext,
+  statusContext,
+  breathingContext,
+  spicyAmountLine,
+} from "./rynx-tone";
+export type { RynxTone, RynxCopyContext } from "./rynx-tone";
+
+export { runMoneyModelFixtures } from "./impact-engine.fixtures";
 
 export function computeRealityCheck(params: {
   budgetAmount: number;

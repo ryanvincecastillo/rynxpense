@@ -86,14 +86,14 @@ export function HeroSection() {
       <div className="relative z-10 mx-auto flex min-h-[90vh] max-w-7xl flex-col justify-end px-4 pb-20 pt-28 sm:px-6 sm:pb-24 lg:justify-center lg:pb-28">
         <div className="max-w-xl animate-fade-up lg:max-w-2xl">
           <p className="font-display text-xs font-semibold uppercase tracking-[0.28em] text-white/80 sm:text-sm">
-            Rynxpense · Trip budget simulator
+            Rynxpense · Travel budget decision engine
           </p>
           <h1 className="mt-4 font-display text-[2.85rem] font-bold leading-[1.02] tracking-[-0.03em] text-white sm:text-6xl lg:text-[4.25rem] drop-shadow-sm">
-            Can you actually afford the trip?
+            Can I afford this trip?
           </h1>
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-white/90 sm:text-xl">
-            Check your peso budget, see where you&apos;ll overspend, and rebuild the plan to
-            fit — before you book. Free, no account needed.
+            Plan in pesos. Check purchases before you spend. See how every decision
+            affects the trip — free, no account needed.
           </p>
 
           <div className="mt-9 flex flex-wrap items-center gap-4">
@@ -101,7 +101,7 @@ export function HeroSection() {
               href="/trips/new"
               className="inline-flex items-center gap-2 rounded-xl bg-accent px-7 py-4 text-base font-semibold text-white transition hover:bg-accent-dark"
             >
-              Check my trip budget
+              Check my trip
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link

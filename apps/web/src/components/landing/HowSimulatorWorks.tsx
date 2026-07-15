@@ -9,13 +9,13 @@ const steps = [
   },
   {
     n: "02",
-    title: "See feasibility",
-    body: "Score, projected cost, category risks — with honest confidence levels.",
+    title: "See breathing room",
+    body: "Plan-level health + free-to-spend. Optional plans are never silently sacrificed.",
   },
   {
     n: "03",
-    title: "Simulate & fit",
-    body: "What-if the budget drops? Apply Make It Fit and keep a plan you can share.",
+    title: "Check purchases & cut",
+    body: "Ask “can I afford this?” before you buy. Tradeoffs show cost-line cuts first.",
   },
 ];
 
@@ -28,7 +28,7 @@ export function HowSimulatorWorks() {
             How it works
           </p>
           <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-text sm:text-4xl">
-            From “can we afford it?” to a plan that fits
+            From “can I afford this?” to a decision you can defend
           </h2>
         </div>
 
@@ -49,7 +49,7 @@ export function HowSimulatorWorks() {
           href="/trips/new"
           className="mt-10 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-semibold text-white transition hover:bg-primary-dark"
         >
-          Check my trip budget
+          Check my trip
           <ArrowRight className="h-4 w-4" />
         </Link>
       </div>

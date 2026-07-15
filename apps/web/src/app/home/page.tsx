@@ -12,9 +12,9 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { buildMetadata, SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/seo";
 
 export const metadata = buildMetadata({
-  title: "Rynxpense — Trip Budget Simulator for Filipino travelers",
+  title: "Rynxpense — Travel Budget Decision Engine for Filipino travelers",
   description:
-    "Can you afford the trip? Get a peso feasibility score, run what-ifs, make the plan fit, then track estimated vs spent. Free — no account needed.",
+    "Can I afford this trip? See breathing room and free-to-spend in pesos, check purchases before you buy, and find explicit tradeoffs. Free — no account needed.",
   path: "/home",
   image: "/og-banner.png",
   absoluteTitle: true,
@@ -26,7 +26,7 @@ const websiteLd = {
   name: SITE_NAME,
   url: SITE_URL,
   description:
-    "Trip budget simulator for Filipino travelers — feasibility score, what-ifs, and make-it-fit plans in pesos.",
+    "Travel budget decision engine for Filipino travelers — breathing room, free-to-spend, and purchase impact in pesos.",
   inLanguage: "en-PH",
   potentialAction: {
     "@type": "SearchAction",
@@ -48,7 +48,7 @@ const appLd = {
   },
   url: absoluteUrl("/home"),
   description:
-    "Free trip budget simulator for Filipino travelers. Feasibility score, scenarios, and peso plans you can share.",
+    "Free travel budget decision engine for Filipino travelers. Check purchases before you spend — in pesos.",
 };
 
 const orgLd = {

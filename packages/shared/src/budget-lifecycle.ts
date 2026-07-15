@@ -1,19 +1,23 @@
 import type { BudgetBreakdown } from "./index";
+import {
+  buildMoneyLines,
+  COST_LINE_META,
+  effectiveTotal,
+  type CostLine,
+  type CostLineKey,
+  type CostLineOverride,
+} from "./money-model";
 
-export type CostStage = "estimated" | "found" | "booked" | "spent";
+export type { CostLine, CostLineKey, CostLineOverride };
+export {
+  buildMoneyLines,
+  effectiveTotal,
+  remainingPayable,
+  projectedFromMoneyLines,
+} from "./money-model";
 
-export type CostLineKey = keyof BudgetBreakdown;
-
-export interface CostLine {
-  key: CostLineKey;
-  label: string;
-  estimated: number;
-  found?: number | null;
-  booked?: number | null;
-  spent?: number | null;
-  note?: string;
-  sourceUrl?: string;
-}
+/** UI stage label — derived, not a financial source of truth. */
+export type CostStage = "estimated" | "found" | "committed" | "paid";
 
 export interface PastePriceResult {
   amount: number;
@@ -21,15 +25,6 @@ export interface PastePriceResult {
   note: string;
   raw: string;
 }
-
-const LABELS: Record<CostLineKey, string> = {
-  flights: "Flights",
-  hotel: "Stay",
-  food: "Food",
-  activities: "Activities",
-  transport: "Local transport",
-  other: "Misc",
-};
 
 const CATEGORY_KEYWORDS: { key: CostLineKey; words: string[] }[] = [
   { key: "flights", words: ["flight", "airfare", "cebu pacific", "airasia", "pal", "plane", "airport", "roundtrip", "round trip"] },
@@ -39,49 +34,50 @@ const CATEGORY_KEYWORDS: { key: CostLineKey; words: string[] }[] = [
   { key: "transport", words: ["train", "metro", "taxi", "grab", "transport", "jr pass", "suica"] },
 ];
 
+/** @deprecated Prefer buildMoneyLines — kept as alias. */
 export function buildCostLines(
   breakdown?: Partial<BudgetBreakdown> | Record<string, number> | null,
-  overrides?: Partial<Record<CostLineKey, Partial<CostLine>>>,
+  overrides?: Partial<Record<CostLineKey, CostLineOverride>>,
 ): CostLine[] {
-  const keys: CostLineKey[] = ["flights", "hotel", "food", "activities", "transport", "other"];
-  return keys.map((key) => {
-    const estimated = Number(breakdown?.[key] ?? 0);
-    const over = overrides?.[key];
-    return {
-      key,
-      label: LABELS[key],
-      estimated,
-      found: over?.found ?? null,
-      booked: over?.booked ?? null,
-      spent: over?.spent ?? null,
-      note: over?.note,
-      sourceUrl: over?.sourceUrl,
-    };
-  });
+  return buildMoneyLines(breakdown, overrides);
 }
 
-/** Effective projection for a line: spent > booked > found > estimated */
+/**
+ * Projection amount for display / feasibility bridge.
+ * Uses committed ?? estimated — found never wins.
+ */
 export function effectiveLineAmount(line: CostLine): number {
-  if (line.spent != null && line.spent > 0) return line.spent;
-  if (line.booked != null && line.booked > 0) return line.booked;
-  if (line.found != null && line.found > 0) return line.found;
-  return line.estimated;
+  return effectiveTotal(line);
 }
 
 export function lineStage(line: CostLine): CostStage {
-  if (line.spent != null && line.spent > 0) return "spent";
-  if (line.booked != null && line.booked > 0) return "booked";
-  if (line.found != null && line.found > 0) return "found";
+  if ((line.paidAmount || 0) > 0 && remainingPaidInFull(line)) return "paid";
+  if ((line.paidAmount || 0) > 0) return "committed"; // partial pay still committed
+  if (line.committedTotal != null && line.committedTotal > 0) return "committed";
+  if (line.foundTotal != null && line.foundTotal > 0) return "found";
   return "estimated";
 }
 
-export function projectedFromLines(lines: CostLine[]): number {
-  return lines.reduce((s, l) => s + effectiveLineAmount(l), 0);
+function remainingPaidInFull(line: CostLine): boolean {
+  return (line.paidAmount || 0) >= effectiveTotal(line) && effectiveTotal(line) > 0;
 }
 
-export function linesToBreakdown(lines: CostLine[]): BudgetBreakdown {
+export function projectedFromLines(lines: CostLine[]): number {
+  return lines.reduce((s, l) => s + effectiveTotal(l), 0);
+}
+
+export function linesToBreakdownLegacy(lines: CostLine[]): BudgetBreakdown {
   const get = (key: CostLineKey) =>
-    effectiveLineAmount(lines.find((l) => l.key === key) ?? { key, label: "", estimated: 0 });
+    effectiveTotal(
+      lines.find((l) => l.key === key) ?? {
+        key,
+        label: "",
+        necessity: COST_LINE_META[key].necessity,
+        flexibility: COST_LINE_META[key].flexibility,
+        estimatedTotal: 0,
+        paidAmount: 0,
+      },
+    );
   return {
     flights: get("flights"),
     hotel: get("hotel"),
@@ -91,6 +87,9 @@ export function linesToBreakdown(lines: CostLine[]): BudgetBreakdown {
     other: get("other"),
   };
 }
+
+/** Alias used by TripDetailClient */
+export { linesToBreakdownLegacy as linesToBreakdown };
 
 /** Parse free text like "Cebu Pacific Davao to Tokyo ₱11,850 roundtrip" */
 export function parsePastePrice(raw: string): PastePriceResult | null {
@@ -142,7 +141,7 @@ export function computeBudgetAutopsy(params: {
   expenses: Array<{ amount: number; category: string }>;
   totalEstimated?: number | null;
 }): BudgetAutopsyResult {
-  const plannedLines = buildCostLines(params.plannedBreakdown);
+  const plannedLines = buildMoneyLines(params.plannedBreakdown);
   const planned =
     params.totalEstimated && params.totalEstimated > 0
       ? params.totalEstimated
@@ -174,12 +173,12 @@ export function computeBudgetAutopsy(params: {
   const variance = actual - planned;
   const variancePct = planned > 0 ? (variance / planned) * 100 : 0;
 
-  const byCategory = (Object.keys(LABELS) as CostLineKey[]).map((key) => {
-    const plannedAmt = plannedLines.find((l) => l.key === key)?.estimated ?? 0;
+  const byCategory = (Object.keys(COST_LINE_META) as CostLineKey[]).map((key) => {
+    const plannedAmt = plannedLines.find((l) => l.key === key)?.estimatedTotal ?? 0;
     const actualAmt = actualByKey[key];
     return {
       key,
-      label: LABELS[key],
+      label: COST_LINE_META[key].label,
       planned: plannedAmt,
       actual: actualAmt,
       delta: actualAmt - plannedAmt,

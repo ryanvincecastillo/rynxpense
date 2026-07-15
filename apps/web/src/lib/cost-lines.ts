@@ -1,13 +1,13 @@
 "use client";
 
-import type { CostLine, CostLineKey, TravelerCostProfile } from "@rynxpense/shared";
+import type { CostLineKey, CostLineOverride, TravelerCostProfile } from "@rynxpense/shared";
 
 const linesKey = (tripId: string) => `rynxpense_cost_lines_${tripId}`;
 const profileKey = "rynxpense_traveler_cost_profile";
 
 export function loadCostLineOverrides(
   tripId: string,
-): Partial<Record<CostLineKey, Partial<CostLine>>> {
+): Partial<Record<CostLineKey, CostLineOverride>> {
   if (typeof window === "undefined") return {};
   try {
     const raw = localStorage.getItem(linesKey(tripId));
@@ -19,7 +19,7 @@ export function loadCostLineOverrides(
 
 export function saveCostLineOverrides(
   tripId: string,
-  overrides: Partial<Record<CostLineKey, Partial<CostLine>>>,
+  overrides: Partial<Record<CostLineKey, CostLineOverride>>,
 ) {
   localStorage.setItem(linesKey(tripId), JSON.stringify(overrides));
 }
@@ -27,10 +27,10 @@ export function saveCostLineOverrides(
 export function upsertCostLineOverride(
   tripId: string,
   key: CostLineKey,
-  patch: Partial<CostLine>,
+  patch: CostLineOverride,
 ) {
   const all = loadCostLineOverrides(tripId);
-  all[key] = { ...all[key], key, ...patch };
+  all[key] = { ...all[key], ...patch };
   saveCostLineOverrides(tripId, all);
   return all;
 }

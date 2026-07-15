@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   PieChart,
   Map,
+  History,
 } from "lucide-react";
 import {
   formatCurrency,
@@ -22,31 +23,41 @@ import {
   itineraryDaysForEngine,
   buildCostLines,
   linesToBreakdown,
+  moneyStateFromBreakdown,
+  pickRynxCopy,
   type FitStrategy,
   type Activity,
   type InspirationItem,
-  type CostLine,
   type CostLineKey,
+  type CostLineOverride,
   type TravelerCostProfile,
+  type ImpactResult,
 } from "@rynxpense/shared";
 import type { ApiTrip, ApiItineraryDay } from "@/lib/types";
-import { getGuestTrip, updateGuestTripPlan } from "@/lib/guest-trips";
+import { getGuestTrip, updateGuestTripPlan, addGuestExpense } from "@/lib/guest-trips";
 import { listTripInspiration } from "@/lib/inspiration";
 import { extractInspirationFromTrip } from "@/lib/inspiration-from-plan";
 import {
   loadCostLineOverrides,
   loadTravelerCostProfile,
+  upsertCostLineOverride,
 } from "@/lib/cost-lines";
+import {
+  appendGuestMoneyEvent,
+  loadGuestMoneyEvents,
+  type MoneyEvent,
+} from "@/lib/money-events";
 import { InspirationBoard } from "@/components/app/InspirationBoard";
 import { BudgetTallyBar } from "@/components/app/BudgetTallyBar";
 import { RealityCheckButton } from "@/components/app/RealityCheckModal";
 import { TripHero } from "@/components/app/TripHero";
 import { TripSharePanel } from "@/components/share/TripSharePanel";
-import { FeasibilityOverview } from "@/components/app/FeasibilityOverview";
+import { MoneyOverview } from "@/components/app/MoneyOverview";
+import { MoneyTimeline } from "@/components/app/MoneyTimeline";
 import { BudgetLifecyclePanel } from "@/components/app/BudgetLifecyclePanel";
 import { BudgetAutopsyPanel } from "@/components/app/BudgetAutopsyPanel";
 
-type Tab = "overview" | "budget" | "plan" | "expenses";
+type Tab = "overview" | "money" | "plan" | "timeline";
 
 export function TripDetailClient({ tripId }: { tripId: string }) {
   const [trip, setTrip] = useState<ApiTrip | null>(null);
@@ -62,9 +73,11 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
   const [scenarioDays, setScenarioDays] = useState<number | null>(null);
   const [skipPaid, setSkipPaid] = useState(false);
   const [costOverrides, setCostOverrides] = useState<
-    Partial<Record<CostLineKey, Partial<CostLine>>>
+    Partial<Record<CostLineKey, CostLineOverride>>
   >({});
   const [costProfile, setCostProfile] = useState<TravelerCostProfile | null>(null);
+  const [moneyEvents, setMoneyEvents] = useState<MoneyEvent[]>([]);
+  const [cutTarget, setCutTarget] = useState<ImpactResult | null>(null);
 
   useEffect(() => {
     setCostOverrides(loadCostLineOverrides(tripId));
@@ -74,20 +87,26 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
     if (guest) {
       setTrip(guest);
       setIsGuest(true);
+      setMoneyEvents(loadGuestMoneyEvents(tripId));
       const saved = listTripInspiration(tripId);
       setInspiration(saved.length ? saved : extractInspirationFromTrip(guest));
       setLoading(false);
       return;
     }
 
-    fetch(`/api/trips/${tripId}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
+    Promise.all([
+      fetch(`/api/trips/${tripId}`).then((res) => (res.ok ? res.json() : null)),
+      fetch(`/api/trips/${tripId}/money-events`).then((res) =>
+        res.ok ? res.json() : [],
+      ),
+    ])
+      .then(([data, events]) => {
         if (data) {
           setTrip(data);
           const saved = listTripInspiration(tripId);
           setInspiration(saved.length ? saved : extractInspirationFromTrip(data));
         }
+        if (Array.isArray(events)) setMoneyEvents(events);
       })
       .finally(() => setLoading(false));
   }, [tripId]);
@@ -118,11 +137,22 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
   const effectiveBreakdown = useMemo(() => {
     if (!trip) return null;
     const lines = buildCostLines(trip.budgetBreakdown, costOverrides);
-    const hasConfirmed = lines.some(
-      (l) => (l.found != null && l.found > 0) || (l.booked != null && l.booked > 0),
+    const hasCommitted = lines.some(
+      (l) => l.committedTotal != null && l.committedTotal > 0,
     );
-    return hasConfirmed ? linesToBreakdown(lines) : trip.budgetBreakdown;
+    return hasCommitted ? linesToBreakdown(lines) : trip.budgetBreakdown;
   }, [trip, costOverrides]);
+
+  const moneyState = useMemo(() => {
+    if (!trip) return null;
+    return moneyStateFromBreakdown({
+      budget: scenarioBudget ?? trip.budgetAmount,
+      breakdown: trip.budgetBreakdown,
+      overrides: costOverrides,
+      startDate: trip.startDate,
+      endDate: trip.endDate,
+    });
+  }, [trip, costOverrides, scenarioBudget]);
 
   const feasibility = useMemo(() => {
     if (!trip || scenarioBudget == null || scenarioTravelers == null || scenarioDays == null) {
@@ -209,6 +239,120 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
     setSkipPaid(false);
   }, [trip]);
 
+  const recordMoneyEvent = useCallback(
+    async (
+      type: MoneyEvent["type"],
+      category: string | undefined,
+      amount: number | undefined,
+      meta?: Record<string, unknown>,
+    ) => {
+      if (isGuest) {
+        setMoneyEvents(
+          appendGuestMoneyEvent(tripId, { type, category, amount, meta }),
+        );
+        return;
+      }
+      try {
+        const res = await fetch(`/api/trips/${tripId}/money-events`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type, category, amount, meta }),
+        });
+        if (res.ok) {
+          const ev = await res.json();
+          setMoneyEvents((prev) => [ev, ...prev]);
+        }
+      } catch {
+        /* ignore offline */
+      }
+    },
+    [isGuest, tripId],
+  );
+
+  const handleConfirmBuy = useCallback(
+    async (result: ImpactResult, note: string) => {
+      if (!trip) return;
+      const today = new Date().toISOString().slice(0, 10);
+      const logged = pickRynxCopy("expense.logged", String(result.amountPhp));
+
+      if (isGuest) {
+        const updated = addGuestExpense(trip.id, {
+          amount: result.amountPhp,
+          category: "other",
+          note: note || logged.text,
+          date: today,
+        });
+        if (updated) setTrip(updated);
+      } else {
+        await fetch(`/api/trips/${trip.id}/expenses`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: result.amountPhp,
+            category: "other",
+            note: note || logged.text,
+            date: today,
+          }),
+        });
+        const refreshed = await fetch(`/api/trips/${trip.id}`).then((r) =>
+          r.ok ? r.json() : null,
+        );
+        if (refreshed) setTrip(refreshed);
+      }
+
+      const line = buildCostLines(trip.budgetBreakdown, costOverrides).find(
+        (l) => l.key === "other",
+      );
+      const base = line ? (line.committedTotal ?? line.estimatedTotal) : 0;
+      const next = upsertCostLineOverride(trip.id, "other", {
+        committedTotal: base + result.amountPhp,
+        paidAmount: (line?.paidAmount || 0) + result.amountPhp,
+      });
+      setCostOverrides(next);
+
+      await recordMoneyEvent("expense", "other", result.amountPhp, {
+        note,
+        verdict: result.verdict,
+        fx: result.fx,
+      });
+      await recordMoneyEvent("purchase_check", "other", result.amountPhp, {
+        verdict: result.verdict,
+        freeToSpendAfter: result.freeToSpendAfter,
+      });
+      setCutTarget(null);
+    },
+    [trip, isGuest, costOverrides, recordMoneyEvent],
+  );
+
+  const handleFindCuts = useCallback((result: ImpactResult) => {
+    setCutTarget(result);
+  }, []);
+
+  const applyRequiredCuts = useCallback(
+    async (result: ImpactResult) => {
+      if (!trip) return;
+      let next = { ...costOverrides };
+      for (const cut of result.requiredCuts) {
+        const lines = buildCostLines(trip.budgetBreakdown, next);
+        const line = lines.find((l) => l.key === cut.category);
+        if (!line) continue;
+        const current = line.committedTotal ?? line.estimatedTotal;
+        const reduced = Math.max(0, current - cut.reduceBy);
+        next = upsertCostLineOverride(trip.id, cut.category, {
+          ...(line.committedTotal != null
+            ? { committedTotal: reduced }
+            : { estimatedTotal: reduced }),
+        });
+      }
+      setCostOverrides(next);
+      await recordMoneyEvent("cut_applied", undefined, result.budgetGap, {
+        cuts: result.requiredCuts,
+      });
+      setCutTarget(null);
+    },
+    [trip, costOverrides, recordMoneyEvent],
+  );
+
   const applyStrategy = async (strategy: FitStrategy) => {
     if (!trip) return;
     setApplying(true);
@@ -288,7 +432,8 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
   };
 
   if (loading) {
-    return <div className="py-12 text-center text-muted">Loading your trip...</div>;
+    const loadingCopy = pickRynxCopy("loading.trip");
+    return <div className="py-12 text-center text-muted">{loadingCopy.text}</div>;
   }
 
   if (!trip) {
@@ -310,9 +455,9 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
 
   const tabs: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
-    { id: "budget", label: "Budget", icon: PieChart },
+    { id: "money", label: "Money", icon: PieChart },
     { id: "plan", label: "Plan", icon: Map },
-    { id: "expenses", label: "Expenses", icon: Receipt },
+    { id: "timeline", label: "Timeline", icon: History },
   ];
 
   return (
@@ -352,12 +497,15 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
                 </span>
               </div>
             </div>
-            {feasibility && (
+            {moneyState && (
               <div className="rounded-xl bg-white/15 px-3 py-2 text-right">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-white/70">
-                  Feasibility
+                  {moneyState.breathingRoom >= 0 ? "Breathing room" : "Over budget"}
                 </p>
-                <p className="font-display text-2xl font-bold">{feasibility.score}</p>
+                <p className="font-display text-2xl font-bold">
+                  {formatCurrency(Math.abs(moneyState.breathingRoom))}
+                </p>
+                <p className="text-[10px] text-white/70">{moneyState.status}</p>
               </div>
             )}
           </div>
@@ -387,13 +535,7 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
               <button
                 key={t.id}
                 type="button"
-                onClick={() => {
-                  if (t.id === "expenses") {
-                    window.location.href = `/trips/${trip.id}/expenses`;
-                    return;
-                  }
-                  setTab(t.id);
-                }}
+                onClick={() => setTab(t.id)}
                 className={`flex items-center gap-2 whitespace-nowrap rounded-t-lg px-4 py-2.5 text-sm font-semibold transition ${
                   active
                     ? "bg-background text-primary"
@@ -408,33 +550,52 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
         </div>
       </div>
 
-      {tab === "overview" && feasibility && scenarioBudget != null && scenarioTravelers != null && scenarioDays != null && (
-        <FeasibilityOverview
-          result={feasibility}
-          scenarioBudget={scenarioBudget}
-          scenarioTravelers={scenarioTravelers}
-          scenarioDays={scenarioDays}
-          maxDays={maxDays}
-          skipPaidActivities={skipPaid}
-          onBudgetChange={setScenarioBudget}
-          onTravelersChange={setScenarioTravelers}
-          onDaysChange={setScenarioDays}
-          onSkipPaidChange={setSkipPaid}
-          onResetScenario={resetScenario}
-          strategies={strategies}
-          onApplyStrategy={applyStrategy}
-          applying={applying}
-        />
-      )}
+      {tab === "overview" &&
+        moneyState &&
+        scenarioBudget != null &&
+        scenarioTravelers != null &&
+        scenarioDays != null && (
+          <MoneyOverview
+            money={moneyState}
+            feasibility={feasibility}
+            scenarioBudget={scenarioBudget}
+            scenarioTravelers={scenarioTravelers}
+            scenarioDays={scenarioDays}
+            maxDays={maxDays}
+            skipPaidActivities={skipPaid}
+            onBudgetChange={setScenarioBudget}
+            onTravelersChange={setScenarioTravelers}
+            onDaysChange={setScenarioDays}
+            onSkipPaidChange={setSkipPaid}
+            onResetScenario={resetScenario}
+            strategies={strategies}
+            onApplyStrategy={applyStrategy}
+            applying={applying}
+            cutTarget={cutTarget}
+            onConfirmBuy={handleConfirmBuy}
+            onFindCuts={handleFindCuts}
+            onApplyCuts={applyRequiredCuts}
+            onClearCuts={() => setCutTarget(null)}
+          />
+        )}
 
-      {tab === "budget" && (
+      {tab === "money" && (
         <div className="space-y-4">
           {tally && <BudgetTallyBar tally={tally} />}
           {feasibility && (
             <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-border">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="font-bold">Budget confidence</h2>
-                {realityCheck && <RealityCheckButton result={realityCheck} />}
+                <div className="flex items-center gap-2">
+                  {realityCheck && <RealityCheckButton result={realityCheck} />}
+                  <Link
+                    href={`/trips/${trip.id}/expenses`}
+                    className="inline-flex items-center gap-1 text-sm font-semibold text-primary"
+                  >
+                    <Receipt className="h-4 w-4" />
+                    Expenses
+                  </Link>
+                </div>
               </div>
               <div className="space-y-2">
                 {feasibility.categories.map((row) => (
@@ -462,9 +623,20 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
 
           <BudgetLifecyclePanel
             tripId={trip.id}
+            budget={trip.budgetAmount}
+            startDate={trip.startDate}
+            endDate={trip.endDate}
             breakdown={breakdown}
             overrides={costOverrides}
             onOverridesChange={setCostOverrides}
+            onMoneyEvent={(type, category, amount, meta) => {
+              void recordMoneyEvent(
+                type as MoneyEvent["type"],
+                category,
+                amount,
+                meta,
+              );
+            }}
           />
 
           <BudgetAutopsyPanel
@@ -479,6 +651,8 @@ export function TripDetailClient({ tripId }: { tripId: string }) {
           />
         </div>
       )}
+
+      {tab === "timeline" && <MoneyTimeline events={moneyEvents} />}
 
       {tab === "plan" && (
         <div className="space-y-6">
