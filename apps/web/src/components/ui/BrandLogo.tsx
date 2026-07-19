@@ -13,8 +13,10 @@ export function BrandLogo({
   href?: string;
 }) {
   const wordClass = variant === "onDark" ? "text-white" : "text-text";
-  // Transparent mark (white R) on dark; blue plate icon on light
-  const src = variant === "onDark" ? "/logo-transparent.png" : "/icon.png";
+  // Dedicated brand assets (not /icon.png) so favicon metadata routes can't collide
+  // and browsers/CDNs don't keep serving a stale optimized favicon as the logo.
+  const src =
+    variant === "onDark" ? "/brand-mark-on-dark.png" : "/brand-mark.png";
 
   return (
     <Link href={href} className="flex items-center gap-2.5">
@@ -24,7 +26,8 @@ export function BrandLogo({
         width={size}
         height={size}
         priority
-        className="shrink-0"
+        unoptimized
+        className="shrink-0 rounded-[9px]"
       />
       {showWordmark ? (
         <span

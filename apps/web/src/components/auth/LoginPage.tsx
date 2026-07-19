@@ -162,7 +162,14 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg ring-1 ring-border">
         <div className="mb-6 flex flex-col items-center text-center">
-          <Image src="/icon.svg" alt="Rynxpense" width={56} height={56} className="mb-3" />
+          <Image
+            src="/brand-mark.png"
+            alt="Rynxpense"
+            width={56}
+            height={56}
+            unoptimized
+            className="mb-3 rounded-[12px]"
+          />
           <h1 className="text-2xl font-bold">Sign in to Rynxpense</h1>
           <p className="mt-1 text-sm text-muted">Plan trips and track your travel budget</p>
         </div>
